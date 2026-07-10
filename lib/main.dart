@@ -4,18 +4,29 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/progress_repository.dart';
 import 'features/home/home_page.dart';
+import 'notifications/notification_service.dart';
 import 'state/progress_controller.dart';
+import 'state/settings_controller.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // İlerlemeyi açılışta yükleyebilmek için prefs'i hazırla ve repository'yi ver.
   final prefs = await SharedPreferences.getInstance();
+
+  // Bildirim servisini hazırla; hatırlatma açıksa açılışta yeniden zamanla
+  // (yeniden başlatma sonrası da yaşasın diye).
+  await NotificationService.instance.init();
+  if (prefs.getBool('reminder_enabled') ?? false) {
+    await NotificationService.instance
+        .scheduleDaily(hour: prefs.getInt('reminder_hour') ?? 19);
+  }
+
   runApp(
     ProviderScope(
       overrides: [
         progressRepositoryProvider.overrideWithValue(
           PrefsProgressRepository(prefs),
         ),
+        prefsProvider.overrideWithValue(prefs),
       ],
       child: const HearTheSoundApp(),
     ),

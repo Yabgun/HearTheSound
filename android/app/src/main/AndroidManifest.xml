@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Perde tespiti için mikrofon erişimi (spike + üretim egzersizleri) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <!-- Günlük hatırlatma bildirimleri (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="hear_the_sound"
         android:name="${applicationName}"

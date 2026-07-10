@@ -8,9 +8,12 @@ plugins {
 android {
     namespace = "com.hearthesound.hear_the_sound"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Eklentiler (record/audioplayers/shared_preferences) NDK 27 istiyor.
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
+        // flutter_local_notifications için core library desugaring gerekli
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -42,4 +45,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // flutter_local_notifications'ın gerektirdiği core library desugaring
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/player_progress.dart';
 import '../../core/rank.dart';
 import '../../state/progress_controller.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_flow_page.dart';
+import '../settings/settings_page.dart';
 
 // -----------------------------------------------------------------------------
 // ANA EKRAN — yolculuğun "yuvası"
 //
-// Streak, XP ve rütbeyi gösterir; ders patikasına buradan girilir. Dersler
-// kilitli/açık/tamamlandı olarak sıralanır — bir ders geçilince (≥%70) sonraki
-// açılır. Bir dersten dönünce (progressProvider izlendiği için) her şey yansır.
+// Günlük hedef, streak, XP ve rütbe; ardından kilitli/açık/tamamlandı ders
+// patikası. Bir dersten dönünce (progressProvider izlendiği için) her şey yansır.
 // -----------------------------------------------------------------------------
 
 class HomePage extends ConsumerWidget {
@@ -47,9 +48,18 @@ class HomePage extends ConsumerWidget {
                 ),
                 const Spacer(),
                 _streakChip(theme, progress.streak),
+                IconButton(
+                  icon: const Icon(Icons.settings_rounded),
+                  tooltip: 'Ayarlar',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const SettingsPage()),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 24),
+            _dailyGoalCard(theme, progress.dailyXp),
+            const SizedBox(height: 16),
             _rankCard(theme, rank, progress.xp, rankPct, nextLabel),
             const SizedBox(height: 28),
             Text(
@@ -74,6 +84,63 @@ class HomePage extends ConsumerWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _dailyGoalCard(ThemeData theme, int dailyXp) {
+    final met = dailyXp >= kDailyXpGoal;
+    final pct = (dailyXp / kDailyXpGoal).clamp(0.0, 1.0);
+    const green = Color(0xFF56C271);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            met ? Icons.check_circle_rounded : Icons.today_rounded,
+            color: met ? green : theme.colorScheme.primary,
+            size: 34,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'BUGÜNKÜ HEDEF',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    letterSpacing: 2,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  met ? 'Tamamlandı! 🎉' : '$dailyXp / $kDailyXpGoal XP',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: met ? green : null,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: pct,
+                    minHeight: 7,
+                    backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.12),
+                    valueColor: AlwaysStoppedAnimation(
+                      met ? green : theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

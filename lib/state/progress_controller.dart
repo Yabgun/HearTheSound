@@ -48,11 +48,15 @@ class ProgressController extends Notifier<PlayerProgress> {
       newCompleted.add(skillId);
     }
 
+    // Günlük XP: aynı günse ekle, yeni günse sıfırdan başlat.
+    final newDailyXp = (last == today) ? state.dailyXp + xpEarned : xpEarned;
+
     state = state.copyWith(
       xp: state.xp + xpEarned,
       streak: streak,
       longestStreak: math.max(state.longestStreak, streak),
       lastActiveDay: today,
+      dailyXp: newDailyXp,
       skillXp: newSkillXp,
       completedLessons: newCompleted,
     );
