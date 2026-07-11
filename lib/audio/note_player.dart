@@ -12,6 +12,7 @@ import 'tone_synth.dart';
 /// hep bu arayüzü konuşur, altyapıyı bilmez.
 abstract class NotePlayer {
   Future<void> play(Note note);
+  Future<void> playChord(List<Note> notes);
   Future<void> stop();
   Future<void> dispose();
 }
@@ -27,6 +28,7 @@ class SynthNotePlayer implements NotePlayer {
   final Duration _duration;
   final AudioPlayer _player = AudioPlayer();
   final Map<int, Uint8List> _cache = {};
+  final Map<String, Uint8List> _chordCache = {};
 
   @override
   Future<void> play(Note note) async {
@@ -35,6 +37,20 @@ class SynthNotePlayer implements NotePlayer {
       () => _synth.wavForFrequency(note.frequency, duration: _duration),
     );
     // Aynı çalıcıyı yeniden kullan; her çağrıda baştan çal.
+    await _player.stop();
+    await _player.play(BytesSource(wav, mimeType: 'audio/wav'));
+  }
+
+  @override
+  Future<void> playChord(List<Note> notes) async {
+    final key = (notes.map((n) => n.midi).toList()..sort()).join(',');
+    final wav = _chordCache.putIfAbsent(
+      key,
+      () => _synth.wavForFrequencies(
+        notes.map((n) => n.frequency).toList(),
+        duration: _duration,
+      ),
+    );
     await _player.stop();
     await _player.play(BytesSource(wav, mimeType: 'audio/wav'));
   }

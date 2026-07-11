@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/player_progress.dart';
 import '../../core/rank.dart';
 import '../../state/progress_controller.dart';
+import '../chords/chord_lesson.dart';
+import '../chords/chord_lesson_flow_page.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_flow_page.dart';
 import '../settings/settings_page.dart';
@@ -80,6 +82,27 @@ class HomePage extends ConsumerWidget {
                       i == 0 || progress.isLessonCompleted(lessons[i - 1].id),
                   completed: progress.isLessonCompleted(lessons[i].id),
                   mastery: progress.skillXp[lessons[i].id] ?? 0,
+                ),
+              ),
+            const SizedBox(height: 16),
+            Text(
+              'Akorlar',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (var i = 0; i < chordLessons.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _chordPathCard(
+                  context,
+                  theme,
+                  chordLessons[i],
+                  unlocked: i == 0 ||
+                      progress.isLessonCompleted(chordLessons[i - 1].id),
+                  completed: progress.isLessonCompleted(chordLessons[i].id),
+                  mastery: progress.skillXp[chordLessons[i].id] ?? 0,
                 ),
               ),
           ],
@@ -222,6 +245,85 @@ class HomePage extends ConsumerWidget {
       child: Text(
         '🔥 $streak',
         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  Widget _chordPathCard(
+    BuildContext context,
+    ThemeData theme,
+    ChordLesson lesson, {
+    required bool unlocked,
+    required bool completed,
+    required int mastery,
+  }) {
+    const green = Color(0xFF56C271);
+    final bg = unlocked
+        ? theme.colorScheme.surfaceContainerHighest
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
+
+    final IconData icon;
+    final Color iconColor;
+    final String subtitle;
+    if (completed) {
+      icon = Icons.check_circle_rounded;
+      iconColor = green;
+      subtitle = 'tamamlandı · ustalık $mastery';
+    } else if (unlocked) {
+      icon = Icons.piano_rounded;
+      iconColor = theme.colorScheme.primary;
+      subtitle = 'başlamak için dokun';
+    } else {
+      icon = Icons.lock_rounded;
+      iconColor = theme.colorScheme.outline;
+      subtitle = 'önceki akoru geç';
+    }
+
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: unlocked
+            ? () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ChordLessonFlowPage(lesson: lesson),
+                  ),
+                )
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Row(
+            children: [
+              Icon(icon, color: iconColor, size: 32),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lesson.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: unlocked ? null : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (unlocked)
+                Icon(Icons.chevron_right_rounded,
+                    color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
       ),
     );
   }

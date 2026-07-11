@@ -1,0 +1,97 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../audio/note_player.dart';
+import '../../state/progress_controller.dart';
+import '../lesson/lesson.dart';
+import '../lesson/lesson_complete_page.dart';
+import 'chord_arpeggio_page.dart';
+import 'chord_lesson.dart';
+import 'chord_recognition_page.dart';
+import 'learn_chords_page.dart';
+
+// -----------------------------------------------------------------------------
+// AKOR DERS AKIŞI — Öğren → Söyle (arpej) → Tanı ("hangi akor?")
+//
+// Nota derslerinin akor karşılığı. Tanıma bitince sonuç ilerlemeye işlenir
+// (XP, streak, ustalık, ders tamamlama → kilit açar).
+// -----------------------------------------------------------------------------
+
+enum _Phase { learning, singing, recognizing, done }
+
+class ChordLessonFlowPage extends ConsumerStatefulWidget {
+  const ChordLessonFlowPage({super.key, required this.lesson});
+
+  final ChordLesson lesson;
+
+  @override
+  ConsumerState<ChordLessonFlowPage> createState() => _ChordLessonFlowPageState();
+}
+
+class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
+  static const int _questionCount = 8;
+  static const int _xpPerCorrect = 10;
+
+  final NotePlayer _player = SynthNotePlayer();
+  _Phase _phase = _Phase.learning;
+  LessonResult? _result;
+  int _xpEarned = 0;
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  void _onRecognitionComplete(LessonResult result) {
+    final xp = result.correct * _xpPerCorrect;
+    ref.read(progressProvider.notifier).completeLesson(
+          skillId: widget.lesson.id,
+          xpEarned: xp,
+          masteryGain: result.correct,
+          completed: result.accuracy >= 0.7,
+        );
+    setState(() {
+      _result = result;
+      _xpEarned = xp;
+      _phase = _Phase.done;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    switch (_phase) {
+      case _Phase.learning:
+        return LearnChordsPage(
+          lesson: widget.lesson,
+          player: _player,
+          onReady: () => setState(() => _phase = _Phase.singing),
+        );
+      case _Phase.singing:
+        return ChordArpeggioPage(
+          // Söyle aşamasında en çok 2 akoru arpej yap (kısa tut).
+          chords: widget.lesson.pool.take(2).toList(),
+          player: _player,
+          onComplete: () => setState(() => _phase = _Phase.recognizing),
+        );
+      case _Phase.recognizing:
+        return ChordRecognitionPage(
+          pool: widget.lesson.pool,
+          player: _player,
+          questionCount: _questionCount,
+          onComplete: _onRecognitionComplete,
+        );
+      case _Phase.done:
+        return LessonCompletePage(
+          result: _result!,
+          xpEarned: _xpEarned,
+          streak: ref.watch(progressProvider).streak,
+          onDone: () => Navigator.of(context).pop(),
+          onReplay: () => setState(() {
+            _result = null;
+            _phase = _Phase.recognizing;
+          }),
+        );
+    }
+  }
+}

@@ -108,7 +108,8 @@ class _SingNotesPageState extends State<SingNotesPage> {
         ? 0.0
         : now.difference(_lastTick!).inMilliseconds / _holdTarget.inMilliseconds;
     _lastTick = now;
-    final match = r != null && r.note.pitchClass == _target.pitchClass;
+    // Tam oktav eşleşmesi (E4 = E4; E2/E3 kabul edilmez).
+    final match = r != null && r.note.midi == _target.midi;
     setState(() {
       _reading = r;
       _hold = (_hold + (match ? dt : -dt * 0.6)).clamp(0.0, 1.0);
@@ -186,20 +187,25 @@ class _SingNotesPageState extends State<SingNotesPage> {
       );
     }
 
-    final matching =
+    final exact = _reading != null && _reading!.note.midi == _target.midi;
+    final samePitchClass =
         _reading != null && _reading!.note.pitchClass == _target.pitchClass;
     const green = Color(0xFF56C271);
-    final ringColor = (_celebrating || matching) ? green : theme.colorScheme.primary;
+    final ringColor = (_celebrating || exact) ? green : theme.colorScheme.primary;
 
     final String status;
     if (_celebrating) {
       status = 'Doğru! ✓';
     } else if (!_micActive) {
       status = 'Notayı dinledin. Şimdi sen söyle 👇';
-    } else if (matching) {
+    } else if (exact) {
       status = 'tam — böyle tut! 🎯';
+    } else if (samePitchClass) {
+      status = _reading!.note.midi < _target.midi
+          ? 'doğru nota — bir oktav tiz söyle'
+          : 'doğru nota — bir oktav pes söyle';
     } else if (_reading != null) {
-      status = 'duyduğum: ${_reading!.note.name}';
+      status = 'duyduğum: ${_reading!.note.label}';
     } else {
       status = 'sesini duyayım…';
     }
@@ -226,9 +232,9 @@ class _SingNotesPageState extends State<SingNotesPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                _target.name,
+                _target.label,
                 style: theme.textTheme.displayLarge?.copyWith(
-                  fontSize: 88,
+                  fontSize: 76,
                   fontWeight: FontWeight.w700,
                   color: theme.colorScheme.primary,
                   height: 1,
@@ -274,7 +280,7 @@ class _SingNotesPageState extends State<SingNotesPage> {
                 status,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  color: (_celebrating || matching)
+                  color: (_celebrating || exact)
                       ? green
                       : theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,

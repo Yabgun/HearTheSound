@@ -1,22 +1,27 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-/// Saf Dart ton sentezleyici: bir frekanstan PCM16 WAV baytları üretir.
+/// Saf Dart ton sentezleyici: bir veya birden çok frekanstan PCM16 WAV üretir.
 ///
-/// Neden WAV baytları? audioplayers `BytesSource` ile doğrudan çalınabiliyor;
-/// hiçbir ses dosyası/asset gerektirmez ve her frekans anında üretilir.
-/// Tık/pat sesini önlemek için giriş-çıkış zarfı (fade) uygulanır.
-///
-/// İleride bu sentez, SoundFont tabanlı gerçek enstrüman tınılarıyla
-/// değiştirilebilir — çağıranlar `NotePlayer` arayüzünü kullandığı için bu dosya
-/// tek başına değişebilir.
+/// Tek frekans = nota; birden çok frekans aynı anda = akor. audioplayers
+/// `BytesSource` ile doğrudan çalınır; asset gerektirmez. Tık sesini önlemek için
+/// giriş-çıkış zarfı uygulanır. İleride SoundFont ile değiştirilebilir.
 class ToneSynth {
   final int sampleRate;
   const ToneSynth({this.sampleRate = 44100});
 
-  /// [frequency] Hz'lik, [duration] süreli bir ton için tam bir WAV üretir.
+  /// Tek bir [frequency] için WAV üretir.
   Uint8List wavForFrequency(
     double frequency, {
+    Duration duration = const Duration(milliseconds: 1200),
+    double volume = 0.6,
+  }) =>
+      wavForFrequencies([frequency], duration: duration, volume: volume);
+
+  /// Birden çok frekansı AYNI ANDA sentezler (akor). Frekanslar toplanıp
+  /// nota sayısına göre normalize edilir (kırpılmayı önlemek için).
+  Uint8List wavForFrequencies(
+    List<double> frequencies, {
     Duration duration = const Duration(milliseconds: 1200),
     double volume = 0.6,
   }) {
@@ -25,12 +30,13 @@ class ToneSynth {
 
     final attack = 0.010 * sampleRate; // 10 ms yumuşak giriş
     final release = 0.180 * sampleRate; // 180 ms yumuşak çıkış
-    final twoPiF = 2 * math.pi * frequency;
+    final twoPiFs = frequencies.map((f) => 2 * math.pi * f).toList();
+    // Her nota: temel + 0.18 harmonik -> 1.18; toplam nota sayısıyla normalize.
+    final norm = frequencies.isEmpty ? 1.0 : frequencies.length * 1.18;
 
     for (var i = 0; i < totalSamples; i++) {
       final t = i / sampleRate;
 
-      // Zarf: giriş fade + çıkış fade + hafif doğal sönüm (sıcaklık için).
       var env = 1.0;
       if (i < attack) {
         env = i / attack;
@@ -39,9 +45,11 @@ class ToneSynth {
       }
       env *= 0.6 + 0.4 * math.exp(-1.5 * t);
 
-      // Temel + hafif 2. harmonik: saf sinüsten biraz daha dolu, perde yine net.
-      final signal = math.sin(twoPiF * t) + 0.18 * math.sin(2 * twoPiF * t);
-      final value = signal / 1.18 * env * volume; // -1..1 aralığına normalize
+      var signal = 0.0;
+      for (final w in twoPiFs) {
+        signal += math.sin(w * t) + 0.18 * math.sin(2 * w * t);
+      }
+      final value = signal / norm * env * volume;
 
       pcm[i] = (value * 32767).round().clamp(-32768, 32767);
     }
@@ -71,8 +79,8 @@ class ToneSynth {
     bd.setUint32(4, fileSize - 8, Endian.little);
     writeAscii(8, 'WAVE');
     writeAscii(12, 'fmt ');
-    bd.setUint32(16, 16, Endian.little); // fmt parça boyutu (PCM = 16)
-    bd.setUint16(20, 1, Endian.little); // audioFormat = PCM
+    bd.setUint32(16, 16, Endian.little);
+    bd.setUint16(20, 1, Endian.little); // PCM
     bd.setUint16(22, numChannels, Endian.little);
     bd.setUint32(24, sampleRate, Endian.little);
     bd.setUint32(28, byteRate, Endian.little);

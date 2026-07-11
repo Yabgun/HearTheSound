@@ -3,49 +3,46 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
-import '../../core/note.dart';
-import '../dev/pitch_spike_page.dart';
+import '../../core/chord.dart';
 import '../lesson/lesson.dart';
 
 // -----------------------------------------------------------------------------
-// TANI AŞAMASI — Nota Tanıma testi (sabit uzunlukta oturum)
+// AKOR TANIMA — "Bu hangi akor?"
 //
-// Uygulama bir nota çalar, kullanıcı şıklardan doğru notayı seçer. [questionCount]
-// soru sonunda oturum biter ve [onComplete] ile sonuç (doğru/toplam) döner.
-// "Nazik ustalık": yanlışta ceza yok — doğru gösterilir, devam edilir.
+// Ders havuzundaki bir akoru çalar; kullanıcı hangi akor olduğunu seçer.
+// Şıklar = dersin akorları (ad ile). (Majör/minör değil, spesifik akor.)
 // -----------------------------------------------------------------------------
 
-class NoteRecognitionPage extends StatefulWidget {
-  const NoteRecognitionPage({
+/// Soru tipi: akorun adını mı yoksa oluşturan notaları mı soralım?
+enum _QMode { name, notes }
+
+class ChordRecognitionPage extends StatefulWidget {
+  const ChordRecognitionPage({
     super.key,
     required this.pool,
     required this.player,
     required this.questionCount,
-    this.onComplete,
-    this.onRelearn,
+    required this.onComplete,
   });
 
-  final List<Note> pool;
+  final List<Chord> pool;
   final NotePlayer player;
   final int questionCount;
-  final void Function(LessonResult result)? onComplete;
-  final VoidCallback? onRelearn;
+  final void Function(LessonResult result) onComplete;
 
   @override
-  State<NoteRecognitionPage> createState() => _NoteRecognitionPageState();
+  State<ChordRecognitionPage> createState() => _ChordRecognitionPageState();
 }
 
-class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
-  static const int _maxOptions = 4;
+class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
   final Random _rng = Random();
-
-  late Note _target;
-  late List<Note> _options;
-  Note? _selected;
+  late Chord _target;
+  late List<Chord> _options;
+  Chord? _selected;
   bool _answered = false;
-  int _index = 0; // 0-tabanlı soru numarası
-  int _correct = 0; // doğru sayısı
-  int _streak = 0; // ders içi seri (ateş göstergesi)
+  int _index = 0;
+  int _correct = 0;
+  late _QMode _mode;
 
   @override
   void initState() {
@@ -55,17 +52,22 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
   }
 
   void _pick() {
-    final pool = widget.pool;
-    final target = pool[_rng.nextInt(pool.length)];
-    final options = <Note>{target};
-    final limit = min(_maxOptions, pool.length);
-    while (options.length < limit) {
-      options.add(pool[_rng.nextInt(pool.length)]);
-    }
-    _target = target;
-    _options = options.toList()..shuffle(_rng);
+    _target = widget.pool[_rng.nextInt(widget.pool.length)];
+    _options = List<Chord>.of(widget.pool)..shuffle(_rng);
+    _mode = _rng.nextBool() ? _QMode.name : _QMode.notes;
     _selected = null;
     _answered = false;
+  }
+
+  Future<void> _playTarget() => widget.player.playChord(_target.notes);
+
+  void _answer(Chord c) {
+    if (_answered) return;
+    setState(() {
+      _selected = c;
+      _answered = true;
+      if (c == _target) _correct++;
+    });
   }
 
   Future<void> _next() async {
@@ -77,51 +79,20 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
     _playTarget();
   }
 
-  Future<void> _playTarget() => widget.player.play(_target);
-
-  void _answer(Note choice) {
-    if (_answered) return;
-    setState(() {
-      _selected = choice;
-      _answered = true;
-      if (choice == _target) {
-        _correct++;
-        _streak++;
-      } else {
-        _streak = 0;
-      }
-    });
-  }
-
-  void _finish() {
-    widget.onComplete?.call(LessonResult(_correct, widget.questionCount));
-  }
+  void _finish() => widget.onComplete(LessonResult(_correct, widget.questionCount));
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final correct = _answered && _selected == _target;
-    final cols = _options.length <= 3 ? _options.length : 2;
     final isLast = _index >= widget.questionCount - 1;
     final progress = (_index + (_answered ? 1 : 0)) / widget.questionCount;
+    final cols = widget.pool.length <= 2 ? widget.pool.length : 2;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Soru ${_index + 1} / ${widget.questionCount}'),
+        title: Text('Akor ${_index + 1} / ${widget.questionCount}'),
         actions: [
-          if (widget.onRelearn != null)
-            IconButton(
-              icon: const Icon(Icons.school_rounded),
-              tooltip: 'Tekrar öğren',
-              onPressed: widget.onRelearn,
-            ),
-          IconButton(
-            icon: const Icon(Icons.graphic_eq_rounded),
-            tooltip: 'Perde tespiti (geliştirici)',
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const PitchSpikePage()),
-            ),
-          ),
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -147,7 +118,10 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
             children: [
               const Spacer(flex: 2),
               Text(
-                _streak > 1 ? '🔥 $_streak seri' : 'Çalınan notayı bul',
+                _mode == _QMode.name
+                    ? 'Bu hangi akor?'
+                    : 'Bu sesi hangi notalar oluşturuyor?',
+                textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -168,8 +142,8 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: cols == 2 ? 2.1 : 1.4,
-                children: _options.map(_optionButton).toList(),
+                childAspectRatio: 2.4,
+                children: _options.map((c) => _optionButton(theme, c)).toList(),
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -181,6 +155,7 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
                             correct
                                 ? 'Doğru! ✓  ${_target.label}'
                                 : 'Bu ${_target.label} idi',
+                            textAlign: TextAlign.center,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: correct
                                   ? const Color(0xFF56C271)
@@ -193,9 +168,7 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
                             onPressed: isLast ? _finish : _next,
                             style: FilledButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 40,
-                                vertical: 14,
-                              ),
+                                  horizontal: 40, vertical: 14),
                             ),
                             child: Text(isLast ? 'Bitir' : 'Sonraki'),
                           ),
@@ -211,16 +184,14 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
     );
   }
 
-  Widget _optionButton(Note note) {
-    final theme = Theme.of(context);
+  Widget _optionButton(ThemeData theme, Chord c) {
     Color bg = theme.colorScheme.surfaceContainerHighest;
     Color fg = theme.colorScheme.onSurface;
-
     if (_answered) {
-      if (note == _target) {
+      if (c == _target) {
         bg = const Color(0xFF2E7D4F);
         fg = Colors.white;
-      } else if (note == _selected) {
+      } else if (c == _selected) {
         bg = const Color(0xFF9E3B4E);
         fg = Colors.white;
       } else {
@@ -228,19 +199,24 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
         fg = theme.colorScheme.onSurfaceVariant;
       }
     }
-
     return Material(
       color: bg,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: _answered ? null : () => _answer(note),
+        onTap: _answered ? null : () => _answer(c),
         child: Center(
-          child: Text(
-            note.label, // oktavıyla (ör. C4) — oktav belirginliği için
-            style: theme.textTheme.headlineMedium?.copyWith(
-              color: fg,
-              fontWeight: FontWeight.w700,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              _mode == _QMode.name
+                  ? c.label
+                  : c.notes.map((n) => n.name).join(' · '),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: fg,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
@@ -249,7 +225,6 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
   }
 }
 
-/// Büyük dairesel "çal" düğmesi.
 class _PlayButton extends StatelessWidget {
   const _PlayButton({required this.onTap});
 
@@ -274,11 +249,8 @@ class _PlayButton extends StatelessWidget {
             ),
           ],
         ),
-        child: Icon(
-          Icons.volume_up_rounded,
-          size: 54,
-          color: theme.colorScheme.onPrimary,
-        ),
+        child: Icon(Icons.volume_up_rounded,
+            size: 54, color: theme.colorScheme.onPrimary),
       ),
     );
   }
