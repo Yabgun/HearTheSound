@@ -4,6 +4,8 @@ import '../../audio/note_player.dart';
 import '../../audio/pitch_service.dart';
 import '../../core/chord.dart';
 import '../../core/note.dart';
+import '../../core/vocal_range.dart';
+import '../calibration/reach_badge.dart';
 
 // -----------------------------------------------------------------------------
 // AKORU SÖYLE (arpej) — "Söyle" adımı
@@ -21,11 +23,15 @@ class ChordArpeggioPage extends StatefulWidget {
     required this.chords,
     required this.player,
     required this.onComplete,
+    this.range,
   });
 
   final List<Chord> chords;
   final NotePlayer player;
   final VoidCallback onComplete;
+
+  /// Kullanıcının ses aralığı — rahat aralığı aşan hedef notalarda rozet için.
+  final VocalRange? range;
 
   @override
   State<ChordArpeggioPage> createState() => _ChordArpeggioPageState();
@@ -320,7 +326,9 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 14),
+              ReachBadge(target: _target, range: widget.range),
+              const SizedBox(height: 8),
               Text(
                 status,
                 textAlign: TextAlign.center,

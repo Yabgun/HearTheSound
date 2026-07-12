@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/octave_mapping.dart';
+import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_complete_page.dart';
@@ -37,6 +39,16 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
   LessonResult? _result;
   int _xpEarned = 0;
 
+  // Kullanıcının ses aralığı + bu derse özel tek oktav offset'i. Akorlar ders
+  // başında bir kez blok halinde transpoze edilir; öğren/söyle/tanı adımlarının
+  // HEPSİ aynı transpoze havuzu kullanır. Kalibre değilse akorlar aynı kalır.
+  late final VocalRange? _range = ref.read(progressProvider).vocalRange;
+  late final ChordLesson _lesson = ChordLesson(
+    id: widget.lesson.id,
+    title: widget.lesson.title,
+    pool: transposeChordsForVoice(widget.lesson.pool, _range),
+  );
+
   @override
   void dispose() {
     _player.dispose();
@@ -63,20 +75,21 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
     switch (_phase) {
       case _Phase.learning:
         return LearnChordsPage(
-          lesson: widget.lesson,
+          lesson: _lesson,
           player: _player,
           onReady: () => setState(() => _phase = _Phase.singing),
         );
       case _Phase.singing:
         return ChordArpeggioPage(
           // Söyle aşamasında en çok 2 akoru arpej yap (kısa tut).
-          chords: widget.lesson.pool.take(2).toList(),
+          chords: _lesson.pool.take(2).toList(),
           player: _player,
+          range: _range,
           onComplete: () => setState(() => _phase = _Phase.recognizing),
         );
       case _Phase.recognizing:
         return ChordRecognitionPage(
-          pool: widget.lesson.pool,
+          pool: _lesson.pool,
           player: _player,
           questionCount: _questionCount,
           onComplete: _onRecognitionComplete,

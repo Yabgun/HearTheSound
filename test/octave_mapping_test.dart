@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hear_the_sound/core/chord.dart';
 import 'package:hear_the_sound/core/note.dart';
 import 'package:hear_the_sound/core/octave_mapping.dart';
 import 'package:hear_the_sound/core/vocal_range.dart';
@@ -86,6 +87,34 @@ void main() {
     test('esnemenin de dışı → beyond', () {
       expect(reachZoneFor(m('A', 5), range), ReachZone.beyond); // 81
       expect(reachZoneFor(m('C', 3), range), ReachZone.beyond); // 48
+    });
+  });
+
+  group('transposeChordsForVoice — akorlar birlikte, şekil korunur', () {
+    // ch1 müfredatı: C majör (kök C4) + A minör (kök A4).
+    final ch1 = [
+      Chord(Note.fromName('C', 4), ChordQuality.major),
+      Chord(Note.fromName('A', 4), ChordQuality.minor),
+    ];
+
+    test('pes ses aralığında iki akor da AYNI offset ile iner', () {
+      final range = _range('A', 2, 'A', 3); // 45..57
+      final out = transposeChordsForVoice(ch1, range);
+      // Her iki kök de bir oktav inmeli (aynı offset -12).
+      expect(out[0].root.label, 'C3');
+      expect(out[1].root.label, 'A3');
+      // Nitelikler (akor şekli) korunmalı.
+      expect(out[0].quality, ChordQuality.major);
+      expect(out[1].quality, ChordQuality.minor);
+      // Nota kümeleri: C3-E3-G3 ve A3-C4-E4.
+      expect(out[0].notes.map((n) => n.label), ['C3', 'E3', 'G3']);
+      expect(out[1].notes.map((n) => n.label), ['A3', 'C4', 'E4']);
+    });
+
+    test('kalibre edilmemişse akorlar değişmeden döner', () {
+      final out = transposeChordsForVoice(ch1, null);
+      expect(out[0].root.midi, Note.fromName('C', 4).midi);
+      expect(out[1].root.midi, Note.fromName('A', 4).midi);
     });
   });
 

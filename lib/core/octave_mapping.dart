@@ -1,3 +1,4 @@
+import 'chord.dart';
 import 'note.dart';
 import 'vocal_range.dart';
 
@@ -99,4 +100,18 @@ List<Note> transposeForVoice(List<Note> notes, VocalRange? range) {
 Note transposeNoteForVoice(Note note, VocalRange? range) {
   final offset = octaveOffsetFor([note.midi], range);
   return offset == 0 ? note : Note(note.midi + offset);
+}
+
+/// Bir akor listesini blok halinde [range]'e transpoze eder. Offset TÜM
+/// akorların TÜM notalarından birlikte hesaplanır (bir ders tek offset paylaşır)
+/// → hem her akorun şekli hem akorların birbirine göre konumu korunur.
+List<Chord> transposeChordsForVoice(List<Chord> chords, VocalRange? range) {
+  final offset = octaveOffsetFor(
+    chords.expand((c) => c.notes).map((n) => n.midi),
+    range,
+  );
+  if (offset == 0) return List<Chord>.from(chords);
+  return chords
+      .map((c) => Chord(Note(c.root.midi + offset), c.quality))
+      .toList();
 }

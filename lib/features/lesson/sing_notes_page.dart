@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import '../../audio/note_player.dart';
 import '../../audio/pitch_service.dart';
 import '../../core/note.dart';
+import '../../core/vocal_range.dart';
+import '../calibration/reach_badge.dart';
 
 // -----------------------------------------------------------------------------
 // SÖYLE AŞAMASI — mikrofonla nota üretimi
 //
 // Akış: notaya girince referans OTOMATIK çalar (kullanıcı duyar). Mikrofon
 // KENDİLİĞİNDEN başlamaz — kullanıcı "Söyle" butonuna basınca izin istenir ve
-// dinleme başlar (çalma önce durdurulur ki ses çakışmasın). Doğru nota sınıfını
-// (oktavdan bağımsız) sürdürdükçe halka dolar; dolunca sonrakine geçilir.
+// dinleme başlar (çalma önce durdurulur ki ses çakışmasın). TAM oktavı
+// (E4 = E4; E2/E3 kabul edilmez) sürdürdükçe halka dolar; dolunca sonrakine
+// geçilir. Havuz akış sayfasında kullanıcının aralığına transpoze edilmiş gelir.
 // -----------------------------------------------------------------------------
 
 class SingNotesPage extends StatefulWidget {
@@ -19,11 +22,16 @@ class SingNotesPage extends StatefulWidget {
     required this.pool,
     required this.player,
     required this.onComplete,
+    this.range,
   });
 
   final List<Note> pool;
   final NotePlayer player;
   final VoidCallback onComplete;
+
+  /// Kullanıcının ses aralığı — rahat aralığı aşan hedeflerde rozet göstermek
+  /// için. null ise (kalibre edilmemiş) rozet çıkmaz.
+  final VocalRange? range;
 
   @override
   State<SingNotesPage> createState() => _SingNotesPageState();
@@ -246,6 +254,8 @@ class _SingNotesPageState extends State<SingNotesPage> {
                 icon: const Icon(Icons.volume_up_rounded),
                 label: const Text('Tekrar dinle'),
               ),
+              const SizedBox(height: 12),
+              ReachBadge(target: _target, range: widget.range),
               const Spacer(),
               SizedBox(
                 width: 168,

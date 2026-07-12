@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/octave_mapping.dart';
+import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
 import '../note_recognition/note_recognition_page.dart';
 import 'learn_notes_page.dart';
@@ -37,6 +39,16 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
   LessonResult? _result;
   int _xpEarned = 0;
 
+  // Kullanıcının ses aralığı + bu derse özel tek oktav offset'i. Ders başında
+  // bir kez hesaplanır; öğren/söyle/tanı adımlarının HEPSİ aynı transpoze
+  // havuzu kullanır ("hepsi birlikte kayar"). Kalibre değilse havuz aynı kalır.
+  late final VocalRange? _range = ref.read(progressProvider).vocalRange;
+  late final Lesson _lesson = Lesson(
+    id: widget.lesson.id,
+    title: widget.lesson.title,
+    pool: transposeForVoice(widget.lesson.pool, _range),
+  );
+
   @override
   void dispose() {
     _player.dispose();
@@ -64,19 +76,20 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
     switch (_phase) {
       case _Phase.learning:
         return LearnNotesPage(
-          lesson: widget.lesson,
+          lesson: _lesson,
           player: _player,
           onReady: () => setState(() => _phase = _Phase.singing),
         );
       case _Phase.singing:
         return SingNotesPage(
-          pool: widget.lesson.pool,
+          pool: _lesson.pool,
           player: _player,
+          range: _range,
           onComplete: () => setState(() => _phase = _Phase.testing),
         );
       case _Phase.testing:
         return NoteRecognitionPage(
-          pool: widget.lesson.pool,
+          pool: _lesson.pool,
           player: _player,
           questionCount: _questionsPerLesson,
           onComplete: _onTestComplete,
