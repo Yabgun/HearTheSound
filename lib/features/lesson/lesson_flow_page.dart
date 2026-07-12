@@ -62,6 +62,7 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
           skillId: widget.lesson.id,
           xpEarned: xp,
           masteryGain: result.correct,
+          accuracy: result.accuracy,
           completed: passed,
         );
     setState(() {

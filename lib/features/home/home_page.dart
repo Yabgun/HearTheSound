@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/player_progress.dart';
 import '../../core/rank.dart';
+import '../../core/spaced_repetition.dart';
 import '../../state/progress_controller.dart';
 import '../calibration/calibration_page.dart';
 import '../chords/chord_lesson.dart';
 import '../chords/chord_lesson_flow_page.dart';
+import '../explorer/range_playground_page.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_flow_page.dart';
+import '../review/review_session_page.dart';
 import '../settings/settings_page.dart';
 
 // -----------------------------------------------------------------------------
@@ -27,6 +30,7 @@ class HomePage extends ConsumerWidget {
     final progress = ref.watch(progressProvider);
     final rank = rankForXp(progress.xp);
     final next = nextRankAfter(progress.xp);
+    final dueSkills = progress.dueReviewSkills(dayKeyFor(DateTime.now()));
 
     double rankPct = 1;
     String nextLabel = 'En yüksek rütbedesin 🏆';
@@ -67,6 +71,10 @@ class HomePage extends ConsumerWidget {
             ],
             _dailyGoalCard(theme, progress.dailyXp),
             const SizedBox(height: 16),
+            if (dueSkills.isNotEmpty) ...[
+              _reviewCard(context, theme, dueSkills),
+              const SizedBox(height: 16),
+            ],
             _rankCard(theme, rank, progress.xp, rankPct, nextLabel),
             const SizedBox(height: 28),
             Text(
@@ -110,7 +118,97 @@ class HomePage extends ConsumerWidget {
                   mastery: progress.skillXp[chordLessons[i].id] ?? 0,
                 ),
               ),
+            const SizedBox(height: 16),
+            _exploreTile(context, theme),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Vadesi gelen tekrarlar için ana ekran çağrısı (aralıklı tekrar).
+  Widget _reviewCard(BuildContext context, ThemeData theme, List<String> due) {
+    const green = Color(0xFF56C271);
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: green.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.replay_circle_filled_rounded, color: green, size: 34),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Tekrar zamanı',
+                  style: theme.textTheme.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${due.length} beceri tekrara hazır',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => ReviewSessionPage(skillIds: due),
+              ),
+            ),
+            style: FilledButton.styleFrom(backgroundColor: green),
+            child: const Text('Başla'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Ses Aralığı Oyun Alanı'na ana ekran girişi (keşif).
+  Widget _exploreTile(BuildContext context, ThemeData theme) {
+    return Material(
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const RangePlaygroundPage()),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Icon(Icons.explore_rounded, color: theme.colorScheme.primary, size: 30),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ses Aralığı Oyun Alanı',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Sesini keşfet ve genişlet — puansız',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
         ),
       ),
     );

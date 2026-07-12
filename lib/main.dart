@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/progress_repository.dart';
 import 'features/home/home_page.dart';
+import 'features/onboarding/onboarding_flow_page.dart';
 import 'notifications/notification_service.dart';
 import 'state/progress_controller.dart';
 import 'state/settings_controller.dart';
@@ -47,7 +48,28 @@ class HearTheSoundApp extends StatelessWidget {
       title: 'HearTheSound',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorScheme: scheme, useMaterial3: true),
-      home: const HomePage(),
+      home: const _RootGate(),
     );
+  }
+}
+
+/// İlk açılışta onboarding, tamamlanınca ana ekran. `onboarded` set edilince
+/// (onboarding sonu) bu widget yeniden kurulup ana ekrana geçer.
+///
+/// Mevcut kullanıcı (zaten ilerlemesi/kalibrasyonu olan) onboarding'i hiç
+/// görmez — `onboarded` bayrağı sonradan eklendiğinden geçmişi olanı da
+/// "onboarded" sayarız.
+class _RootGate extends ConsumerWidget {
+  const _RootGate();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final onboarded = ref.watch(settingsProvider.select((s) => s.onboarded));
+    final progress = ref.watch(progressProvider);
+    final hasHistory = progress.xp > 0 ||
+        progress.completedLessons.isNotEmpty ||
+        progress.isCalibrated;
+    final showOnboarding = !onboarded && !hasHistory;
+    return showOnboarding ? const OnboardingFlowPage() : const HomePage();
   }
 }

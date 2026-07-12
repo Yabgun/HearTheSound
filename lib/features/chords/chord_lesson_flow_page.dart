@@ -61,6 +61,7 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
           skillId: widget.lesson.id,
           xpEarned: xp,
           masteryGain: result.correct,
+          accuracy: result.accuracy,
           completed: result.accuracy >= 0.7,
         );
     setState(() {

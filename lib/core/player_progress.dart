@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'spaced_repetition.dart';
 import 'vocal_range.dart';
 
 /// Günlük XP hedefi (alışkanlık motoru) — kullanıcının her gün ulaşması istenen XP.
@@ -23,6 +24,7 @@ class PlayerProgress {
   final Map<String, int> skillXp; // beceri kimliği -> ustalık puanı
   final List<String> completedLessons; // geçilmiş ders kimlikleri (kilit açar)
   final VocalRange? vocalRange; // ölçülmüş ses aralığı; null = kalibre edilmemiş
+  final Map<String, ReviewState> reviews; // beceri kimliği -> aralıklı tekrar durumu
 
   const PlayerProgress({
     this.xp = 0,
@@ -33,6 +35,7 @@ class PlayerProgress {
     this.skillXp = const {},
     this.completedLessons = const [],
     this.vocalRange,
+    this.reviews = const {},
   });
 
   static const empty = PlayerProgress();
@@ -42,6 +45,12 @@ class PlayerProgress {
 
   /// Kullanıcı ses aralığını kalibre etmiş mi? (Söyleme oktavları buna uyarlanır.)
   bool get isCalibrated => vocalRange != null;
+
+  /// [todayKey] ('yyyy-mm-dd') itibarıyla vadesi gelmiş tekrar becerileri.
+  List<String> dueReviewSkills(String todayKey) => reviews.entries
+      .where((e) => e.value.isDueOn(todayKey))
+      .map((e) => e.key)
+      .toList();
 
   /// [vocalRange] için özel: null geçilebilmesi gerektiğinden (temizleme)
   /// [copyWith] yerine sentinel kullanır — verilmezse mevcut değer korunur.
@@ -54,6 +63,7 @@ class PlayerProgress {
     Map<String, int>? skillXp,
     List<String>? completedLessons,
     Object? vocalRange = _unset,
+    Map<String, ReviewState>? reviews,
   }) {
     return PlayerProgress(
       xp: xp ?? this.xp,
@@ -66,6 +76,7 @@ class PlayerProgress {
       vocalRange: identical(vocalRange, _unset)
           ? this.vocalRange
           : vocalRange as VocalRange?,
+      reviews: reviews ?? this.reviews,
     );
   }
 
@@ -78,6 +89,7 @@ class PlayerProgress {
         'skillXp': skillXp,
         'completedLessons': completedLessons,
         'vocalRange': vocalRange?.toMap(),
+        'reviews': reviews.map((k, v) => MapEntry(k, v.toMap())),
       };
 
   factory PlayerProgress.fromMap(Map<String, dynamic> map) {
@@ -98,6 +110,13 @@ class PlayerProgress {
       vocalRange: map['vocalRange'] == null
           ? null
           : VocalRange.fromMap((map['vocalRange'] as Map).cast<String, dynamic>()),
+      reviews: (map['reviews'] as Map?)?.map(
+            (key, value) => MapEntry(
+              key as String,
+              ReviewState.fromMap((value as Map).cast<String, dynamic>()),
+            ),
+          ) ??
+          const {},
     );
   }
 

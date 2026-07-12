@@ -1,0 +1,204 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../audio/note_player.dart';
+import '../../core/octave_mapping.dart';
+import '../../core/vocal_range.dart';
+import '../../state/progress_controller.dart';
+import '../chords/chord_lesson.dart';
+import '../chords/chord_recognition_page.dart';
+import '../lesson/lesson.dart';
+import '../note_recognition/note_recognition_page.dart';
+
+// -----------------------------------------------------------------------------
+// TEKRAR OTURUMU — aralıklı tekrar (SM-2)
+//
+// Vadesi gelen becerileri SIRAYLA kısa bir tanıma testinden geçirir. Her beceri
+// için doğruluk SM-2'ye işlenir (recordReviewResult) → bir sonraki tekrar tarihi
+// güncellenir. Nota ve akor dersleri tek oturumda karışabilir. İçerik kullanıcının
+// ses aralığına transpoze edilir (derslerdeki gibi tutarlı).
+// -----------------------------------------------------------------------------
+
+class ReviewSessionPage extends ConsumerStatefulWidget {
+  const ReviewSessionPage({super.key, required this.skillIds});
+
+  final List<String> skillIds;
+
+  @override
+  ConsumerState<ReviewSessionPage> createState() => _ReviewSessionPageState();
+}
+
+class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
+  static const int _questionsPerSkill = 5;
+  static const int _xpPerCorrect = 5;
+
+  final NotePlayer _player = SynthNotePlayer();
+  late final VocalRange? _range = ref.read(progressProvider).vocalRange;
+
+  // Sadece içeriğe çözülebilen (tanıdığımız) becerileri tut.
+  late final List<String> _skills =
+      widget.skillIds.where(_isKnown).toList();
+
+  int _index = 0;
+  bool _done = false;
+  int _totalCorrect = 0;
+  int _totalQuestions = 0;
+  int _xpEarned = 0;
+
+  bool _isKnown(String id) =>
+      _noteLessonById(id) != null || _chordLessonById(id) != null;
+
+  Lesson? _noteLessonById(String id) {
+    for (final l in lessons) {
+      if (l.id == id) return l;
+    }
+    return null;
+  }
+
+  ChordLesson? _chordLessonById(String id) {
+    for (final l in chordLessons) {
+      if (l.id == id) return l;
+    }
+    return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    if (_skills.isEmpty) _done = true;
+  }
+
+  void _grade(String skillId, LessonResult result) {
+    ref.read(progressProvider.notifier).recordReviewResult(
+          skillId: skillId,
+          xpEarned: result.correct * _xpPerCorrect,
+          accuracy: result.accuracy,
+        );
+    setState(() {
+      _totalCorrect += result.correct;
+      _totalQuestions += result.total;
+      _xpEarned += result.correct * _xpPerCorrect;
+      if (_index + 1 >= _skills.length) {
+        _done = true;
+      } else {
+        _index++;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_done) return _buildSummary(context);
+
+    final id = _skills[_index];
+    // key: her beceride tanıma ekranının State'i sıfırlansın (yeni sorular).
+    final key = ValueKey('review-$_index-$id');
+
+    final note = _noteLessonById(id);
+    if (note != null) {
+      return NoteRecognitionPage(
+        key: key,
+        pool: transposeForVoice(note.pool, _range),
+        player: _player,
+        questionCount: _questionsPerSkill,
+        onComplete: (r) => _grade(id, r),
+      );
+    }
+    final chord = _chordLessonById(id)!;
+    return ChordRecognitionPage(
+      key: key,
+      pool: transposeChordsForVoice(chord.pool, _range),
+      player: _player,
+      questionCount: _questionsPerSkill,
+      onComplete: (r) => _grade(id, r),
+    );
+  }
+
+  Widget _buildSummary(BuildContext context) {
+    final theme = Theme.of(context);
+    final total = _totalQuestions == 0 ? 1 : _totalQuestions;
+    final pct = (_totalCorrect / total * 100).round();
+    final nothing = _skills.isEmpty;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Spacer(flex: 2),
+              Icon(
+                nothing ? Icons.check_circle_outline_rounded : Icons.replay_rounded,
+                size: 88,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                nothing ? 'Tekrar yok' : 'Tekrar tamam! 🔁',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                nothing
+                    ? 'Şimdilik tekrar edilecek bir şey yok.'
+                    : '$_totalCorrect / $_totalQuestions doğru · %$pct',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              if (!nothing) ...[
+                const SizedBox(height: 24),
+                _statCard(theme, 'Tekrar edilen beceri', '${_skills.length}'),
+                const SizedBox(height: 10),
+                _statCard(theme, 'Kazanılan XP', '+$_xpEarned'),
+              ],
+              const Spacer(flex: 3),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text('Bitir'),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _statCard(ThemeData theme, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

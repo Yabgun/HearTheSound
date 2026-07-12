@@ -51,7 +51,12 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
   bool _celebrating = false;
   bool _permissionDenied = false;
 
-  Chord get _chord => widget.chords[_chordIndex];
+  // Ders içi oktav kaydırıcı (keşif/konfor): tüm akoru ±oktav nudge eder.
+  int _octaveShift = 0;
+  Chord get _chord => Chord(
+        Note(widget.chords[_chordIndex].root.midi + _octaveShift),
+        widget.chords[_chordIndex].quality,
+      );
   Note get _target => _chord.notes[_noteIndex];
 
   @override
@@ -77,6 +82,20 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
     if (_micActive) await _pitch.stop();
     if (mounted) setState(() => _micActive = false);
     await widget.player.playChord(_chord.notes);
+  }
+
+  /// Tüm akoru ±oktav kaydır. Kökü makul aralıkta tutar; akoru baştan duyurur.
+  Future<void> _shiftOctave(int delta) async {
+    final baseRoot = widget.chords[_chordIndex].root.midi;
+    final next = _octaveShift + delta;
+    if (baseRoot + next < 28 || baseRoot + next > 84) return; // güvenli sınır
+    if (_micActive) await _pitch.stop();
+    if (!mounted) return;
+    setState(() {
+      _octaveShift = next;
+      _micActive = false;
+    });
+    _beginChord();
   }
 
   /// Bir notaya dokununca (bakla) o notayı tek tek çal — referans için.
@@ -271,7 +290,33 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
                 icon: const Icon(Icons.piano_rounded),
                 label: const Text('Akorun tamamını dinle'),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton.outlined(
+                    onPressed: _micActive ? null : () => _shiftOctave(-12),
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                    tooltip: 'Bir oktav pes',
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      'oktav',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  IconButton.outlined(
+                    onPressed: _micActive ? null : () => _shiftOctave(12),
+                    icon: const Icon(Icons.keyboard_arrow_up_rounded),
+                    tooltip: 'Bir oktav tiz',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
               // Bireysel notalar — dokunarak dinlenebilir.
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,

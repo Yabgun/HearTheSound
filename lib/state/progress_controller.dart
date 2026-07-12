@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/player_progress.dart';
+import '../core/spaced_repetition.dart';
 import '../core/vocal_range.dart';
 import '../data/progress_repository.dart';
 
@@ -20,11 +21,13 @@ class ProgressController extends Notifier<PlayerProgress> {
   PlayerProgress build() => _repo.load();
 
   /// Bir ders/oturum tamamlandığında çağrılır: XP ekler, günlük streak'i
-  /// günceller, beceri ustalığını artırır ve kalıcı olarak kaydeder.
+  /// günceller, beceri ustalığını artırır, aralıklı tekrarı zamanlar ve kalıcı
+  /// olarak kaydeder. [accuracy] (0..1) hem geçme hem tekrar kalitesi için.
   void completeLesson({
     required String skillId,
     required int xpEarned,
     required int masteryGain,
+    required double accuracy,
     bool completed = false,
   }) {
     final now = DateTime.now();
@@ -52,6 +55,17 @@ class ProgressController extends Notifier<PlayerProgress> {
     // Günlük XP: aynı günse ekle, yeni günse sıfırdan başlat.
     final newDailyXp = (last == today) ? state.dailyXp + xpEarned : xpEarned;
 
+    // Aralıklı tekrar: beceri geçildiyse (veya zaten tekrar rotasyonundaysa)
+    // SM-2 ile bir sonraki tekrarı zamanla.
+    final newReviews = Map<String, ReviewState>.from(state.reviews);
+    if (completed || newReviews.containsKey(skillId)) {
+      newReviews[skillId] = applyReview(
+        prev: newReviews[skillId],
+        accuracy: accuracy,
+        now: now,
+      );
+    }
+
     state = state.copyWith(
       xp: state.xp + xpEarned,
       streak: streak,
@@ -60,7 +74,32 @@ class ProgressController extends Notifier<PlayerProgress> {
       dailyXp: newDailyXp,
       skillXp: newSkillXp,
       completedLessons: newCompleted,
+      reviews: newReviews,
     );
+    _repo.save(state);
+  }
+
+  /// Bir tekrar oturumu sonucu: XP + streak + günlük hedefi günceller ve o
+  /// becerinin tekrar zamanını SM-2 ile ileri alır (kilit/ustalık değişmez).
+  void recordReviewResult({
+    required String skillId,
+    required int xpEarned,
+    required double accuracy,
+  }) {
+    completeLesson(
+      skillId: skillId,
+      xpEarned: xpEarned,
+      masteryGain: 0,
+      accuracy: accuracy,
+      completed: false,
+    );
+  }
+
+  /// Yerleştirme sonucu: bilindiği tespit edilen dersleri 'tamamlandı' işaretler
+  /// (kilit açar). XP/streak vermez — pratik değil, yerleştirmedir.
+  void applyPlacement(Iterable<String> knownSkillIds) {
+    final set = <String>{...state.completedLessons, ...knownSkillIds};
+    state = state.copyWith(completedLessons: set.toList());
     _repo.save(state);
   }
 

@@ -60,7 +60,11 @@ class _SingNotesPageState extends State<SingNotesPage> {
     return shuffled.take(count).toList();
   }
 
-  Note get _target => _toSing[_index];
+  // Ders içi oktav kaydırıcı (keşif/konfor): kullanıcı bu söyleme adımını
+  // ±oktav nudge edebilir. Efektif hedef = temel nota + kaydırma. Oturum boyu
+  // korunur (bir kez rahat oktavı seçince tüm notalar öyle gelir).
+  int _octaveShift = 0;
+  Note get _target => Note(_toSing[_index].midi + _octaveShift);
 
   @override
   void initState() {
@@ -82,6 +86,16 @@ class _SingNotesPageState extends State<SingNotesPage> {
   Future<void> _replay() async {
     if (_micActive) await _stopListening();
     await widget.player.play(_target);
+  }
+
+  /// Bu adımın oktavını kaydır (±12). Efektif hedefi makul aralıkta tutar.
+  Future<void> _shiftOctave(int delta) async {
+    final base = _toSing[_index].midi;
+    final next = _octaveShift + delta;
+    if (base + next < 24 || base + next > 96) return; // güvenli sınır
+    if (_micActive) await _stopListening();
+    setState(() => _octaveShift = next);
+    _beginNote(); // yeni oktavda referansı duyur, tutmayı sıfırla
   }
 
   /// "Söyle" — izin iste, çalmayı durdur, mikrofonu başlat.
@@ -254,7 +268,33 @@ class _SingNotesPageState extends State<SingNotesPage> {
                 icon: const Icon(Icons.volume_up_rounded),
                 label: const Text('Tekrar dinle'),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton.outlined(
+                    onPressed: () => _shiftOctave(-12),
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                    tooltip: 'Bir oktav pes',
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      'oktav',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  IconButton.outlined(
+                    onPressed: () => _shiftOctave(12),
+                    icon: const Icon(Icons.keyboard_arrow_up_rounded),
+                    tooltip: 'Bir oktav tiz',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
               ReachBadge(target: _target, range: widget.range),
               const Spacer(),
               SizedBox(
