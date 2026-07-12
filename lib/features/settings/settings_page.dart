@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../notifications/notification_service.dart';
+import '../../state/progress_controller.dart';
 import '../../state/settings_controller.dart';
+import '../calibration/calibration_page.dart';
 
 // -----------------------------------------------------------------------------
-// AYARLAR — günlük hatırlatma bildirimi (aç/kapa + saat + test)
+// AYARLAR — ses aralığı kalibrasyonu + günlük hatırlatma bildirimi
 // -----------------------------------------------------------------------------
 
 class SettingsPage extends ConsumerWidget {
@@ -17,11 +19,26 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final ctrl = ref.read(settingsProvider.notifier);
+    final range = ref.watch(progressProvider).vocalRange;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Ayarlar')),
       body: ListView(
         children: [
+          ListTile(
+            leading: const Icon(Icons.graphic_eq_rounded),
+            title: const Text('Ses aralığı'),
+            subtitle: Text(
+              range == null
+                  ? 'Henüz kalibre edilmedi — dokun ve ölç'
+                  : 'Rahat: ${range.comfortLowNote.label} – ${range.comfortHighNote.label}',
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const CalibrationPage()),
+            ),
+          ),
+          const Divider(),
           SwitchListTile(
             secondary: const Icon(Icons.notifications_active_rounded),
             title: const Text('Günlük hatırlatma'),

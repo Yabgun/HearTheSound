@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/player_progress.dart';
+import '../core/vocal_range.dart';
 import '../data/progress_repository.dart';
 
 /// Repository sağlayıcısı — `main` içinde gerçek (prefs destekli) örnekle
@@ -60,6 +61,18 @@ class ProgressController extends Notifier<PlayerProgress> {
       skillXp: newSkillXp,
       completedLessons: newCompleted,
     );
+    _repo.save(state);
+  }
+
+  /// Kalibrasyon sonucu ses aralığını kaydeder (söyleme oktavları buna uyarlanır).
+  void setVocalRange(VocalRange range) {
+    state = state.copyWith(vocalRange: range);
+    _repo.save(state);
+  }
+
+  /// Ses aralığı kalibrasyonunu temizler (yeniden kalibre etmeden önce ya da test).
+  void clearVocalRange() {
+    state = state.copyWith(vocalRange: null);
     _repo.save(state);
   }
 

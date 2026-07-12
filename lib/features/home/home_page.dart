@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/player_progress.dart';
 import '../../core/rank.dart';
 import '../../state/progress_controller.dart';
+import '../calibration/calibration_page.dart';
 import '../chords/chord_lesson.dart';
 import '../chords/chord_lesson_flow_page.dart';
 import '../lesson/lesson.dart';
@@ -60,6 +61,10 @@ class HomePage extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 24),
+            if (!progress.isCalibrated) ...[
+              _calibrationBanner(context, theme),
+              const SizedBox(height: 16),
+            ],
             _dailyGoalCard(theme, progress.dailyXp),
             const SizedBox(height: 16),
             _rankCard(theme, rank, progress.xp, rankPct, nextLabel),
@@ -106,6 +111,52 @@ class HomePage extends ConsumerWidget {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Kalibre edilmemiş kullanıcı için: söylemeden önce ses aralığını ölçmeye
+  /// davet eden nazik kart. Kalibrasyon tamamlanınca (isCalibrated) gizlenir.
+  Widget _calibrationBanner(BuildContext context, ThemeData theme) {
+    return Material(
+      color: theme.colorScheme.primary.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const CalibrationPage()),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Icon(Icons.graphic_eq_rounded,
+                  color: theme.colorScheme.primary, size: 32),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Önce sesini tanıyalım',
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Dersleri tam senin rahat oktavında hazırlamak için '
+                      '~1 dakikalık ses aralığı ölçümü.',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
         ),
       ),
     );
