@@ -9,6 +9,7 @@ import '../lesson/lesson.dart';
 import '../lesson/lesson_complete_page.dart';
 import 'chord_arpeggio_page.dart';
 import 'chord_lesson.dart';
+import 'chord_quality_recognition_page.dart';
 import 'chord_recognition_page.dart';
 import 'learn_chords_page.dart';
 
@@ -89,12 +90,20 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
           onComplete: () => setState(() => _phase = _Phase.recognizing),
         );
       case _Phase.recognizing:
-        return ChordRecognitionPage(
-          pool: _lesson.pool,
-          player: _player,
-          questionCount: _questionCount,
-          onComplete: _onRecognitionComplete,
-        );
+        // Ders "nitelik tanıma" ise renk sorusu, değilse spesifik akor sorusu.
+        return _lesson.recognizeBy == ChordRecognizeBy.quality
+            ? ChordQualityRecognitionPage(
+                pool: _lesson.pool,
+                player: _player,
+                questionCount: _questionCount,
+                onComplete: _onRecognitionComplete,
+              )
+            : ChordRecognitionPage(
+                pool: _lesson.pool,
+                player: _player,
+                questionCount: _questionCount,
+                onComplete: _onRecognitionComplete,
+              );
       case _Phase.done:
         return LessonCompletePage(
           result: _result!,
