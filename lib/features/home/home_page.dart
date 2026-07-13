@@ -8,9 +8,16 @@ import '../../state/progress_controller.dart';
 import '../calibration/calibration_page.dart';
 import '../chords/chord_lesson.dart';
 import '../chords/chord_lesson_flow_page.dart';
+import '../concept/concept_sheet.dart';
 import '../explorer/range_playground_page.dart';
+import '../function/function_lesson.dart';
+import '../function/function_lesson_flow_page.dart';
+import '../intervals/interval_lesson.dart';
+import '../intervals/interval_lesson_flow_page.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_flow_page.dart';
+import '../progression/progression_lesson.dart';
+import '../progression/progression_lesson_flow_page.dart';
 import '../review/review_session_page.dart';
 import '../settings/settings_page.dart';
 
@@ -116,6 +123,70 @@ class HomePage extends ConsumerWidget {
                       progress.isLessonCompleted(chordLessons[i - 1].id),
                   completed: progress.isLessonCompleted(chordLessons[i].id),
                   mastery: progress.skillXp[chordLessons[i].id] ?? 0,
+                ),
+              ),
+            const SizedBox(height: 16),
+            Text(
+              'Aralıklar',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (var i = 0; i < intervalLessons.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _intervalPathCard(
+                  context,
+                  theme,
+                  intervalLessons[i],
+                  unlocked: i == 0 ||
+                      progress.isLessonCompleted(intervalLessons[i - 1].id),
+                  completed: progress.isLessonCompleted(intervalLessons[i].id),
+                  mastery: progress.skillXp[intervalLessons[i].id] ?? 0,
+                ),
+              ),
+            const SizedBox(height: 16),
+            Text(
+              'Akor İşlevi',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (var i = 0; i < functionLessons.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _functionPathCard(
+                  context,
+                  theme,
+                  functionLessons[i],
+                  unlocked: i == 0 ||
+                      progress.isLessonCompleted(functionLessons[i - 1].id),
+                  completed: progress.isLessonCompleted(functionLessons[i].id),
+                  mastery: progress.skillXp[functionLessons[i].id] ?? 0,
+                ),
+              ),
+            const SizedBox(height: 16),
+            Text(
+              'İlerlemeler',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (var i = 0; i < progressionLessons.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _progressionPathCard(
+                  context,
+                  theme,
+                  progressionLessons[i],
+                  unlocked: i == 0 ||
+                      progress.isLessonCompleted(progressionLessons[i - 1].id),
+                  completed:
+                      progress.isLessonCompleted(progressionLessons[i].id),
+                  mastery: progress.skillXp[progressionLessons[i].id] ?? 0,
                 ),
               ),
             const SizedBox(height: 16),
@@ -253,6 +324,267 @@ class HomePage extends ConsumerWidget {
               ),
               Icon(Icons.chevron_right_rounded,
                   color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// İlerleme dersi kartı (ana ekran "İlerlemeler" bölümü).
+  Widget _progressionPathCard(
+    BuildContext context,
+    ThemeData theme,
+    ProgressionLesson lesson, {
+    required bool unlocked,
+    required bool completed,
+    required int mastery,
+  }) {
+    const green = Color(0xFF56C271);
+    final bg = unlocked
+        ? theme.colorScheme.surfaceContainerHighest
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
+
+    final IconData icon;
+    final Color iconColor;
+    final String subtitle;
+    if (completed) {
+      icon = Icons.check_circle_rounded;
+      iconColor = green;
+      subtitle = 'tamamlandı · ustalık $mastery';
+    } else if (unlocked) {
+      icon = Icons.timeline_rounded;
+      iconColor = theme.colorScheme.primary;
+      subtitle = 'başlamak için dokun';
+    } else {
+      icon = Icons.lock_rounded;
+      iconColor = theme.colorScheme.outline;
+      subtitle = 'önceki dersi geç';
+    }
+
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: unlocked
+            ? () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => ProgressionLessonFlowPage(lesson: lesson),
+                  ),
+                )
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Row(
+            children: [
+              Icon(icon, color: iconColor, size: 32),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lesson.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color:
+                            unlocked ? null : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (unlocked && lesson.concept != null)
+                IconButton(
+                  icon: const Icon(Icons.info_outline_rounded),
+                  tooltip: 'Bu ders ne anlatıyor?',
+                  onPressed: () => showConceptSheet(context, lesson.concept!),
+                ),
+              if (unlocked)
+                Icon(Icons.chevron_right_rounded,
+                    color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Akor işlevi dersi kartı (ana ekran "Akor İşlevi" bölümü).
+  Widget _functionPathCard(
+    BuildContext context,
+    ThemeData theme,
+    FunctionLesson lesson, {
+    required bool unlocked,
+    required bool completed,
+    required int mastery,
+  }) {
+    const green = Color(0xFF56C271);
+    final bg = unlocked
+        ? theme.colorScheme.surfaceContainerHighest
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
+
+    final IconData icon;
+    final Color iconColor;
+    final String subtitle;
+    if (completed) {
+      icon = Icons.check_circle_rounded;
+      iconColor = green;
+      subtitle = 'tamamlandı · ustalık $mastery';
+    } else if (unlocked) {
+      icon = Icons.account_tree_rounded;
+      iconColor = theme.colorScheme.primary;
+      subtitle = 'başlamak için dokun';
+    } else {
+      icon = Icons.lock_rounded;
+      iconColor = theme.colorScheme.outline;
+      subtitle = 'önceki dersi geç';
+    }
+
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: unlocked
+            ? () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => FunctionLessonFlowPage(lesson: lesson),
+                  ),
+                )
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Row(
+            children: [
+              Icon(icon, color: iconColor, size: 32),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lesson.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color:
+                            unlocked ? null : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (unlocked && lesson.concept != null)
+                IconButton(
+                  icon: const Icon(Icons.info_outline_rounded),
+                  tooltip: 'Bu ders ne anlatıyor?',
+                  onPressed: () => showConceptSheet(context, lesson.concept!),
+                ),
+              if (unlocked)
+                Icon(Icons.chevron_right_rounded,
+                    color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Aralık dersi kartı (ana ekran "Aralıklar" bölümü).
+  Widget _intervalPathCard(
+    BuildContext context,
+    ThemeData theme,
+    IntervalLesson lesson, {
+    required bool unlocked,
+    required bool completed,
+    required int mastery,
+  }) {
+    const green = Color(0xFF56C271);
+    final bg = unlocked
+        ? theme.colorScheme.surfaceContainerHighest
+        : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
+
+    final IconData icon;
+    final Color iconColor;
+    final String subtitle;
+    if (completed) {
+      icon = Icons.check_circle_rounded;
+      iconColor = green;
+      subtitle = 'tamamlandı · ustalık $mastery';
+    } else if (unlocked) {
+      icon = Icons.straighten_rounded;
+      iconColor = theme.colorScheme.primary;
+      subtitle = 'başlamak için dokun';
+    } else {
+      icon = Icons.lock_rounded;
+      iconColor = theme.colorScheme.outline;
+      subtitle = 'önceki aralığı geç';
+    }
+
+    return Material(
+      color: bg,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: unlocked
+            ? () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => IntervalLessonFlowPage(lesson: lesson),
+                  ),
+                )
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Row(
+            children: [
+              Icon(icon, color: iconColor, size: 32),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      lesson.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color:
+                            unlocked ? null : theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (unlocked && lesson.concept != null)
+                IconButton(
+                  icon: const Icon(Icons.info_outline_rounded),
+                  tooltip: 'Bu ders ne anlatıyor?',
+                  onPressed: () => showConceptSheet(context, lesson.concept!),
+                ),
+              if (unlocked)
+                Icon(Icons.chevron_right_rounded,
+                    color: theme.colorScheme.onSurfaceVariant),
             ],
           ),
         ),
@@ -467,6 +799,12 @@ class HomePage extends ConsumerWidget {
                   ],
                 ),
               ),
+              if (unlocked && lesson.concept != null)
+                IconButton(
+                  icon: const Icon(Icons.info_outline_rounded),
+                  tooltip: 'Bu ders ne anlatıyor?',
+                  onPressed: () => showConceptSheet(context, lesson.concept!),
+                ),
               if (unlocked)
                 Icon(Icons.chevron_right_rounded,
                     color: theme.colorScheme.onSurfaceVariant),
@@ -546,6 +884,12 @@ class HomePage extends ConsumerWidget {
                   ],
                 ),
               ),
+              if (unlocked && lesson.concept != null)
+                IconButton(
+                  icon: const Icon(Icons.info_outline_rounded),
+                  tooltip: 'Bu ders ne anlatıyor?',
+                  onPressed: () => showConceptSheet(context, lesson.concept!),
+                ),
               if (unlocked)
                 Icon(
                   Icons.chevron_right_rounded,

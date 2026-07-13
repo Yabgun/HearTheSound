@@ -5,10 +5,18 @@ import '../../audio/note_player.dart';
 import '../../core/octave_mapping.dart';
 import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
+import '../chords/chord_inversion_recognition_page.dart';
 import '../chords/chord_lesson.dart';
+import '../chords/chord_quality_recognition_page.dart';
 import '../chords/chord_recognition_page.dart';
+import '../function/function_lesson.dart';
+import '../function/function_recognition_page.dart';
+import '../intervals/interval_lesson.dart';
+import '../intervals/interval_recognition_page.dart';
 import '../lesson/lesson.dart';
 import '../note_recognition/note_recognition_page.dart';
+import '../progression/progression_lesson.dart';
+import '../progression/progression_recognition_page.dart';
 
 // -----------------------------------------------------------------------------
 // TEKRAR OTURUMU — aralıklı tekrar (SM-2)
@@ -46,7 +54,11 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
   int _xpEarned = 0;
 
   bool _isKnown(String id) =>
-      _noteLessonById(id) != null || _chordLessonById(id) != null;
+      _noteLessonById(id) != null ||
+      _chordLessonById(id) != null ||
+      _intervalLessonById(id) != null ||
+      _functionLessonById(id) != null ||
+      _progressionLessonById(id) != null;
 
   Lesson? _noteLessonById(String id) {
     for (final l in lessons) {
@@ -57,6 +69,27 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
 
   ChordLesson? _chordLessonById(String id) {
     for (final l in chordLessons) {
+      if (l.id == id) return l;
+    }
+    return null;
+  }
+
+  IntervalLesson? _intervalLessonById(String id) {
+    for (final l in intervalLessons) {
+      if (l.id == id) return l;
+    }
+    return null;
+  }
+
+  FunctionLesson? _functionLessonById(String id) {
+    for (final l in functionLessons) {
+      if (l.id == id) return l;
+    }
+    return null;
+  }
+
+  ProgressionLesson? _progressionLessonById(String id) {
+    for (final l in progressionLessons) {
       if (l.id == id) return l;
     }
     return null;
@@ -110,10 +143,58 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
         onComplete: (r) => _grade(id, r),
       );
     }
-    final chord = _chordLessonById(id)!;
-    return ChordRecognitionPage(
+    final chord = _chordLessonById(id);
+    if (chord != null) {
+      final pool = transposeChordsForVoice(chord.pool, _range);
+      return switch (chord.recognizeBy) {
+        ChordRecognizeBy.quality => ChordQualityRecognitionPage(
+            key: key,
+            pool: pool,
+            player: _player,
+            questionCount: _questionsPerSkill,
+            onComplete: (r) => _grade(id, r),
+          ),
+        ChordRecognizeBy.inversion => ChordInversionRecognitionPage(
+            key: key,
+            pool: pool,
+            player: _player,
+            questionCount: _questionsPerSkill,
+            onComplete: (r) => _grade(id, r),
+          ),
+        ChordRecognizeBy.chord => ChordRecognitionPage(
+            key: key,
+            pool: pool,
+            player: _player,
+            questionCount: _questionsPerSkill,
+            onComplete: (r) => _grade(id, r),
+          ),
+      };
+    }
+    final func = _functionLessonById(id);
+    if (func != null) {
+      return FunctionRecognitionPage(
+        key: key,
+        pool: func.pool,
+        player: _player,
+        questionCount: _questionsPerSkill,
+        onComplete: (r) => _grade(id, r),
+      );
+    }
+    final prog = _progressionLessonById(id);
+    if (prog != null) {
+      return ProgressionRecognitionPage(
+        key: key,
+        pool: prog.pool,
+        player: _player,
+        questionCount: _questionsPerSkill,
+        onComplete: (r) => _grade(id, r),
+      );
+    }
+    // Aralık dersi — tanımada kök rastgele, transpoze gerekmez.
+    final interval = _intervalLessonById(id)!;
+    return IntervalRecognitionPage(
       key: key,
-      pool: transposeChordsForVoice(chord.pool, _range),
+      pool: interval.pool,
       player: _player,
       questionCount: _questionsPerSkill,
       onComplete: (r) => _grade(id, r),

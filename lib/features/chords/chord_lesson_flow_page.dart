@@ -8,6 +8,7 @@ import '../../state/progress_controller.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_complete_page.dart';
 import 'chord_arpeggio_page.dart';
+import 'chord_inversion_recognition_page.dart';
 import 'chord_lesson.dart';
 import 'chord_quality_recognition_page.dart';
 import 'chord_recognition_page.dart';
@@ -48,6 +49,8 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
     id: widget.lesson.id,
     title: widget.lesson.title,
     pool: transposeChordsForVoice(widget.lesson.pool, _range),
+    recognizeBy: widget.lesson.recognizeBy, // transpoze ederken kaybolmasın
+    concept: widget.lesson.concept,
   );
 
   @override
@@ -90,20 +93,27 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
           onComplete: () => setState(() => _phase = _Phase.recognizing),
         );
       case _Phase.recognizing:
-        // Ders "nitelik tanıma" ise renk sorusu, değilse spesifik akor sorusu.
-        return _lesson.recognizeBy == ChordRecognizeBy.quality
-            ? ChordQualityRecognitionPage(
-                pool: _lesson.pool,
-                player: _player,
-                questionCount: _questionCount,
-                onComplete: _onRecognitionComplete,
-              )
-            : ChordRecognitionPage(
-                pool: _lesson.pool,
-                player: _player,
-                questionCount: _questionCount,
-                onComplete: _onRecognitionComplete,
-              );
+        // Tanıma tipi derse göre: nitelik / çevrim / spesifik akor.
+        return switch (_lesson.recognizeBy) {
+          ChordRecognizeBy.quality => ChordQualityRecognitionPage(
+              pool: _lesson.pool,
+              player: _player,
+              questionCount: _questionCount,
+              onComplete: _onRecognitionComplete,
+            ),
+          ChordRecognizeBy.inversion => ChordInversionRecognitionPage(
+              pool: _lesson.pool,
+              player: _player,
+              questionCount: _questionCount,
+              onComplete: _onRecognitionComplete,
+            ),
+          ChordRecognizeBy.chord => ChordRecognitionPage(
+              pool: _lesson.pool,
+              player: _player,
+              questionCount: _questionCount,
+              onComplete: _onRecognitionComplete,
+            ),
+        };
       case _Phase.done:
         return LessonCompletePage(
           result: _result!,

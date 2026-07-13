@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../audio/note_player.dart';
 import '../../core/chord.dart';
 import '../../core/note.dart';
+import '../concept/concept_sheet.dart';
 import 'chord_lesson.dart';
 
 // -----------------------------------------------------------------------------
@@ -43,6 +44,10 @@ class LearnChordsPage extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              if (lesson.concept != null) ...[
+                const SizedBox(height: 14),
+                ConceptCardButton(concept: lesson.concept!),
+              ],
               const SizedBox(height: 16),
               Expanded(
                 child: ListView.separated(

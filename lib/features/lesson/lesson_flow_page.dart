@@ -47,6 +47,7 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
     id: widget.lesson.id,
     title: widget.lesson.title,
     pool: transposeForVoice(widget.lesson.pool, _range),
+    concept: widget.lesson.concept,
   );
 
   @override

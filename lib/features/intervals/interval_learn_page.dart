@@ -1,93 +1,94 @@
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/interval.dart';
 import '../../core/note.dart';
 import '../concept/concept_sheet.dart';
-import 'lesson.dart';
+import 'interval_lesson.dart';
 
 // -----------------------------------------------------------------------------
-// ÖĞREN AŞAMASI — "Notaları Tanı"
+// ARALIKLARI TANI (öğren aşaması)
 //
-// Test'ten ÖNCE gelir (pedagoji ilkesi: hiç duymadığın notayı tanıyamazsın).
-// Her notaya dokununca sesi + adı birlikte verilir; "Sırayla dinle" rehberli
-// bir tur çalar. Hazır hissedince teste geçilir.
+// Her aralığı sabit bir kökten (C4) melodik dinlet (kök → üst). Test'ten önce
+// gel — mesafeyi ve adını eşleştir.
 // -----------------------------------------------------------------------------
 
-class LearnNotesPage extends StatefulWidget {
-  const LearnNotesPage({
+class IntervalLearnPage extends StatefulWidget {
+  const IntervalLearnPage({
     super.key,
     required this.lesson,
     required this.player,
     required this.onReady,
   });
 
-  final Lesson lesson;
+  final IntervalLesson lesson;
   final NotePlayer player;
   final VoidCallback onReady;
 
   @override
-  State<LearnNotesPage> createState() => _LearnNotesPageState();
+  State<IntervalLearnPage> createState() => _IntervalLearnPageState();
 }
 
-class _LearnNotesPageState extends State<LearnNotesPage> {
-  int? _playingMidi; // o an çalan notayı vurgula
+class _IntervalLearnPageState extends State<IntervalLearnPage> {
+  static final Note _root = Note.fromName('C', 4);
+
+  int? _playing; // o an çalan aralığın yarım sesi
   bool _touring = false;
 
-  Future<void> _play(Note n) async {
-    setState(() => _playingMidi = n.midi);
-    await widget.player.play(n);
+  Future<void> _playInterval(MusicInterval interval) async {
+    setState(() => _playing = interval.semitones);
+    await widget.player.play(_root);
     await Future<void>.delayed(const Duration(milliseconds: 650));
-    if (mounted && _playingMidi == n.midi) {
-      setState(() => _playingMidi = null);
+    if (!mounted) return;
+    await widget.player.play(interval.topFrom(_root));
+    await Future<void>.delayed(const Duration(milliseconds: 550));
+    if (mounted && _playing == interval.semitones) {
+      setState(() => _playing = null);
     }
   }
 
   Future<void> _tour() async {
     if (_touring) return;
     setState(() => _touring = true);
-    for (final n in widget.lesson.pool) {
+    for (final interval in widget.lesson.pool) {
       if (!mounted) break;
-      setState(() => _playingMidi = n.midi);
-      await widget.player.play(n);
-      await Future<void>.delayed(const Duration(milliseconds: 850));
+      await _playInterval(interval);
+      await Future<void>.delayed(const Duration(milliseconds: 250));
     }
-    if (mounted) {
-      setState(() {
-        _playingMidi = null;
-        _touring = false;
-      });
-    }
+    if (mounted) setState(() => _touring = false);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final concept = widget.lesson.concept;
     return Scaffold(
-      appBar: AppBar(title: const Text('Notaları Tanı')),
+      appBar: AppBar(title: const Text('Aralıkları Tanı')),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text('Önce dinle, öğren', style: theme.textTheme.headlineSmall),
               const SizedBox(height: 6),
               Text(
-                'Her notaya dokun; sesini ve adını eşleştir. Hazır hissedince teste geç.',
+                'Her aralığa dokun; kök notayı ve ardından üst notayı duy. '
+                'Aradaki "atlamanın" büyüklüğünü hisset.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              if (widget.lesson.concept != null) ...[
+              if (concept != null) ...[
                 const SizedBox(height: 14),
-                ConceptCardButton(concept: widget.lesson.concept!),
+                ConceptCardButton(concept: concept),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               Expanded(
                 child: ListView.separated(
                   itemCount: widget.lesson.pool.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (_, i) => _noteCard(widget.lesson.pool[i]),
+                  itemBuilder: (_, i) => _intervalCard(widget.lesson.pool[i]),
                 ),
               ),
               const SizedBox(height: 12),
@@ -105,7 +106,7 @@ class _LearnNotesPageState extends State<LearnNotesPage> {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Hazırım · Teste Geç'),
+                child: const Text('Hazırım · Devam'),
               ),
             ],
           ),
@@ -114,9 +115,10 @@ class _LearnNotesPageState extends State<LearnNotesPage> {
     );
   }
 
-  Widget _noteCard(Note n) {
+  Widget _intervalCard(MusicInterval interval) {
     final theme = Theme.of(context);
-    final playing = _playingMidi == n.midi;
+    final playing = _playing == interval.semitones;
+    final notes = interval.from(_root);
     return Material(
       color: playing
           ? theme.colorScheme.primaryContainer
@@ -124,28 +126,34 @@ class _LearnNotesPageState extends State<LearnNotesPage> {
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => _play(n),
+        onTap: () => _playInterval(interval),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
           child: Row(
             children: [
-              Text(
-                n.name,
-                style: theme.textTheme.displaySmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: playing
-                      ? theme.colorScheme.onPrimaryContainer
-                      : theme.colorScheme.primary,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      interval.name,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: playing
+                            ? theme.colorScheme.onPrimaryContainer
+                            : theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${notes[0].label} → ${notes[1].label}  ·  ${interval.semitones} yarım ses',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 16),
-              Text(
-                n.label, // ör. C4
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
               Icon(
                 playing ? Icons.graphic_eq_rounded : Icons.volume_up_rounded,
                 color: playing
