@@ -8,6 +8,7 @@ import 'features/onboarding/onboarding_flow_page.dart';
 import 'notifications/notification_service.dart';
 import 'state/progress_controller.dart';
 import 'state/settings_controller.dart';
+import 'ui/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,15 +40,10 @@ class HearTheSoundApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Marka rengi (amber/altın) çekirdekli koyu tema.
-    final scheme = ColorScheme.fromSeed(
-      seedColor: const Color(0xFFE0912B),
-      brightness: Brightness.dark,
-    );
     return MaterialApp(
       title: 'HearTheSound',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(colorScheme: scheme, useMaterial3: true),
+      theme: AppTheme.light(),
       home: const _RootGate(),
     );
   }

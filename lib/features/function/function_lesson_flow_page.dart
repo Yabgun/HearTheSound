@@ -2,21 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_complete_page.dart';
+import 'function_build_page.dart';
 import 'function_learn_page.dart';
 import 'function_lesson.dart';
 import 'function_recognition_page.dart';
+import 'function_root_sing_page.dart';
 
 // -----------------------------------------------------------------------------
-// AKOR İŞLEVİ DERS AKIŞI — Öğren → Tanı → Tamamla
+// AKOR İŞLEVİ DERS AKIŞI — Öğren → Kur → Tanı → Tamamla
 //
 // İşlev analitik bir dinleme becerisi (üretim/söyleme adımı yok). Sonuç
 // ilerlemeye işlenir (XP/streak/ustalık/tekrar).
 // -----------------------------------------------------------------------------
 
-enum _Phase { learning, recognizing, done }
+enum _Phase { learning, building, singing, recognizing, done }
 
 class FunctionLessonFlowPage extends ConsumerStatefulWidget {
   const FunctionLessonFlowPage({super.key, required this.lesson});
@@ -37,6 +40,17 @@ class _FunctionLessonFlowPageState
   _Phase _phase = _Phase.learning;
   LessonResult? _result;
   int _xpEarned = 0;
+
+  // Kök söyleme de diğer safhalarla aynı blok oktavı kullanır.
+  late final VocalRange? _range = ref.read(progressProvider).vocalRange;
+  late final FunctionLesson _keyLesson = widget.lesson.inKey(widget.lesson.key);
+  late final FunctionLesson _lesson = FunctionLesson(
+    id: _keyLesson.id,
+    title: _keyLesson.title,
+    pool: transposeDegreesForVoice(_keyLesson.pool, _range),
+    key: _keyLesson.key,
+    concept: _keyLesson.concept,
+  );
 
   @override
   void dispose() {
@@ -65,15 +79,30 @@ class _FunctionLessonFlowPageState
     switch (_phase) {
       case _Phase.learning:
         return FunctionLearnPage(
-          lesson: widget.lesson,
+          lesson: _lesson,
           player: _player,
-          onReady: () => setState(() => _phase = _Phase.recognizing),
+          onReady: () => setState(() => _phase = _Phase.building),
+        );
+      case _Phase.building:
+        return FunctionBuildPage(
+          pool: _lesson.pool,
+          player: _player,
+          majorKey: _lesson.key,
+          onComplete: () => setState(() => _phase = _Phase.singing),
+        );
+      case _Phase.singing:
+        return FunctionRootSingPage(
+          pool: _lesson.pool,
+          player: _player,
+          range: _range,
+          onComplete: () => setState(() => _phase = _Phase.recognizing),
         );
       case _Phase.recognizing:
         return FunctionRecognitionPage(
-          pool: widget.lesson.pool,
+          pool: _lesson.pool,
           player: _player,
           questionCount: _questionCount,
+          majorKey: _lesson.key,
           onComplete: _onComplete,
         );
       case _Phase.done:

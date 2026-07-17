@@ -47,7 +47,7 @@ class _ProgressionLearnPageState extends State<ProgressionLearnPage> {
     final theme = Theme.of(context);
     final concept = widget.lesson.concept;
     return Scaffold(
-      appBar: AppBar(title: const Text('İlerlemeleri Tanı')),
+      appBar: AppBar(title: Text('İlerlemeleri Tanı · ${widget.lesson.key.label}')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
@@ -57,7 +57,7 @@ class _ProgressionLearnPageState extends State<ProgressionLearnPage> {
               Text('Önce dinle, öğren', style: theme.textTheme.headlineSmall),
               const SizedBox(height: 6),
               Text(
-                'Her ilerlemeye dokun; akorlar sırayla çalar. Dizinin genel '
+                '${widget.lesson.key.label}de her ilerlemeye dokun; akorlar sırayla çalar. Dizinin genel '
                 'hareketini (ev → gerilim → dönüş) hisset.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -93,7 +93,6 @@ class _ProgressionLearnPageState extends State<ProgressionLearnPage> {
   Widget _progressionCard(Progression p) {
     final theme = Theme.of(context);
     final playing = _playingName == p.name;
-    final chordChain = p.chords.map((c) => c.root.name).join(' – ');
     return Material(
       color: playing
           ? theme.colorScheme.primaryContainer
@@ -121,8 +120,25 @@ class _ProgressionLearnPageState extends State<ProgressionLearnPage> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      chordChain,
+                      p.chordChain,
                       style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      p.story,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: playing
+                            ? theme.colorScheme.onPrimaryContainer
+                            : theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      p.cadenceHint,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),

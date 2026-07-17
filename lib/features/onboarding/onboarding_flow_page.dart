@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../state/settings_controller.dart';
 import '../calibration/calibration_page.dart';
+import '../mascot/eko_mascot.dart';
 import '../placement/placement_test_page.dart';
 
 // -----------------------------------------------------------------------------
@@ -34,10 +35,10 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
   }
 
   Future<void> _goPlacement() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const PlacementTestPage()),
+    final completed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(builder: (_) => const PlacementTestPage()),
     );
-    _finish();
+    if (mounted && completed != null) _finish();
   }
 
   /// Onboarding'i tamamla — kök geçiş bunu görünce ana ekrana geçer.
@@ -60,8 +61,7 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
           child: Column(
             children: [
               const Spacer(flex: 2),
-              Icon(Icons.hearing_rounded,
-                  size: 88, color: theme.colorScheme.primary),
+              const EkoMascot(size: 118),
               const SizedBox(height: 24),
               Text(
                 'HearTheSound',

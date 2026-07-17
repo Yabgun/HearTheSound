@@ -1,52 +1,50 @@
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
 import '../../core/note.dart';
-import '../dev/pitch_spike_page.dart';
 import '../lesson/lesson.dart';
+import 'tonality_lesson.dart';
 
 // -----------------------------------------------------------------------------
-// TANI AŞAMASI — Nota Tanıma testi (sabit uzunlukta oturum)
+// DERECE TANIMA — "Tonikten sonra duyduğun ses kaçıncı derece?"
 //
-// Uygulama bir nota çalar, kullanıcı şıklardan doğru notayı seçer. [questionCount]
-// soru sonunda oturum biter ve [onComplete] ile sonuç (doğru/toplam) döner.
-// "Nazik ustalık": yanlışta ceza yok — doğru gösterilir, devam edilir.
+// İlk sürüm sabit Do majörde çalışır. Sonraki aşamada aynı modeli farklı
+// tonalitelere genişleteceğiz; kullanıcı görevi ezber değil ilişki olarak duyacak.
 // -----------------------------------------------------------------------------
 
-class NoteRecognitionPage extends StatefulWidget {
-  const NoteRecognitionPage({
+class TonalityRecognitionPage extends StatefulWidget {
+  const TonalityRecognitionPage({
     super.key,
     required this.pool,
     required this.player,
     required this.questionCount,
-    this.onComplete,
-    this.onRelearn,
+    required this.onComplete,
   });
 
-  final List<Note> pool;
+  final List<ScaleDegree> pool;
   final NotePlayer player;
   final int questionCount;
-  final void Function(LessonResult result)? onComplete;
-  final VoidCallback? onRelearn;
+  final void Function(LessonResult result) onComplete;
 
   @override
-  State<NoteRecognitionPage> createState() => _NoteRecognitionPageState();
+  State<TonalityRecognitionPage> createState() =>
+      _TonalityRecognitionPageState();
 }
 
-class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
+class _TonalityRecognitionPageState extends State<TonalityRecognitionPage> {
   static const int _maxOptions = 4;
+  static final Note _tonic = Note.fromName('C', 4);
+
   final Random _rng = Random();
 
-  late Note _target;
-  late List<Note> _options;
-  Note? _selected;
+  late ScaleDegree _target;
+  late List<ScaleDegree> _options;
+  ScaleDegree? _selected;
   bool _answered = false;
-  int _index = 0; // 0-tabanlı soru numarası
-  int _correct = 0; // doğru sayısı
-  int _streak = 0; // ders içi seri (ateş göstergesi)
+  int _index = 0;
+  int _correct = 0;
 
   @override
   void initState() {
@@ -56,17 +54,31 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
   }
 
   void _pick() {
-    final pool = widget.pool;
-    final target = pool[_rng.nextInt(pool.length)];
-    final options = <Note>{target};
-    final limit = min(_maxOptions, pool.length);
-    while (options.length < limit) {
-      options.add(pool[_rng.nextInt(pool.length)]);
+    _target = widget.pool[_rng.nextInt(widget.pool.length)];
+    final opts = <ScaleDegree>{_target};
+    final limit = min(_maxOptions, widget.pool.length);
+    while (opts.length < limit) {
+      opts.add(widget.pool[_rng.nextInt(widget.pool.length)]);
     }
-    _target = target;
-    _options = options.toList()..shuffle(_rng);
+    _options = opts.toList()..shuffle(_rng);
     _selected = null;
     _answered = false;
+  }
+
+  Future<void> _playTarget() async {
+    await widget.player.play(_tonic);
+    await Future<void>.delayed(const Duration(milliseconds: 650));
+    if (!mounted) return;
+    await widget.player.play(_target.noteFrom(_tonic));
+  }
+
+  void _answer(ScaleDegree choice) {
+    if (_answered) return;
+    setState(() {
+      _selected = choice;
+      _answered = true;
+      if (choice == _target) _correct++;
+    });
   }
 
   Future<void> _next() async {
@@ -78,52 +90,21 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
     _playTarget();
   }
 
-  Future<void> _playTarget() => widget.player.play(_target);
-
-  void _answer(Note choice) {
-    if (_answered) return;
-    setState(() {
-      _selected = choice;
-      _answered = true;
-      if (choice == _target) {
-        _correct++;
-        _streak++;
-      } else {
-        _streak = 0;
-      }
-    });
-  }
-
-  void _finish() {
-    widget.onComplete?.call(LessonResult(_correct, widget.questionCount));
-  }
+  void _finish() =>
+      widget.onComplete(LessonResult(_correct, widget.questionCount));
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final correct = _answered && _selected == _target;
-    final cols = _options.length <= 3 ? _options.length : 2;
     final isLast = _index >= widget.questionCount - 1;
     final progress = (_index + (_answered ? 1 : 0)) / widget.questionCount;
+    final cols = _options.length <= 2 ? _options.length : 2;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Soru ${_index + 1} / ${widget.questionCount}'),
+        title: Text('Derece ${_index + 1} / ${widget.questionCount}'),
         actions: [
-          if (widget.onRelearn != null)
-            IconButton(
-              icon: const Icon(Icons.school_rounded),
-              tooltip: 'Tekrar öğren',
-              onPressed: widget.onRelearn,
-            ),
-          if (kDebugMode)
-            IconButton(
-              icon: const Icon(Icons.graphic_eq_rounded),
-              tooltip: 'Perde tespiti (geliştirici)',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const PitchSpikePage()),
-              ),
-            ),
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -139,7 +120,10 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
-          child: LinearProgressIndicator(value: progress.clamp(0, 1), minHeight: 4),
+          child: LinearProgressIndicator(
+            value: progress.clamp(0, 1),
+            minHeight: 4,
+          ),
         ),
       ),
       body: SafeArea(
@@ -149,7 +133,8 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
             children: [
               const Spacer(flex: 2),
               Text(
-                _streak > 1 ? '🔥 $_streak seri' : 'Çalınan notayı bul',
+                'Tonik → hedef. Bu kaçıncı derece?',
+                textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -170,19 +155,20 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: cols == 2 ? 2.1 : 1.4,
-                children: _options.map(_optionButton).toList(),
+                childAspectRatio: 2.6,
+                children: _options.map((d) => _optionButton(theme, d)).toList(),
               ),
               const SizedBox(height: 20),
               SizedBox(
-                height: 84,
+                height: 96,
                 child: _answered
                     ? Column(
                         children: [
                           Text(
                             correct
                                 ? 'Doğru! ✓  ${_target.label}'
-                                : 'Bu ${_target.label} idi',
+                                : 'Bu ${_target.label} idi (${_target.name})',
+                            textAlign: TextAlign.center,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: correct
                                   ? const Color(0xFF56C271)
@@ -213,16 +199,14 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
     );
   }
 
-  Widget _optionButton(Note note) {
-    final theme = Theme.of(context);
+  Widget _optionButton(ThemeData theme, ScaleDegree degree) {
     Color bg = theme.colorScheme.surfaceContainerHighest;
     Color fg = theme.colorScheme.onSurface;
-
     if (_answered) {
-      if (note == _target) {
+      if (degree == _target) {
         bg = const Color(0xFF2E7D4F);
         fg = Colors.white;
-      } else if (note == _selected) {
+      } else if (degree == _selected) {
         bg = const Color(0xFF9E3B4E);
         fg = Colors.white;
       } else {
@@ -230,19 +214,22 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
         fg = theme.colorScheme.onSurfaceVariant;
       }
     }
-
     return Material(
       color: bg,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: _answered ? null : () => _answer(note),
+        onTap: _answered ? null : () => _answer(degree),
         child: Center(
-          child: Text(
-            note.label, // oktavıyla (ör. C4) — oktav belirginliği için
-            style: theme.textTheme.headlineMedium?.copyWith(
-              color: fg,
-              fontWeight: FontWeight.w700,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              degree.label,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: fg,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
@@ -251,7 +238,6 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
   }
 }
 
-/// Büyük dairesel "çal" düğmesi.
 class _PlayButton extends StatelessWidget {
   const _PlayButton({required this.onTap});
 

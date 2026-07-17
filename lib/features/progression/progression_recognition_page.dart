@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/major_key.dart';
 import '../lesson/lesson.dart';
 import 'progression_lesson.dart';
 
@@ -20,12 +21,14 @@ class ProgressionRecognitionPage extends StatefulWidget {
     required this.player,
     required this.questionCount,
     required this.onComplete,
+    this.majorKey = MajorKey.c,
   });
 
   final List<Progression> pool;
   final NotePlayer player;
   final int questionCount;
   final void Function(LessonResult result) onComplete;
+  final MajorKey majorKey;
 
   @override
   State<ProgressionRecognitionPage> createState() =>
@@ -99,7 +102,7 @@ class _ProgressionRecognitionPageState
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('İlerleme ${_index + 1} / ${widget.questionCount}'),
+        title: Text('${widget.majorKey.label} · İlerleme ${_index + 1}/${widget.questionCount}'),
         actions: [
           Center(
             child: Padding(

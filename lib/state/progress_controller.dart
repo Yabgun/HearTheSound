@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,12 +14,23 @@ final progressRepositoryProvider = Provider<ProgressRepository>((ref) {
   throw UnimplementedError('progressRepositoryProvider main içinde override edilmeli');
 });
 
+/// Zamanı tek noktadan okur. Testlerde gün devrini güvenle canlandırabilmek için
+/// override edilir; uygulamada gerçek saat kullanılır.
+final progressClockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
 /// İlerleme durumunu yöneten denetleyici: yükler, günceller, kaydeder.
 class ProgressController extends Notifier<PlayerProgress> {
   ProgressRepository get _repo => ref.read(progressRepositoryProvider);
 
   @override
-  PlayerProgress build() => _repo.load();
+  PlayerProgress build() {
+    final loaded = _repo.load();
+    final normalized = _normalizeForToday(loaded, ref.read(progressClockProvider)());
+    if (!identical(loaded, normalized)) {
+      unawaited(_repo.save(normalized));
+    }
+    return normalized;
+  }
 
   /// Bir ders/oturum tamamlandığında çağrılır: XP ekler, günlük streak'i
   /// günceller, beceri ustalığını artırır, aralıklı tekrarı zamanlar ve kalıcı
@@ -30,7 +42,7 @@ class ProgressController extends Notifier<PlayerProgress> {
     required double accuracy,
     bool completed = false,
   }) {
-    final now = DateTime.now();
+    final now = ref.read(progressClockProvider)();
     final today = _dayKey(now);
     final yesterday = _dayKey(now.subtract(const Duration(days: 1)));
 
@@ -125,6 +137,24 @@ class ProgressController extends Notifier<PlayerProgress> {
       '${d.year.toString().padLeft(4, '0')}-'
       '${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')}';
+
+  PlayerProgress _normalizeForToday(PlayerProgress progress, DateTime now) {
+    final today = _dayKey(now);
+    if (progress.lastActiveDay == today) return progress;
+
+    final yesterday = _dayKey(now.subtract(const Duration(days: 1)));
+    final normalizedStreak =
+        progress.lastActiveDay == yesterday ? progress.streak : 0;
+
+    if (progress.dailyXp == 0 && progress.streak == normalizedStreak) {
+      return progress;
+    }
+
+    return progress.copyWith(
+      dailyXp: 0,
+      streak: normalizedStreak,
+    );
+  }
 }
 
 /// İlerleme sağlayıcısı — arayüz bunu izleyerek XP/streak/ustalığı gösterir.

@@ -5,37 +5,32 @@ import '../../audio/note_player.dart';
 import '../../state/progress_controller.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_complete_page.dart';
-import 'interval_build_page.dart';
-import 'interval_direction_page.dart';
-import 'interval_learn_page.dart';
-import 'interval_lesson.dart';
-import 'interval_melody_page.dart';
-import 'interval_recognition_page.dart';
-import 'interval_sing_page.dart';
+import 'tonality_learn_page.dart';
+import 'tonality_lesson.dart';
+import 'tonality_recognition_page.dart';
+import 'tonality_sing_page.dart';
 
 // -----------------------------------------------------------------------------
-// ARALIK DERS AKIŞI — Öğren → Kur → Yön → Uygula → Söyle → Tanı → Tamamla
+// TONALİTE DERS AKIŞI — Öğren → Söyle → Tanı → Tamamla
 //
-// Nota/akor akışlarının aralık karşılığı. Aralık göreceli olduğundan havuz
-// transpoze EDİLMEZ; kök seçimini alt ekranlar yapar (söylemede kullanıcının
-// aralığına, tanımada rastgele). Sonuç ilerlemeye işlenir (XP/streak/ustalık/
-// tekrar zamanlama).
+// Tonik bağlamı önce öğretilir; sonra kullanıcı hedef dereceyi sesiyle üretir ve
+// en sonda ipuçsuz tanır.
 // -----------------------------------------------------------------------------
 
-enum _Phase { learning, building, direction, applying, singing, recognizing, done }
+enum _Phase { learning, singing, recognizing, done }
 
-class IntervalLessonFlowPage extends ConsumerStatefulWidget {
-  const IntervalLessonFlowPage({super.key, required this.lesson});
+class TonalityLessonFlowPage extends ConsumerStatefulWidget {
+  const TonalityLessonFlowPage({super.key, required this.lesson});
 
-  final IntervalLesson lesson;
+  final TonalityLesson lesson;
 
   @override
-  ConsumerState<IntervalLessonFlowPage> createState() =>
-      _IntervalLessonFlowPageState();
+  ConsumerState<TonalityLessonFlowPage> createState() =>
+      _TonalityLessonFlowPageState();
 }
 
-class _IntervalLessonFlowPageState
-    extends ConsumerState<IntervalLessonFlowPage> {
+class _TonalityLessonFlowPageState
+    extends ConsumerState<TonalityLessonFlowPage> {
   static const int _questionCount = 8;
   static const int _xpPerCorrect = 10;
 
@@ -70,38 +65,20 @@ class _IntervalLessonFlowPageState
   Widget build(BuildContext context) {
     switch (_phase) {
       case _Phase.learning:
-        return IntervalLearnPage(
+        return TonalityLearnPage(
           lesson: widget.lesson,
           player: _player,
-          onReady: () => setState(() => _phase = _Phase.building),
-        );
-      case _Phase.building:
-        return IntervalBuildPage(
-          pool: widget.lesson.pool,
-          player: _player,
-          onComplete: () => setState(() => _phase = _Phase.direction),
-        );
-      case _Phase.direction:
-        return IntervalDirectionPage(
-          pool: widget.lesson.pool,
-          player: _player,
-          onComplete: () => setState(() => _phase = _Phase.applying),
-        );
-      case _Phase.applying:
-        return IntervalMelodyPage(
-          pool: widget.lesson.pool,
-          player: _player,
-          onComplete: () => setState(() => _phase = _Phase.singing),
+          onReady: () => setState(() => _phase = _Phase.singing),
         );
       case _Phase.singing:
-        return IntervalSingPage(
+        return TonalitySingPage(
           pool: widget.lesson.pool,
           player: _player,
           range: ref.read(progressProvider).vocalRange,
           onComplete: () => setState(() => _phase = _Phase.recognizing),
         );
       case _Phase.recognizing:
-        return IntervalRecognitionPage(
+        return TonalityRecognitionPage(
           pool: widget.lesson.pool,
           player: _player,
           questionCount: _questionCount,

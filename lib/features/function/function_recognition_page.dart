@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/major_key.dart';
 import '../lesson/lesson.dart';
 import 'function_lesson.dart';
 
@@ -21,12 +22,14 @@ class FunctionRecognitionPage extends StatefulWidget {
     required this.player,
     required this.questionCount,
     required this.onComplete,
+    this.majorKey = MajorKey.c,
   });
 
   final List<DegreeChord> pool;
   final NotePlayer player;
   final int questionCount;
   final void Function(LessonResult result) onComplete;
+  final MajorKey majorKey;
 
   @override
   State<FunctionRecognitionPage> createState() =>
@@ -67,7 +70,7 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
 
   /// Önce tonik (ev), sonra hedef akor.
   Future<void> _playTarget() async {
-    await widget.player.playChord(tonicReference.notes);
+    await widget.player.playChord(tonicForDegrees(widget.pool).notes);
     await Future<void>.delayed(const Duration(milliseconds: 750));
     if (!mounted) return;
     await widget.player.playChord(_target.chord.notes);
@@ -104,7 +107,7 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('İşlev ${_index + 1} / ${widget.questionCount}'),
+        title: Text('${widget.majorKey.label} · İşlev ${_index + 1}/${widget.questionCount}'),
         actions: [
           Center(
             child: Padding(
@@ -125,11 +128,9 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
-              const Spacer(flex: 2),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+          children: [
               Text(
                 'Önce ev (tonik), sonra akor. İşlevi ne?',
                 textAlign: TextAlign.center,
@@ -146,7 +147,7 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
                   color: theme.colorScheme.outline,
                 ),
               ),
-              const Spacer(flex: 2),
+              const SizedBox(height: 32),
               GridView.count(
                 crossAxisCount: cols,
                 shrinkWrap: true,
@@ -157,11 +158,9 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
                 children: _options.map((f) => _optionButton(theme, f)).toList(),
               ),
               const SizedBox(height: 20),
-              SizedBox(
-                height: 84,
-                child: _answered
-                    ? Column(
-                        children: [
+              if (_answered)
+                Column(
+                  children: [
                           Text(
                             correct
                                 ? 'Doğru! ✓  ${_target.function.label}'
@@ -174,6 +173,15 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _target.roleHint,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           const SizedBox(height: 10),
                           FilledButton(
                             onPressed: isLast ? _finish : _next,
@@ -183,13 +191,9 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
                             ),
                             child: Text(isLast ? 'Bitir' : 'Sonraki'),
                           ),
-                        ],
-                      )
-                    : null,
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
+                  ],
+                ),
+          ],
         ),
       ),
     );

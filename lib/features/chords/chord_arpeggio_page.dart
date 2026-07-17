@@ -24,6 +24,8 @@ class ChordArpeggioPage extends StatefulWidget {
     required this.player,
     required this.onComplete,
     this.range,
+    this.title = 'Akoru Söyle',
+    this.instruction = 'notalarına dokunup dinle, sonra sırayla söyle',
   });
 
   final List<Chord> chords;
@@ -32,6 +34,10 @@ class ChordArpeggioPage extends StatefulWidget {
 
   /// Kullanıcının ses aralığı — rahat aralığı aşan hedef notalarda rozet için.
   final VocalRange? range;
+
+  /// İlerleme gibi bağlamlarda aynı sağlam arpej motorunu farklı dille sunar.
+  final String title;
+  final String instruction;
 
   @override
   State<ChordArpeggioPage> createState() => _ChordArpeggioPageState();
@@ -56,6 +62,7 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
   Chord get _chord => Chord(
         Note(widget.chords[_chordIndex].root.midi + _octaveShift),
         widget.chords[_chordIndex].quality,
+        inversion: widget.chords[_chordIndex].inversion,
       );
   Note get _target => _chord.notes[_noteIndex];
 
@@ -205,7 +212,7 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
 
     if (_permissionDenied) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Akoru Söyle')),
+        appBar: AppBar(title: Text(widget.title)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(28),
@@ -260,7 +267,7 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Akoru Söyle · ${_chordIndex + 1}/${widget.chords.length}'),
+        title: Text('${widget.title} · ${_chordIndex + 1}/${widget.chords.length}'),
         actions: [TextButton(onPressed: _skip, child: const Text('Geç'))],
       ),
       body: SafeArea(
@@ -278,7 +285,7 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
               ),
               const SizedBox(height: 4),
               Text(
-                'notalarına dokunup dinle, sonra sırayla söyle',
+                widget.instruction,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
