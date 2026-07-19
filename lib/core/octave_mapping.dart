@@ -112,7 +112,12 @@ List<Chord> transposeChordsForVoice(List<Chord> chords, VocalRange? range) {
   );
   if (offset == 0) return List<Chord>.from(chords);
   return chords
-      .map((c) =>
-          Chord(Note(c.root.midi + offset), c.quality, inversion: c.inversion))
+      .map(
+        (c) => Chord(
+          Note(c.root.midi + offset),
+          c.quality,
+          inversion: c.inversion,
+        ),
+      )
       .toList();
 }

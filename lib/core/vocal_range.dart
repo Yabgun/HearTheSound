@@ -79,12 +79,12 @@ class VocalRange {
   }
 
   Map<String, dynamic> toMap() => {
-        'comfortLow': comfortLow,
-        'comfortHigh': comfortHigh,
-        'stretchLow': stretchLow,
-        'stretchHigh': stretchHigh,
-        'calibratedAt': calibratedAt?.toIso8601String(),
-      };
+    'comfortLow': comfortLow,
+    'comfortHigh': comfortHigh,
+    'stretchLow': stretchLow,
+    'stretchHigh': stretchHigh,
+    'calibratedAt': calibratedAt?.toIso8601String(),
+  };
 
   factory VocalRange.fromMap(Map<String, dynamic> map) {
     final ts = map['calibratedAt'] as String?;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/concept.dart';
+import '../../core/content_locale.dart';
 
 // -----------------------------------------------------------------------------
 // KAVRAM KARTI — öğretici içeriği gösteren ortak parça
@@ -30,8 +31,9 @@ Future<void> showConceptSheet(BuildContext context, Concept concept) {
               children: [
                 Text(
                   concept.title,
-                  style: theme.textTheme.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 for (final s in concept.sections) ...[
@@ -59,7 +61,7 @@ Future<void> showConceptSheet(BuildContext context, Concept concept) {
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: const Text('Anladım'),
+                    child: Text(t(en: 'Got it', tr: 'Anladım')),
                   ),
                 ),
               ],
@@ -97,20 +99,27 @@ class ConceptCardButton extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Bu ders ne anlatıyor?',
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      t(
+                        en: "What's this lesson about?",
+                        tr: 'Bu ders ne anlatıyor?',
+                      ),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     Text(
                       concept.title,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded,
-                  color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),

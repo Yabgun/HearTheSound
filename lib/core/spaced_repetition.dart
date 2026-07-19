@@ -14,7 +14,8 @@ import 'dart:math' as math;
 // -----------------------------------------------------------------------------
 
 /// Gün anahtarı (yerel tarih, saat atılır). Streak/tekrar mantığı bunu kullanır.
-String dayKeyFor(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
+String dayKeyFor(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-'
     '${d.month.toString().padLeft(2, '0')}-'
     '${d.day.toString().padLeft(2, '0')}';
 
@@ -50,22 +51,22 @@ class ReviewState {
   bool isDueOn(String todayKey) => dueDay.compareTo(todayKey) <= 0;
 
   Map<String, dynamic> toMap() => {
-        'ease': ease,
-        'intervalDays': intervalDays,
-        'reps': reps,
-        'lapses': lapses,
-        'dueDay': dueDay,
-        'lastReviewedDay': lastReviewedDay,
-      };
+    'ease': ease,
+    'intervalDays': intervalDays,
+    'reps': reps,
+    'lapses': lapses,
+    'dueDay': dueDay,
+    'lastReviewedDay': lastReviewedDay,
+  };
 
   factory ReviewState.fromMap(Map<String, dynamic> map) => ReviewState(
-        ease: (map['ease'] as num?)?.toDouble() ?? 2.5,
-        intervalDays: (map['intervalDays'] as num?)?.toInt() ?? 1,
-        reps: (map['reps'] as num?)?.toInt() ?? 0,
-        lapses: (map['lapses'] as num?)?.toInt() ?? 0,
-        dueDay: map['dueDay'] as String? ?? '',
-        lastReviewedDay: map['lastReviewedDay'] as String? ?? '',
-      );
+    ease: (map['ease'] as num?)?.toDouble() ?? 2.5,
+    intervalDays: (map['intervalDays'] as num?)?.toInt() ?? 1,
+    reps: (map['reps'] as num?)?.toInt() ?? 0,
+    lapses: (map['lapses'] as num?)?.toInt() ?? 0,
+    dueDay: map['dueDay'] as String? ?? '',
+    lastReviewedDay: map['lastReviewedDay'] as String? ?? '',
+  );
 
   @override
   String toString() =>

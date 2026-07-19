@@ -8,21 +8,30 @@ environment:
 
 dependencies:
   audioplayers: ^6.6.0
+  dart_melty_soundfont: ^2.0.0
   flutter:
     sdk: flutter
   flutter_local_notifications: ^20.1.0
+  flutter_localizations:
+    sdk: flutter
   flutter_riverpod: 2.6.1
   flutter_timezone: ^5.1.0
   google_fonts: ^6.3.2
   pitch_detector_dart: ^0.0.7
   record: ^6.2.1
   shared_preferences: ^2.5.3
+  supabase_flutter: ^2.15.4
   timezone: ^0.10.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
+  assets:
+    # Gerçek piyano tınısı (GeneralUser GS — lisansı uygulama içinde
+    # paketlemeye izin verir; bkz. assets/sf2/ATTRIBUTION.md).
+    - assets/sf2/GeneralUser-GS.sf2

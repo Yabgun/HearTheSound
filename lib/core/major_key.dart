@@ -1,3 +1,4 @@
+import 'content_locale.dart';
 import 'note.dart';
 
 // -----------------------------------------------------------------------------
@@ -9,14 +10,16 @@ import 'note.dart';
 // -----------------------------------------------------------------------------
 
 enum MajorKey {
-  c('C', 'C Majör', 0),
-  g('G', 'G Majör', 7),
-  d('D', 'D Majör', 2);
+  c('C', 0),
+  g('G', 7),
+  d('D', 2);
 
-  const MajorKey(this.tonicName, this.label, this.semitonesFromC);
+  const MajorKey(this.tonicName, this.semitonesFromC);
 
   final String tonicName;
-  final String label;
+
+  /// Görünen ad — aktif içerik diline göre ("C Major" / "C Majör").
+  String get label => '$tonicName ${t(en: 'Major', tr: 'Majör')}';
 
   /// Kanonik C majöre göre tonalite farkı. Yalnızca perde sınıfını taşır;
   /// kullanıcının ses aralığına göre oktav eşlemesi derste ayrıca yapılır.

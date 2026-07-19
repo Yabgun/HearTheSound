@@ -20,10 +20,13 @@ class EkoMascot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(painter: _EkoPainter(celebrate: celebrate)),
+    // Dekoratif görsel: ekran okuyucuya gürültü olmasın (metinler zaten anlatıyor).
+    return ExcludeSemantics(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: CustomPaint(painter: _EkoPainter(celebrate: celebrate)),
+      ),
     );
   }
 }
@@ -96,11 +99,17 @@ class _EkoPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round;
       canvas.drawArc(
         Rect.fromCircle(center: const Offset(49, 60), radius: 7),
-        3.6, 1.9, false, happy,
+        3.6,
+        1.9,
+        false,
+        happy,
       );
       canvas.drawArc(
         Rect.fromCircle(center: const Offset(71, 60), radius: 7),
-        3.6, 1.9, false, happy,
+        3.6,
+        1.9,
+        false,
+        happy,
       );
     } else {
       final white = Paint()..color = Colors.white;

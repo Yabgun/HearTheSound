@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../concept/concept_sheet.dart';
 import 'lesson.dart';
@@ -63,17 +64,25 @@ class _LearnNotesPageState extends State<LearnNotesPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Notaları Tanı')),
+      appBar: AppBar(
+        title: Text(t(en: 'Meet the Notes', tr: 'Notaları Tanı')),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Önce dinle, öğren', style: theme.textTheme.headlineSmall),
+              Text(
+                t(en: 'Listen first, then learn', tr: 'Önce dinle, öğren'),
+                style: theme.textTheme.headlineSmall,
+              ),
               const SizedBox(height: 6),
               Text(
-                'Her notaya dokun; sesini ve adını eşleştir. Hazır hissedince teste geç.',
+                t(
+                  en: 'Tap each note; match its sound to its name. When you feel ready, move on to the test.',
+                  tr: 'Her notaya dokun; sesini ve adını eşleştir. Hazır hissedince teste geç.',
+                ),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -94,7 +103,7 @@ class _LearnNotesPageState extends State<LearnNotesPage> {
               OutlinedButton.icon(
                 onPressed: _touring ? null : _tour,
                 icon: const Icon(Icons.playlist_play_rounded),
-                label: const Text('Sırayla dinle'),
+                label: Text(t(en: 'Listen in order', tr: 'Sırayla dinle')),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -105,7 +114,12 @@ class _LearnNotesPageState extends State<LearnNotesPage> {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Hazırım · Teste Geç'),
+                child: Text(
+                  t(
+                    en: "I'm Ready · Start the Test",
+                    tr: 'Hazırım · Teste Geç',
+                  ),
+                ),
               ),
             ],
           ),

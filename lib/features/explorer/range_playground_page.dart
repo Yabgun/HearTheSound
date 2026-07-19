@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../audio/note_player.dart';
 import '../../audio/pitch_service.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../../core/octave_mapping.dart';
 import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
+import '../../ui/app_theme.dart';
 
 // -----------------------------------------------------------------------------
 // SES ARALIĞI OYUN ALANI — puansız keşif
@@ -30,11 +32,11 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
   static final int _highMidi = Note.fromName('C', 6).midi; // 84
   static const double _itemExtent = 58;
   static const Duration _holdTarget = Duration(milliseconds: 1000);
-  static const Color _green = Color(0xFF56C271);
+  static const Color _green = AppColors.success;
   static const Color _amber = Color(0xFFE0912B);
 
   final PitchService _pitch = PitchService();
-  final NotePlayer _player = SynthNotePlayer();
+  final NotePlayer _player = createNotePlayer();
   late final ScrollController _scroll;
 
   int? _selected;
@@ -51,8 +53,13 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
     _selected = range?.comfortHigh ?? Note.fromName('C', 4).midi;
     // Listeyi kullanıcının rahat aralığının biraz üstünden başlat (tiz notalar
     // üstte). Kalibre değilse C5 civarı.
-    final top = range == null ? Note.fromName('C', 5).midi : range.comfortHigh + 3;
-    final offset = ((_highMidi - top) * _itemExtent).clamp(0.0, double.infinity);
+    final top = range == null
+        ? Note.fromName('C', 5).midi
+        : range.comfortHigh + 3;
+    final offset = ((_highMidi - top) * _itemExtent).clamp(
+      0.0,
+      double.infinity,
+    );
     _scroll = ScrollController(initialScrollOffset: offset);
   }
 
@@ -83,7 +90,14 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
     if (!ok) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mikrofon izni gerekli.')),
+          SnackBar(
+            content: Text(
+              t(
+                en: 'Microphone permission needed.',
+                tr: 'Mikrofon izni gerekli.',
+              ),
+            ),
+          ),
         );
       }
       return;
@@ -108,7 +122,8 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
     final now = DateTime.now();
     final dt = _lastTick == null
         ? 0.0
-        : now.difference(_lastTick!).inMilliseconds / _holdTarget.inMilliseconds;
+        : now.difference(_lastTick!).inMilliseconds /
+              _holdTarget.inMilliseconds;
     _lastTick = now;
     final match = r != null && r.note.midi == _selected;
     setState(() {
@@ -138,17 +153,17 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
       range == null ? null : reachZoneFor(midi, range);
 
   Color _zoneColor(ReachZone? zone, ThemeData theme) => switch (zone) {
-        ReachZone.comfort => _green,
-        ReachZone.stretch => _amber,
-        _ => theme.colorScheme.outline,
-      };
+    ReachZone.comfort => _green,
+    ReachZone.stretch => _amber,
+    _ => theme.colorScheme.outline,
+  };
 
   String _zoneLabel(ReachZone? zone) => switch (zone) {
-        ReachZone.comfort => 'rahat',
-        ReachZone.stretch => 'esneme',
-        ReachZone.beyond => 'aralık dışı',
-        null => '',
-      };
+    ReachZone.comfort => t(en: 'comfort', tr: 'rahat'),
+    ReachZone.stretch => t(en: 'stretch', tr: 'esneme'),
+    ReachZone.beyond => t(en: 'out of range', tr: 'aralık dışı'),
+    null => '',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -157,7 +172,11 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
     final count = _highMidi - _lowMidi + 1;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Ses Aralığı Oyun Alanı')),
+      appBar: AppBar(
+        title: Text(
+          t(en: 'Vocal Range Playground', tr: 'Ses Aralığı Oyun Alanı'),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -165,11 +184,26 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
               child: Text(
                 range == null
-                    ? 'Bir notaya dokun, dinle ve söylemeyi dene. Baskı yok — sesini keşfet.'
-                    : 'Yeşil = rahat, sarı = esneme aralığın. Dışına çıkıp sesini '
-                        'genişletmeyi de deneyebilirsin.',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ? t(
+                        en:
+                            'Tap a note, listen, and try singing it. '
+                            'No pressure — explore your voice.',
+                        tr:
+                            'Bir notaya dokun, dinle ve söylemeyi dene. '
+                            'Baskı yok — sesini keşfet.',
+                      )
+                    : t(
+                        en:
+                            'Green = comfort, yellow = your stretch zone. '
+                            'Feel free to step outside them and grow your '
+                            'range.',
+                        tr:
+                            'Yeşil = rahat, sarı = esneme aralığın. Dışına '
+                            'çıkıp sesini genişletmeyi de deneyebilirsin.',
+                      ),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             Expanded(
@@ -203,7 +237,11 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
         decoration: BoxDecoration(
           color: selected
               ? theme.colorScheme.primaryContainer
-              : (isC ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35) : null),
+              : (isC
+                    ? theme.colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.35,
+                      )
+                    : null),
           border: Border(
             left: BorderSide(color: zoneColor, width: 5),
             bottom: BorderSide(
@@ -226,20 +264,28 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
             ),
             if (zone != null && zone != ReachZone.beyond)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: zoneColor.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   _zoneLabel(zone),
-                  style: theme.textTheme.labelSmall
-                      ?.copyWith(color: zoneColor, fontWeight: FontWeight.w600),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: zoneColor,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             const Spacer(),
-            Icon(Icons.volume_up_rounded,
-                size: 20, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.volume_up_rounded,
+              size: 20,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),
@@ -257,17 +303,27 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
 
     final String status;
     if (_caught) {
+      final aboveComfort = sel > (range?.comfortHigh ?? sel);
       status = zone == ReachZone.comfort
-          ? 'Tuttun! ✓'
-          : 'Harika! ✓ Bu, rahat aralığının ${sel > (range?.comfortHigh ?? sel) ? 'üstünde' : 'dışında'} — güzel iş!';
+          ? t(en: 'You held it! ✓', tr: 'Tuttun! ✓')
+          : t(
+              en: "Amazing! ✓ That's ${aboveComfort ? 'above' : 'outside'} your comfort range — nice work!",
+              tr: 'Harika! ✓ Bu, rahat aralığının ${aboveComfort ? 'üstünde' : 'dışında'} — güzel iş!',
+            );
     } else if (!_micActive) {
-      status = 'Dinle, sonra söylemeyi dene';
+      status = t(
+        en: 'Listen, then try singing it',
+        tr: 'Dinle, sonra söylemeyi dene',
+      );
     } else if (exact) {
-      status = 'tam — böyle tut! 🎯';
+      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
     } else if (_reading != null) {
-      status = 'duyduğum: ${_reading!.note.label}';
+      status = t(
+        en: 'I hear: ${_reading!.note.label}',
+        tr: 'duyduğum: ${_reading!.note.label}',
+      );
     } else {
-      status = 'sesini duyayım…';
+      status = t(en: 'let me hear you…', tr: 'sesini duyayım…');
     }
 
     return Container(
@@ -286,21 +342,24 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
                 target.label,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: (_caught || exact) ? _green : theme.colorScheme.primary,
+                  color: (_caught || exact)
+                      ? _green
+                      : theme.colorScheme.primary,
                 ),
               ),
               const SizedBox(width: 12),
               if (zone != null)
                 Text(
                   _zoneLabel(zone),
-                  style: theme.textTheme.labelLarge
-                      ?.copyWith(color: _zoneColor(zone, theme)),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: _zoneColor(zone, theme),
+                  ),
                 ),
               const Spacer(),
               IconButton.filledTonal(
                 onPressed: () => _hearNote(sel),
                 icon: const Icon(Icons.volume_up_rounded),
-                tooltip: 'Dinle',
+                tooltip: t(en: 'Listen', tr: 'Dinle'),
               ),
             ],
           ),
@@ -318,7 +377,9 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
             status,
             textAlign: TextAlign.center,
             style: theme.textTheme.titleSmall?.copyWith(
-              color: (_caught || exact) ? _green : theme.colorScheme.onSurfaceVariant,
+              color: (_caught || exact)
+                  ? _green
+                  : theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -329,7 +390,7 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
                 ? OutlinedButton.icon(
                     onPressed: _stopMic,
                     icon: const Icon(Icons.stop_rounded),
-                    label: const Text('Durdur'),
+                    label: Text(t(en: 'Stop', tr: 'Durdur')),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
@@ -337,7 +398,12 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
                 : FilledButton.icon(
                     onPressed: _toggleSing,
                     icon: const Icon(Icons.mic_rounded),
-                    label: Text('${target.label} söyle'),
+                    label: Text(
+                      t(
+                        en: 'Sing ${target.label}',
+                        tr: '${target.label} söyle',
+                      ),
+                    ),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),

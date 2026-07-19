@@ -1,0 +1,9 @@
+# Launcher ikon üretimi — kaynak PNG'ler test/tools/generate_launcher_icon_test.dart
+# ile Eko'dan render edilir (bkz. o dosyanın başındaki komut), sonra:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: false # iOS build'i ileride bulut Mac CI ile
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#6A4DF4" # AppColors.grape
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"

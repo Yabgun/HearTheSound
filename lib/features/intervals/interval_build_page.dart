@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/interval.dart';
 import '../../core/note.dart';
+import '../../ui/app_theme.dart';
 
 // -----------------------------------------------------------------------------
 // ARALIĞI KUR — "Kur" adımı
@@ -17,11 +19,15 @@ class IntervalBuildPage extends StatefulWidget {
     required this.pool,
     required this.player,
     required this.onComplete,
+    this.harmonic = false,
   });
 
   final List<MusicInterval> pool;
   final NotePlayer player;
   final VoidCallback onComplete;
+
+  /// true → "doğru cevabı dinle" iki notayı AYNI ANDA çalar (harmonik dersler).
+  final bool harmonic;
 
   @override
   State<IntervalBuildPage> createState() => _IntervalBuildPageState();
@@ -50,11 +56,16 @@ class _IntervalBuildPageState extends State<IntervalBuildPage> {
   Future<void> _playTarget() async {
     if (_playing) return;
     setState(() => _playing = true);
-    await widget.player.play(_root);
-    await Future<void>.delayed(const Duration(milliseconds: 550));
-    if (!mounted) return;
-    await widget.player.play(_target);
-    await Future<void>.delayed(const Duration(milliseconds: 300));
+    if (widget.harmonic) {
+      await widget.player.playChord([_root, _target]);
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+    } else {
+      await widget.player.play(_root);
+      await Future<void>.delayed(const Duration(milliseconds: 550));
+      if (!mounted) return;
+      await widget.player.play(_target);
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+    }
     if (mounted) setState(() => _playing = false);
   }
 
@@ -96,8 +107,18 @@ class _IntervalBuildPageState extends State<IntervalBuildPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Aralığı Kur · ${_index + 1}/${_toBuild.length}'),
-        actions: [TextButton(onPressed: _skip, child: const Text('Geç'))],
+        title: Text(
+          t(
+            en: 'Build the Interval · ${_index + 1}/${_toBuild.length}',
+            tr: 'Aralığı Kur · ${_index + 1}/${_toBuild.length}',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _skip,
+            child: Text(t(en: 'Skip', tr: 'Geç')),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -105,11 +126,25 @@ class _IntervalBuildPageState extends State<IntervalBuildPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Kökten hedefi kur', style: theme.textTheme.headlineSmall),
+              Text(
+                t(
+                  en: 'Build the target from the root',
+                  tr: 'Kökten hedefi kur',
+                ),
+                style: theme.textTheme.headlineSmall,
+              ),
               const SizedBox(height: 6),
               Text(
-                'Kök nota C4. ${_interval.name} kurmak için üst notayı seç. '
-                'Yarım ses merdivenini görerek aralığın şeklini oturt.',
+                t(
+                  en:
+                      'The root note is C4. Pick the top note to build the '
+                      '${_interval.name}. Watching the semitone ladder helps '
+                      'the shape of the interval settle in.',
+                  tr:
+                      'Kök nota C4. ${_interval.name} kurmak için üst notayı '
+                      'seç. Yarım ses merdivenini görerek aralığın şeklini '
+                      'oturt.',
+                ),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -130,7 +165,9 @@ class _IntervalBuildPageState extends State<IntervalBuildPage> {
               OutlinedButton.icon(
                 onPressed: _playing ? null : _playTarget,
                 icon: const Icon(Icons.volume_up_rounded),
-                label: const Text('Doğru cevabı dinle'),
+                label: Text(
+                  t(en: 'Hear the correct answer', tr: 'Doğru cevabı dinle'),
+                ),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -142,7 +179,9 @@ class _IntervalBuildPageState extends State<IntervalBuildPage> {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: Text(
-                  _index + 1 >= _toBuild.length ? 'Devam' : 'Sonraki aralık',
+                  _index + 1 >= _toBuild.length
+                      ? t(en: 'Continue', tr: 'Devam')
+                      : t(en: 'Next interval', tr: 'Sonraki aralık'),
                 ),
               ),
             ],
@@ -154,16 +193,31 @@ class _IntervalBuildPageState extends State<IntervalBuildPage> {
 
   Widget _targetPanel(ThemeData theme, bool wrong) {
     final color = _answeredCorrectly
-        ? const Color(0xFF56C271)
+        ? AppColors.success
         : wrong
-            ? const Color(0xFFD25872)
-            : theme.colorScheme.primary;
+        ? AppColors.danger
+        : theme.colorScheme.primary;
     final selected = _selected;
     final status = _answeredCorrectly
-        ? 'Doğru: ${_root.label} → ${_target.label}'
+        ? t(
+            en: 'Correct: ${_root.label} → ${_target.label}',
+            tr: 'Doğru: ${_root.label} → ${_target.label}',
+          )
         : wrong
-            ? '${selected!.label} değil; ${_interval.semitones} yarım ses yukarıyı ara.'
-            : '${_interval.semitones} yarım ses yukarı';
+        ? t(
+            en:
+                'Not ${selected!.label}; look ${_interval.semitones} semitone'
+                '${_interval.semitones == 1 ? '' : 's'} up.',
+            tr:
+                '${selected.label} değil; ${_interval.semitones} yarım ses '
+                'yukarıyı ara.',
+          )
+        : t(
+            en:
+                '${_interval.semitones} semitone'
+                '${_interval.semitones == 1 ? '' : 's'} up',
+            tr: '${_interval.semitones} yarım ses yukarı',
+          );
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -228,11 +282,11 @@ class _IntervalBuildPageState extends State<IntervalBuildPage> {
       fg = theme.colorScheme.onSecondaryContainer;
     }
     if (selected && !_answeredCorrectly) {
-      bg = const Color(0xFF9E3B4E);
+      bg = AppColors.danger;
       fg = Colors.white;
     }
     if (isTarget) {
-      bg = const Color(0xFF2E7D4F);
+      bg = AppColors.success;
       fg = Colors.white;
     }
 
@@ -255,7 +309,12 @@ class _IntervalBuildPageState extends State<IntervalBuildPage> {
               ),
               const SizedBox(height: 2),
               Text(
-                isRoot ? 'kök' : '${note.midi - _root.midi} ys',
+                isRoot
+                    ? t(en: 'root', tr: 'kök')
+                    : t(
+                        en: '${note.midi - _root.midi} st',
+                        tr: '${note.midi - _root.midi} ys',
+                      ),
                 style: theme.textTheme.labelSmall?.copyWith(color: fg),
               ),
             ],

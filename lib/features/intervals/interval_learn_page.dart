@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/interval.dart';
 import '../../core/note.dart';
 import '../concept/concept_sheet.dart';
@@ -19,11 +20,15 @@ class IntervalLearnPage extends StatefulWidget {
     required this.lesson,
     required this.player,
     required this.onReady,
+    this.harmonic = false,
   });
 
   final IntervalLesson lesson;
   final NotePlayer player;
   final VoidCallback onReady;
+
+  /// true → iki nota AYNI ANDA çalınır (harmonik dersler).
+  final bool harmonic;
 
   @override
   State<IntervalLearnPage> createState() => _IntervalLearnPageState();
@@ -37,11 +42,17 @@ class _IntervalLearnPageState extends State<IntervalLearnPage> {
 
   Future<void> _playInterval(MusicInterval interval) async {
     setState(() => _playing = interval.semitones);
-    await widget.player.play(_root);
-    await Future<void>.delayed(const Duration(milliseconds: 650));
-    if (!mounted) return;
-    await widget.player.play(interval.topFrom(_root));
-    await Future<void>.delayed(const Duration(milliseconds: 550));
+    if (widget.harmonic) {
+      // Harmonik: kök + üst AYNI ANDA tınlar (akor motoruyla).
+      await widget.player.playChord(interval.from(_root));
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+    } else {
+      await widget.player.play(_root);
+      await Future<void>.delayed(const Duration(milliseconds: 650));
+      if (!mounted) return;
+      await widget.player.play(interval.topFrom(_root));
+      await Future<void>.delayed(const Duration(milliseconds: 550));
+    }
     if (mounted && _playing == interval.semitones) {
       setState(() => _playing = null);
     }
@@ -63,18 +74,29 @@ class _IntervalLearnPageState extends State<IntervalLearnPage> {
     final theme = Theme.of(context);
     final concept = widget.lesson.concept;
     return Scaffold(
-      appBar: AppBar(title: const Text('Aralıkları Tanı')),
+      appBar: AppBar(
+        title: Text(t(en: 'Meet the Intervals', tr: 'Aralıkları Tanı')),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Önce dinle, öğren', style: theme.textTheme.headlineSmall),
+              Text(
+                t(en: 'Listen first, then learn', tr: 'Önce dinle, öğren'),
+                style: theme.textTheme.headlineSmall,
+              ),
               const SizedBox(height: 6),
               Text(
-                'Her aralığa dokun; kök notayı ve ardından üst notayı duy. '
-                'Aradaki "atlamanın" büyüklüğünü hisset.',
+                t(
+                  en:
+                      'Tap each interval; hear the root note, then the top '
+                      'note. Feel the size of the "leap" between them.',
+                  tr:
+                      'Her aralığa dokun; kök notayı ve ardından üst notayı '
+                      'duy. Aradaki "atlamanın" büyüklüğünü hisset.',
+                ),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -95,7 +117,7 @@ class _IntervalLearnPageState extends State<IntervalLearnPage> {
               OutlinedButton.icon(
                 onPressed: _touring ? null : _tour,
                 icon: const Icon(Icons.playlist_play_rounded),
-                label: const Text('Sırayla dinle'),
+                label: Text(t(en: 'Listen in order', tr: 'Sırayla dinle')),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -106,7 +128,9 @@ class _IntervalLearnPageState extends State<IntervalLearnPage> {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Hazırım · Devam'),
+                child: Text(
+                  t(en: "I'm Ready · Continue", tr: 'Hazırım · Devam'),
+                ),
               ),
             ],
           ),
@@ -146,7 +170,15 @@ class _IntervalLearnPageState extends State<IntervalLearnPage> {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${notes[0].label} → ${notes[1].label}  ·  ${interval.semitones} yarım ses',
+                      t(
+                        en:
+                            '${notes[0].label} → ${notes[1].label}  ·  '
+                            '${interval.semitones} semitone'
+                            '${interval.semitones == 1 ? '' : 's'}',
+                        tr:
+                            '${notes[0].label} → ${notes[1].label}  ·  '
+                            '${interval.semitones} yarım ses',
+                      ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

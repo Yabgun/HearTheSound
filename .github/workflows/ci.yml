@@ -1,0 +1,38 @@
+# -----------------------------------------------------------------------------
+# CI — her push/PR'da statik analiz + test.
+#
+# Amaç: regresyon kalkanı. Yerelde `flutter analyze` + `flutter test` neyse
+# burada da aynısı koşar; kırmızıysa birleştirme yapılmaz. Format kapısı bilerek
+# YOK: yerel Flutter sürümü ile CI'daki formatter farklı davranabiliyor.
+# -----------------------------------------------------------------------------
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  # Aynı dala üst üste push gelirse eski koşuyu iptal et (dakika israfı olmasın).
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Bağımlılıkları indir
+        run: flutter pub get
+
+      - name: Statik analiz
+        run: flutter analyze
+
+      - name: Testler
+        run: flutter test

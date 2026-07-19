@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/content_locale.dart';
 import '../../core/player_progress.dart';
 import '../../core/rank.dart';
 import '../../core/spaced_repetition.dart';
@@ -42,11 +43,18 @@ class TodayPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Selam! 👋', style: theme.textTheme.titleLarge),
                     Text(
-                      'Eko seni bekliyordu',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      t(en: 'Hey! 👋', tr: 'Selam! 👋'),
+                      style: theme.textTheme.titleLarge,
+                    ),
+                    Text(
+                      t(
+                        en: 'Eko was waiting for you',
+                        tr: 'Eko seni bekliyordu',
+                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -98,11 +106,21 @@ class TodayPage extends ConsumerWidget {
           children: [
             const EkoMascot(size: 54, celebrate: true),
             const SizedBox(height: 12),
-            Text('Tüm dersleri bitirdin! 🎉',
-                style: theme.textTheme.headlineSmall?.copyWith(color: onHero)),
+            Text(
+              t(
+                en: 'You finished every lesson! 🎉',
+                tr: 'Tüm dersleri bitirdin! 🎉',
+              ),
+              style: theme.textTheme.headlineSmall?.copyWith(color: onHero),
+            ),
             const SizedBox(height: 6),
-            Text('Tekrarlarla taze tut, kulağını keskin bırakma.',
-                style: theme.textTheme.bodyMedium?.copyWith(color: onSoft)),
+            Text(
+              t(
+                en: 'Keep it fresh with reviews — keep your ear sharp.',
+                tr: 'Tekrarlarla taze tut, kulağını keskin bırakma.',
+              ),
+              style: theme.textTheme.bodyMedium?.copyWith(color: onSoft),
+            ),
           ],
         ),
       );
@@ -112,77 +130,101 @@ class TodayPage extends ConsumerWidget {
     final item = next.item;
     final grad = [track.color, Color.lerp(track.color, AppColors.coral, 0.5)!];
 
-    return Material(
-      borderRadius: BorderRadius.circular(26),
-      elevation: 0,
-      child: Ink(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: grad,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    // Gölge DIŞ katmanda (kırpılmaz); gradyan + ripple İÇ Material'da yuvarlak
+    // kırpılır. Tek yuvarlatılmış yüzey → alt köşelerde eski Material+Ink çift
+    // yüzeyinin yol açtığı beyaz "dik köşe" taşması oluşmaz.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: track.color.withValues(alpha: 0.4),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
           ),
-          borderRadius: BorderRadius.circular(26),
-          boxShadow: [
-            BoxShadow(
-              color: track.color.withValues(alpha: 0.4),
-              blurRadius: 26,
-              offset: const Offset(0, 14),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(26),
+        clipBehavior: Clip.antiAlias,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: grad,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ],
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(26),
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => item.open()),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('KALDIĞIN YERDEN',
+          child: InkWell(
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute<void>(builder: (_) => item.open())),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          t(
+                            en: 'PICK UP WHERE YOU LEFT',
+                            tr: 'KALDIĞIN YERDEN',
+                          ),
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: onSoft,
                             letterSpacing: 1.6,
                             fontWeight: FontWeight.w800,
-                          )),
-                      const SizedBox(height: 8),
-                      Text(item.title,
-                          style: theme.textTheme.headlineSmall
-                              ?.copyWith(color: onHero)),
-                      const SizedBox(height: 3),
-                      Text(track.name,
-                          style: theme.textTheme.bodyMedium?.copyWith(color: onSoft)),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 11),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
-                        child: Text('Devam Et →',
-                            style: theme.textTheme.titleMedium
-                                ?.copyWith(color: track.color)),
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        Text(
+                          item.title,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            color: onHero,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          track.name,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: onSoft,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 11,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Text(
+                            t(en: 'Continue →', tr: 'Devam Et →'),
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: track.color,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.22),
-                    shape: BoxShape.circle,
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 62,
+                    height: 62,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.22),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(track.icon, color: Colors.white, size: 30),
                   ),
-                  child: Icon(track.icon, color: Colors.white, size: 30),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -208,12 +250,14 @@ class TodayPage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('BUGÜNÜN PLANI',
-              style: theme.textTheme.labelSmall?.copyWith(
-                letterSpacing: 1.6,
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w800,
-              )),
+          Text(
+            t(en: "TODAY'S PLAN", tr: 'BUGÜNÜN PLANI'),
+            style: theme.textTheme.labelSmall?.copyWith(
+              letterSpacing: 1.6,
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
           const SizedBox(height: 12),
           if (next != null)
             _planRow(
@@ -221,11 +265,14 @@ class TodayPage extends ConsumerWidget {
               theme,
               icon: Icons.play_circle_fill_rounded,
               color: next.track.color,
-              title: 'Yeni ders: ${next.item.title}',
-              subtitle: next.track.name,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => next.item.open()),
+              title: t(
+                en: 'New lesson: ${next.item.title}',
+                tr: 'Yeni ders: ${next.item.title}',
               ),
+              subtitle: next.track.name,
+              onTap: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute<void>(builder: (_) => next.item.open())),
             ),
           if (due.isNotEmpty)
             _planRow(
@@ -233,8 +280,14 @@ class TodayPage extends ConsumerWidget {
               theme,
               icon: Icons.replay_circle_filled_rounded,
               color: AppColors.teal,
-              title: '${due.length} tekrar hazır',
-              subtitle: 'Tam zamanı gelen becerileri tazele',
+              title: t(
+                en: '${due.length} reviews ready',
+                tr: '${due.length} tekrar hazır',
+              ),
+              subtitle: t(
+                en: 'Refresh the skills due right now',
+                tr: 'Tam zamanı gelen becerileri tazele',
+              ),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => ReviewSessionPage(skillIds: due),
@@ -247,8 +300,11 @@ class TodayPage extends ConsumerWidget {
               theme,
               icon: Icons.check_circle_rounded,
               color: AppColors.success,
-              title: 'Bugünlük tamam!',
-              subtitle: 'Dilersen Pratik’ten keşfe devam et',
+              title: t(en: 'Done for today!', tr: 'Bugünlük tamam!'),
+              subtitle: t(
+                en: 'Keep exploring in Practice if you like',
+                tr: 'Dilersen Pratik’ten keşfe devam et',
+              ),
             ),
           const SizedBox(height: 14),
           ClipRRect(
@@ -264,14 +320,19 @@ class TodayPage extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Günlük hedef',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              Text('${progress.dailyXp} / $kDailyXpGoal XP',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
-                  )),
+              Text(
+                t(en: 'Daily goal', tr: 'Günlük hedef'),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              Text(
+                '${progress.dailyXp} / $kDailyXpGoal XP',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ],
           ),
         ],
@@ -309,18 +370,27 @@ class TodayPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontSize: 14, fontWeight: FontWeight.w700)),
-                  Text(subtitle,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),
             if (onTap != null)
-              Icon(Icons.chevron_right_rounded,
-                  color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
           ],
         ),
       ),
@@ -329,33 +399,39 @@ class TodayPage extends ConsumerWidget {
 
   Widget _statRow(ThemeData theme, PlayerProgress progress, Rank rank) {
     Widget cell(String n, String l, Color c) => Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(n, style: theme.textTheme.titleLarge?.copyWith(color: c)),
+            const SizedBox(height: 2),
+            Text(
+              l,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(n,
-                    style: theme.textTheme.titleLarge?.copyWith(color: c)),
-                const SizedBox(height: 2),
-                Text(l,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-              ],
-            ),
-          ),
-        );
+          ],
+        ),
+      ),
+    );
     return Row(
       children: [
         cell('${progress.xp}', 'XP', AppColors.grape),
         const SizedBox(width: 10),
-        cell(rank.name, 'Rütbe', AppColors.coral),
+        cell(rank.name, t(en: 'Rank', tr: 'Rütbe'), AppColors.coral),
         const SizedBox(width: 10),
-        cell('${progress.streak}', 'Gün seri', AppColors.amber),
+        cell(
+          '${progress.streak}',
+          t(en: 'Day streak', tr: 'Gün seri'),
+          AppColors.amber,
+        ),
       ],
     );
   }
@@ -368,11 +444,13 @@ class TodayPage extends ConsumerWidget {
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: const Color(0xFFF6E2AE)),
       ),
-      child: Text('🔥 $streak',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFFC9871A),
-          )),
+      child: Text(
+        '🔥 $streak',
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w800,
+          color: const Color(0xFFC9871A),
+        ),
+      ),
     );
   }
 
@@ -389,27 +467,42 @@ class TodayPage extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(Icons.graphic_eq_rounded,
-                  color: AppColors.grape, size: 30),
+              const Icon(
+                Icons.graphic_eq_rounded,
+                color: AppColors.grape,
+                size: 30,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Önce sesini tanıyalım',
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700)),
+                    Text(
+                      t(
+                        en: "Let's meet your voice first",
+                        tr: 'Önce sesini tanıyalım',
+                      ),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
-                      'Dersleri rahat oktavında hazırlamak için ~1 dk ölçüm.',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      t(
+                        en: 'A ~1 min check so lessons fit your comfy octave.',
+                        tr: 'Dersleri rahat oktavında hazırlamak için ~1 dk ölçüm.',
+                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded,
-                  color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),

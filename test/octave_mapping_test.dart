@@ -49,14 +49,10 @@ void main() {
   group('transposeForVoice — blok tutarlılığı', () {
     test('transpoze sonrası akorun aralık şekli (majör üçlü) korunur', () {
       final range = _range('A', 2, 'A', 3);
-      final notes =
-          [m('C', 4), m('E', 4), m('G', 4)].map(Note.new).toList();
+      final notes = [m('C', 4), m('E', 4), m('G', 4)].map(Note.new).toList();
       final out = transposeForVoice(notes, range);
       // Ardışık yarım-ses farkları majör üçlüde [4, 3] olmalı.
-      final diffs = [
-        out[1].midi - out[0].midi,
-        out[2].midi - out[1].midi,
-      ];
+      final diffs = [out[1].midi - out[0].midi, out[2].midi - out[1].midi];
       expect(diffs, [4, 3]);
       // Ve hepsi bir oktav inmiş olmalı: C3-E3-G3.
       expect(out.map((n) => n.label), ['C3', 'E3', 'G3']);

@@ -34,7 +34,7 @@ class _TonalityLessonFlowPageState
   static const int _questionCount = 8;
   static const int _xpPerCorrect = 10;
 
-  final NotePlayer _player = SynthNotePlayer();
+  final NotePlayer _player = createNotePlayer();
   _Phase _phase = _Phase.learning;
   LessonResult? _result;
   int _xpEarned = 0;
@@ -47,11 +47,14 @@ class _TonalityLessonFlowPageState
 
   void _onComplete(LessonResult result) {
     final xp = result.correct * _xpPerCorrect;
-    ref.read(progressProvider.notifier).completeLesson(
+    ref
+        .read(progressProvider.notifier)
+        .completeLesson(
           skillId: widget.lesson.id,
           xpEarned: xp,
           masteryGain: result.correct,
           accuracy: result.accuracy,
+          mistakes: result.mistakes,
           completed: result.accuracy >= 0.7,
         );
     setState(() {

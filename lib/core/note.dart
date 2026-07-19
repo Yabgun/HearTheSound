@@ -48,8 +48,9 @@ class Note {
 }
 
 /// İki nota arasındaki (ikisi dahil) tüm notalar — egzersiz havuzu kurmak için.
-List<Note> noteRange(Note from, Note to) =>
-    [for (var m = from.midi; m <= to.midi; m++) Note(m)];
+List<Note> noteRange(Note from, Note to) => [
+  for (var m = from.midi; m <= to.midi; m++) Note(m),
+];
 
 /// Bir frekanstan (Hz) en yakın nota + akort sapması (cent). Perde tespiti
 /// (mikrofon) tarafında kullanılır.

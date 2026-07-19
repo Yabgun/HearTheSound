@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/concept.dart';
+import '../../core/content_locale.dart';
 import '../../core/player_progress.dart';
 import '../../ui/app_theme.dart';
 import '../chords/chord_lesson.dart';
@@ -57,9 +58,16 @@ class Track {
 }
 
 /// Tüm müfredat, ana ekran sırasıyla (pedagojik/bağımlılık düzeni).
-final List<Track> curriculum = [
+/// Locale-anahtarlı önbellekten döner: dil değişince yeni dilde kurulur
+/// (ders listeleri de aynı mekanizmayla dil değiştirir).
+final Map<String, List<Track>> _curriculumCache = {};
+
+List<Track> get curriculum =>
+    _curriculumCache.putIfAbsent(ContentLocale.code, _buildCurriculum);
+
+List<Track> _buildCurriculum() => [
   Track(
-    name: 'Notalar',
+    name: t(en: 'Notes', tr: 'Notalar'),
     color: AppColors.catNotes,
     icon: Icons.music_note_rounded,
     items: [
@@ -73,7 +81,7 @@ final List<Track> curriculum = [
     ],
   ),
   Track(
-    name: 'Akorlar',
+    name: t(en: 'Chords', tr: 'Akorlar'),
     color: AppColors.catChords,
     icon: Icons.piano_rounded,
     items: [
@@ -87,7 +95,7 @@ final List<Track> curriculum = [
     ],
   ),
   Track(
-    name: 'Aralıklar',
+    name: t(en: 'Intervals', tr: 'Aralıklar'),
     color: AppColors.catIntervals,
     icon: Icons.straighten_rounded,
     items: [
@@ -101,7 +109,7 @@ final List<Track> curriculum = [
     ],
   ),
   Track(
-    name: 'Diziler ve Tonalite',
+    name: t(en: 'Scales & Tonality', tr: 'Diziler ve Tonalite'),
     color: AppColors.catTonality,
     icon: Icons.hub_rounded,
     items: [
@@ -115,7 +123,7 @@ final List<Track> curriculum = [
     ],
   ),
   Track(
-    name: 'Akor İşlevi',
+    name: t(en: 'Chord Function', tr: 'Akor İşlevi'),
     color: AppColors.catFunction,
     icon: Icons.account_tree_rounded,
     unlockAfter: tonalityLessons.last.id,
@@ -130,7 +138,7 @@ final List<Track> curriculum = [
     ],
   ),
   Track(
-    name: 'İlerlemeler',
+    name: t(en: 'Progressions', tr: 'İlerlemeler'),
     color: AppColors.catProgression,
     icon: Icons.timeline_rounded,
     unlockAfter: functionLessons.last.id,

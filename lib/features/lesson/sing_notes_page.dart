@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
 import '../../audio/pitch_service.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../../core/vocal_range.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/pitch_meter.dart';
 import '../calibration/reach_badge.dart';
 
 // -----------------------------------------------------------------------------
@@ -101,7 +104,9 @@ class _SingNotesPageState extends State<SingNotesPage> {
   /// "Söyle" — izin iste, çalmayı durdur, mikrofonu başlat.
   Future<void> _startListening() async {
     await widget.player.stop(); // referans çalmasını kes (ses çakışmasın)
-    await Future<void>.delayed(const Duration(milliseconds: 200)); // ses sistemi otursun
+    await Future<void>.delayed(
+      const Duration(milliseconds: 200),
+    ); // ses sistemi otursun
     final ok = await _pitch.start(_onReading);
     if (!ok) {
       if (mounted) setState(() => _permissionDenied = true);
@@ -128,7 +133,8 @@ class _SingNotesPageState extends State<SingNotesPage> {
     final now = DateTime.now();
     final dt = _lastTick == null
         ? 0.0
-        : now.difference(_lastTick!).inMilliseconds / _holdTarget.inMilliseconds;
+        : now.difference(_lastTick!).inMilliseconds /
+              _holdTarget.inMilliseconds;
     _lastTick = now;
     // Tam oktav eşleşmesi (E4 = E4; E2/E3 kabul edilmez).
     final match = r != null && r.note.midi == _target.midi;
@@ -177,7 +183,9 @@ class _SingNotesPageState extends State<SingNotesPage> {
 
     if (_permissionDenied) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Söyle')),
+        appBar: AppBar(
+          title: Text(t(en: 'Sing', tr: 'Söyle')),
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(28),
@@ -185,7 +193,10 @@ class _SingNotesPageState extends State<SingNotesPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Bu adım için mikrofon izni gerekli.',
+                  t(
+                    en: 'This step needs microphone permission.',
+                    tr: 'Bu adım için mikrofon izni gerekli.',
+                  ),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleMedium,
                 ),
@@ -195,12 +206,14 @@ class _SingNotesPageState extends State<SingNotesPage> {
                     setState(() => _permissionDenied = false);
                     _startListening();
                   },
-                  child: const Text('İzin ver ve tekrar dene'),
+                  child: Text(
+                    t(en: 'Allow and try again', tr: 'İzin ver ve tekrar dene'),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: widget.onComplete,
-                  child: const Text('Bu adımı atla'),
+                  child: Text(t(en: 'Skip this step', tr: 'Bu adımı atla')),
                 ),
               ],
             ),
@@ -212,31 +225,53 @@ class _SingNotesPageState extends State<SingNotesPage> {
     final exact = _reading != null && _reading!.note.midi == _target.midi;
     final samePitchClass =
         _reading != null && _reading!.note.pitchClass == _target.pitchClass;
-    const green = Color(0xFF56C271);
-    final ringColor = (_celebrating || exact) ? green : theme.colorScheme.primary;
+    const green = AppColors.success;
+    final ringColor = (_celebrating || exact)
+        ? green
+        : theme.colorScheme.primary;
 
     final String status;
     if (_celebrating) {
-      status = 'Doğru! ✓';
+      status = t(en: 'Correct! ✓', tr: 'Doğru! ✓');
     } else if (!_micActive) {
-      status = 'Notayı dinledin. Şimdi sen söyle 👇';
+      status = t(
+        en: 'You heard the note. Now you sing it 👇',
+        tr: 'Notayı dinledin. Şimdi sen söyle 👇',
+      );
     } else if (exact) {
-      status = 'tam — böyle tut! 🎯';
+      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
     } else if (samePitchClass) {
       status = _reading!.note.midi < _target.midi
-          ? 'doğru nota — bir oktav tiz söyle'
-          : 'doğru nota — bir oktav pes söyle';
+          ? t(
+              en: 'right note — sing an octave higher',
+              tr: 'doğru nota — bir oktav tiz söyle',
+            )
+          : t(
+              en: 'right note — sing an octave lower',
+              tr: 'doğru nota — bir oktav pes söyle',
+            );
     } else if (_reading != null) {
-      status = 'duyduğum: ${_reading!.note.label}';
+      status = t(
+        en: 'I hear: ${_reading!.note.label}',
+        tr: 'duyduğum: ${_reading!.note.label}',
+      );
     } else {
-      status = 'sesini duyayım…';
+      status = t(en: 'let me hear you…', tr: 'sesini duyayım…');
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Söyle · ${_index + 1}/${_toSing.length}'),
+        title: Text(
+          t(
+            en: 'Sing · ${_index + 1}/${_toSing.length}',
+            tr: 'Söyle · ${_index + 1}/${_toSing.length}',
+          ),
+        ),
         actions: [
-          TextButton(onPressed: _skip, child: const Text('Geç')),
+          TextButton(
+            onPressed: _skip,
+            child: Text(t(en: 'Skip', tr: 'Geç')),
+          ),
         ],
       ),
       body: SafeArea(
@@ -246,7 +281,7 @@ class _SingNotesPageState extends State<SingNotesPage> {
             children: [
               const Spacer(),
               Text(
-                'BU NOTAYI SÖYLE',
+                t(en: 'SING THIS NOTE', tr: 'BU NOTAYI SÖYLE'),
                 style: theme.textTheme.labelMedium?.copyWith(
                   letterSpacing: 3,
                   color: theme.colorScheme.onSurfaceVariant,
@@ -266,7 +301,7 @@ class _SingNotesPageState extends State<SingNotesPage> {
               OutlinedButton.icon(
                 onPressed: _replay,
                 icon: const Icon(Icons.volume_up_rounded),
-                label: const Text('Tekrar dinle'),
+                label: Text(t(en: 'Listen again', tr: 'Tekrar dinle')),
               ),
               const SizedBox(height: 6),
               Row(
@@ -276,12 +311,12 @@ class _SingNotesPageState extends State<SingNotesPage> {
                   IconButton.outlined(
                     onPressed: () => _shiftOctave(-12),
                     icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                    tooltip: 'Bir oktav pes',
+                    tooltip: t(en: 'One octave lower', tr: 'Bir oktav pes'),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Text(
-                      'oktav',
+                      t(en: 'octave', tr: 'oktav'),
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -290,7 +325,7 @@ class _SingNotesPageState extends State<SingNotesPage> {
                   IconButton.outlined(
                     onPressed: () => _shiftOctave(12),
                     icon: const Icon(Icons.keyboard_arrow_up_rounded),
-                    tooltip: 'Bir oktav tiz',
+                    tooltip: t(en: 'One octave higher', tr: 'Bir oktav tiz'),
                   ),
                 ],
               ),
@@ -309,7 +344,8 @@ class _SingNotesPageState extends State<SingNotesPage> {
                       child: CircularProgressIndicator(
                         value: _hold,
                         strokeWidth: 10,
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
                         valueColor: AlwaysStoppedAnimation(ringColor),
                       ),
                     ),
@@ -319,8 +355,8 @@ class _SingNotesPageState extends State<SingNotesPage> {
                       color: _celebrating
                           ? green
                           : (_micActive
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.outline),
+                                ? theme.colorScheme.primary
+                                : theme.colorScheme.outline),
                     ),
                   ],
                 ),
@@ -336,6 +372,13 @@ class _SingNotesPageState extends State<SingNotesPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              const SizedBox(height: 12),
+              // Canlı perde ibresi: sesin hedefe göre tam nerede olduğunu gösterir.
+              PitchMeter(
+                target: _target,
+                reading: _reading,
+                active: _micActive,
+              ),
               const Spacer(flex: 2),
               // Ana eylem: Söyle / Durdur
               SizedBox(
@@ -344,7 +387,7 @@ class _SingNotesPageState extends State<SingNotesPage> {
                     ? OutlinedButton.icon(
                         onPressed: _celebrating ? null : _stopListening,
                         icon: const Icon(Icons.stop_rounded),
-                        label: const Text('Durdur'),
+                        label: Text(t(en: 'Stop', tr: 'Durdur')),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
@@ -352,7 +395,7 @@ class _SingNotesPageState extends State<SingNotesPage> {
                     : FilledButton.icon(
                         onPressed: _celebrating ? null : _startListening,
                         icon: const Icon(Icons.mic_rounded),
-                        label: const Text('Söyle'),
+                        label: Text(t(en: 'Sing', tr: 'Söyle')),
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),

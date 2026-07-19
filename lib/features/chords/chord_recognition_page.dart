@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
 import '../../core/chord.dart';
+import '../../core/content_locale.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/play_button.dart';
 import '../lesson/lesson.dart';
 
 // -----------------------------------------------------------------------------
@@ -40,6 +43,7 @@ class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
   late List<Chord> _options;
   Chord? _selected;
   bool _answered = false;
+  final List<String> _mistakes = [];
   int _index = 0;
   int _correct = 0;
   late _QMode _mode;
@@ -66,7 +70,13 @@ class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
     setState(() {
       _selected = c;
       _answered = true;
-      if (c == _target) _correct++;
+      if (c == _target) {
+        _correct++;
+      } else {
+        _mistakes.add(
+          'chord:${_target.root.name}.${_target.quality.name}>${c.root.name}.${c.quality.name}',
+        );
+      }
     });
   }
 
@@ -79,7 +89,9 @@ class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
     _playTarget();
   }
 
-  void _finish() => widget.onComplete(LessonResult(_correct, widget.questionCount));
+  void _finish() => widget.onComplete(
+    LessonResult(_correct, widget.questionCount, mistakes: _mistakes),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +103,12 @@ class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Akor ${_index + 1} / ${widget.questionCount}'),
+        title: Text(
+          t(
+            en: 'Chord ${_index + 1} / ${widget.questionCount}',
+            tr: 'Akor ${_index + 1} / ${widget.questionCount}',
+          ),
+        ),
         actions: [
           Center(
             child: Padding(
@@ -108,7 +125,10 @@ class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
-          child: LinearProgressIndicator(value: progress.clamp(0, 1), minHeight: 4),
+          child: LinearProgressIndicator(
+            value: progress.clamp(0, 1),
+            minHeight: 4,
+          ),
         ),
       ),
       body: SafeArea(
@@ -119,18 +139,21 @@ class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
               const Spacer(flex: 2),
               Text(
                 _mode == _QMode.name
-                    ? 'Bu hangi akor?'
-                    : 'Bu sesi hangi notalar oluşturuyor?',
+                    ? t(en: 'Which chord?', tr: 'Bu hangi akor?')
+                    : t(
+                        en: 'Which notes make this sound?',
+                        tr: 'Bu sesi hangi notalar oluşturuyor?',
+                      ),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 24),
-              _PlayButton(onTap: _playTarget),
+              PlayButton(onTap: _playTarget),
               const SizedBox(height: 12),
               Text(
-                'dinlemek için dokun',
+                t(en: 'tap to listen', tr: 'dinlemek için dokun'),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
@@ -153,13 +176,19 @@ class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
                         children: [
                           Text(
                             correct
-                                ? 'Doğru! ✓  ${_target.label}'
-                                : 'Bu ${_target.label} idi',
+                                ? t(
+                                    en: 'Correct! ✓  ${_target.label}',
+                                    tr: 'Doğru! ✓  ${_target.label}',
+                                  )
+                                : t(
+                                    en: 'It was ${_target.label}',
+                                    tr: 'Bu ${_target.label} idi',
+                                  ),
                             textAlign: TextAlign.center,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: correct
-                                  ? const Color(0xFF56C271)
-                                  : const Color(0xFFD25872),
+                                  ? AppColors.success
+                                  : AppColors.danger,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -168,9 +197,15 @@ class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
                             onPressed: isLast ? _finish : _next,
                             style: FilledButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 14),
+                                horizontal: 40,
+                                vertical: 14,
+                              ),
                             ),
-                            child: Text(isLast ? 'Bitir' : 'Sonraki'),
+                            child: Text(
+                              isLast
+                                  ? t(en: 'Finish', tr: 'Bitir')
+                                  : t(en: 'Next', tr: 'Sonraki'),
+                            ),
                           ),
                         ],
                       )
@@ -189,10 +224,10 @@ class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
     Color fg = theme.colorScheme.onSurface;
     if (_answered) {
       if (c == _target) {
-        bg = const Color(0xFF2E7D4F);
+        bg = AppColors.success;
         fg = Colors.white;
       } else if (c == _selected) {
-        bg = const Color(0xFF9E3B4E);
+        bg = AppColors.danger;
         fg = Colors.white;
       } else {
         bg = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
@@ -220,37 +255,6 @@ class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 128,
-        height: 128,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.colorScheme.primary,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.35),
-              blurRadius: 30,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Icon(Icons.volume_up_rounded,
-            size: 54, color: theme.colorScheme.onPrimary),
       ),
     );
   }

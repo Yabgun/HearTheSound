@@ -6,6 +6,7 @@ import 'package:pitch_detector_dart/pitch_detector.dart';
 import 'package:record/record.dart';
 
 import '../../core/note.dart';
+import '../../ui/app_theme.dart';
 
 // -----------------------------------------------------------------------------
 // GELİŞTİRİCİ EKRANI — Mikrofon -> YIN -> Nota (perde tespiti spike'ı)
@@ -142,11 +143,11 @@ class _PitchSpikePageState extends State<PitchSpikePage> {
     if (!active || reading == null) {
       accent = theme.colorScheme.outline;
     } else if (reading.cents.abs() < 5) {
-      accent = const Color(0xFF56C271);
+      accent = AppColors.success;
     } else if (reading.cents.abs() < 20) {
       accent = const Color(0xFFE0912B);
     } else {
-      accent = const Color(0xFFD25872);
+      accent = AppColors.danger;
     }
 
     return Scaffold(
@@ -188,7 +189,11 @@ class _PitchSpikePageState extends State<PitchSpikePage> {
                 ),
               ),
               const SizedBox(height: 28),
-              _TuningMeter(cents: reading?.cents ?? 0, active: active, accent: accent),
+              _TuningMeter(
+                cents: reading?.cents ?? 0,
+                active: active,
+                accent: accent,
+              ),
               const SizedBox(height: 10),
               Text(
                 active && reading != null
@@ -221,7 +226,9 @@ class _PitchSpikePageState extends State<PitchSpikePage> {
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: _toggle,
-                  icon: Icon(_listening ? Icons.stop_rounded : Icons.mic_rounded),
+                  icon: Icon(
+                    _listening ? Icons.stop_rounded : Icons.mic_rounded,
+                  ),
                   label: Text(_listening ? 'Durdur' : 'Dinle'),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 18),
@@ -266,7 +273,10 @@ class _TuningMeter extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          Container(height: 2, color: theme.colorScheme.surfaceContainerHighest),
+          Container(
+            height: 2,
+            color: theme.colorScheme.surfaceContainerHighest,
+          ),
           Container(width: 2, height: 26, color: theme.colorScheme.outline),
           Align(
             alignment: Alignment(2 * t - 1, 0),

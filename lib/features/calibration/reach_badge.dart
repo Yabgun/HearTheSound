@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../../core/octave_mapping.dart';
 import '../../core/vocal_range.dart';
@@ -29,8 +30,18 @@ class ReachBadge extends StatelessWidget {
     final beyond = zone == ReachZone.beyond;
     final color = beyond ? theme.colorScheme.error : const Color(0xFFE0912B);
     final text = beyond
-        ? (above ? 'aralığının üstünde' : 'aralığının altında')
-        : (above ? 'biraz tiz — zorlarsan çıkar' : 'biraz pes — zorlarsan çıkar');
+        ? (above
+              ? t(en: 'above your range', tr: 'aralığının üstünde')
+              : t(en: 'below your range', tr: 'aralığının altında'))
+        : (above
+              ? t(
+                  en: 'a bit high — you can reach it if you push',
+                  tr: 'biraz tiz — zorlarsan çıkar',
+                )
+              : t(
+                  en: 'a bit low — you can reach it if you push',
+                  tr: 'biraz pes — zorlarsan çıkar',
+                ));
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -49,8 +60,10 @@ class ReachBadge extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             text,
-            style: theme.textTheme.labelMedium
-                ?.copyWith(color: color, fontWeight: FontWeight.w600),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

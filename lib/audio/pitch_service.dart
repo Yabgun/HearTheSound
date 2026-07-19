@@ -80,9 +80,11 @@ class PitchService {
       final samples = _pcm16ToFloat(pcm16);
       final result = await _detector.getPitchFromFloatBuffer(samples);
       if ((_frame++ % 15) == 0) {
-        debugPrint('[pitch] hz=${result.pitch.toStringAsFixed(1)} '
-            'prob=${result.probability.toStringAsFixed(2)} '
-            'pitched=${result.pitched}');
+        debugPrint(
+          '[pitch] hz=${result.pitch.toStringAsFixed(1)} '
+          'prob=${result.probability.toStringAsFixed(2)} '
+          'pitched=${result.pitched}',
+        );
       }
       final reading = (result.pitched && result.pitch > 0)
           ? NoteReading.fromFrequency(result.pitch)

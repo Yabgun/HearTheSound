@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/octave_mapping.dart';
 import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
@@ -17,6 +18,8 @@ import '../lesson/lesson.dart';
 import '../note_recognition/note_recognition_page.dart';
 import '../progression/progression_lesson.dart';
 import '../progression/progression_recognition_page.dart';
+import '../tonality/tonality_lesson.dart';
+import '../tonality/tonality_recognition_page.dart';
 
 // -----------------------------------------------------------------------------
 // TEKRAR OTURUMU — aralıklı tekrar (SM-2)
@@ -40,12 +43,11 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
   static const int _questionsPerSkill = 5;
   static const int _xpPerCorrect = 5;
 
-  final NotePlayer _player = SynthNotePlayer();
+  final NotePlayer _player = createNotePlayer();
   late final VocalRange? _range = ref.read(progressProvider).vocalRange;
 
   // Sadece içeriğe çözülebilen (tanıdığımız) becerileri tut.
-  late final List<String> _skills =
-      widget.skillIds.where(_isKnown).toList();
+  late final List<String> _skills = widget.skillIds.where(_isKnown).toList();
 
   int _index = 0;
   bool _done = false;
@@ -58,7 +60,8 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
       _chordLessonById(id) != null ||
       _intervalLessonById(id) != null ||
       _functionLessonById(id) != null ||
-      _progressionLessonById(id) != null;
+      _progressionLessonById(id) != null ||
+      _tonalityLessonById(id) != null;
 
   Lesson? _noteLessonById(String id) {
     for (final l in lessons) {
@@ -95,6 +98,13 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
     return null;
   }
 
+  TonalityLesson? _tonalityLessonById(String id) {
+    for (final l in tonalityLessons) {
+      if (l.id == id) return l;
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -102,10 +112,13 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
   }
 
   void _grade(String skillId, LessonResult result) {
-    ref.read(progressProvider.notifier).recordReviewResult(
+    ref
+        .read(progressProvider.notifier)
+        .recordReviewResult(
           skillId: skillId,
           xpEarned: result.correct * _xpPerCorrect,
           accuracy: result.accuracy,
+          mistakes: result.mistakes,
         );
     setState(() {
       _totalCorrect += result.correct;
@@ -148,26 +161,26 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
       final pool = transposeChordsForVoice(chord.pool, _range);
       return switch (chord.recognizeBy) {
         ChordRecognizeBy.quality => ChordQualityRecognitionPage(
-            key: key,
-            pool: pool,
-            player: _player,
-            questionCount: _questionsPerSkill,
-            onComplete: (r) => _grade(id, r),
-          ),
+          key: key,
+          pool: pool,
+          player: _player,
+          questionCount: _questionsPerSkill,
+          onComplete: (r) => _grade(id, r),
+        ),
         ChordRecognizeBy.inversion => ChordInversionRecognitionPage(
-            key: key,
-            pool: pool,
-            player: _player,
-            questionCount: _questionsPerSkill,
-            onComplete: (r) => _grade(id, r),
-          ),
+          key: key,
+          pool: pool,
+          player: _player,
+          questionCount: _questionsPerSkill,
+          onComplete: (r) => _grade(id, r),
+        ),
         ChordRecognizeBy.chord => ChordRecognitionPage(
-            key: key,
-            pool: pool,
-            player: _player,
-            questionCount: _questionsPerSkill,
-            onComplete: (r) => _grade(id, r),
-          ),
+          key: key,
+          pool: pool,
+          player: _player,
+          questionCount: _questionsPerSkill,
+          onComplete: (r) => _grade(id, r),
+        ),
       };
     }
     final func = _functionLessonById(id);
@@ -185,6 +198,18 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
       return ProgressionRecognitionPage(
         key: key,
         pool: prog.pool,
+        player: _player,
+        questionCount: _questionsPerSkill,
+        onComplete: (r) => _grade(id, r),
+      );
+    }
+    // Tonalite dersi — derece pool'u, akor işlevi gibi transpoze gerektirmez
+    // (tanıma sabit Do majör tonik referansıyla çalışır).
+    final tonality = _tonalityLessonById(id);
+    if (tonality != null) {
+      return TonalityRecognitionPage(
+        key: key,
+        pool: tonality.pool,
         player: _player,
         questionCount: _questionsPerSkill,
         onComplete: (r) => _grade(id, r),
@@ -216,31 +241,51 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
             children: [
               const Spacer(flex: 2),
               Icon(
-                nothing ? Icons.check_circle_outline_rounded : Icons.replay_rounded,
+                nothing
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.replay_rounded,
                 size: 88,
                 color: theme.colorScheme.primary,
               ),
               const SizedBox(height: 16),
               Text(
-                nothing ? 'Tekrar yok' : 'Tekrar tamam! 🔁',
+                nothing
+                    ? t(en: 'No reviews', tr: 'Tekrar yok')
+                    : t(en: 'Reviews done! 🔁', tr: 'Tekrar tamam! 🔁'),
                 textAlign: TextAlign.center,
-                style: theme.textTheme.headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
                 nothing
-                    ? 'Şimdilik tekrar edilecek bir şey yok.'
-                    : '$_totalCorrect / $_totalQuestions doğru · %$pct',
+                    ? t(
+                        en: 'Nothing to review right now.',
+                        tr: 'Şimdilik tekrar edilecek bir şey yok.',
+                      )
+                    : t(
+                        en: '$_totalCorrect / $_totalQuestions correct · $pct%',
+                        tr: '$_totalCorrect / $_totalQuestions doğru · %$pct',
+                      ),
                 textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               if (!nothing) ...[
                 const SizedBox(height: 24),
-                _statCard(theme, 'Tekrar edilen beceri', '${_skills.length}'),
+                _statCard(
+                  theme,
+                  t(en: 'Skills reviewed', tr: 'Tekrar edilen beceri'),
+                  '${_skills.length}',
+                ),
                 const SizedBox(height: 10),
-                _statCard(theme, 'Kazanılan XP', '+$_xpEarned'),
+                _statCard(
+                  theme,
+                  t(en: 'XP earned', tr: 'Kazanılan XP'),
+                  '+$_xpEarned',
+                ),
               ],
               const Spacer(flex: 3),
               FilledButton(
@@ -248,7 +293,7 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Bitir'),
+                child: Text(t(en: 'Finish', tr: 'Bitir')),
               ),
               const SizedBox(height: 12),
             ],
@@ -268,9 +313,12 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            label,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           Text(
             value,
             style: theme.textTheme.titleLarge?.copyWith(

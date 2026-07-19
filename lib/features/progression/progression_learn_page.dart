@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../concept/concept_sheet.dart';
 import 'progression_lesson.dart';
 
@@ -47,18 +48,36 @@ class _ProgressionLearnPageState extends State<ProgressionLearnPage> {
     final theme = Theme.of(context);
     final concept = widget.lesson.concept;
     return Scaffold(
-      appBar: AppBar(title: Text('İlerlemeleri Tanı · ${widget.lesson.key.label}')),
+      appBar: AppBar(
+        title: Text(
+          t(
+            en: 'Meet the Progressions · ${widget.lesson.key.label}',
+            tr: 'İlerlemeleri Tanı · ${widget.lesson.key.label}',
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Önce dinle, öğren', style: theme.textTheme.headlineSmall),
+              Text(
+                t(en: 'Listen first, then learn', tr: 'Önce dinle, öğren'),
+                style: theme.textTheme.headlineSmall,
+              ),
               const SizedBox(height: 6),
               Text(
-                '${widget.lesson.key.label}de her ilerlemeye dokun; akorlar sırayla çalar. Dizinin genel '
-                'hareketini (ev → gerilim → dönüş) hisset.',
+                t(
+                  en:
+                      'Tap each progression in ${widget.lesson.key.label}; '
+                      'the chords play in order. Feel the overall motion of '
+                      'the sequence (home → tension → return).',
+                  tr:
+                      '${widget.lesson.key.label}de her ilerlemeye dokun; '
+                      'akorlar sırayla çalar. Dizinin genel hareketini '
+                      '(ev → gerilim → dönüş) hisset.',
+                ),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -72,7 +91,8 @@ class _ProgressionLearnPageState extends State<ProgressionLearnPage> {
                 child: ListView.separated(
                   itemCount: widget.lesson.pool.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (_, i) => _progressionCard(widget.lesson.pool[i]),
+                  itemBuilder: (_, i) =>
+                      _progressionCard(widget.lesson.pool[i]),
                 ),
               ),
               const SizedBox(height: 12),
@@ -81,7 +101,12 @@ class _ProgressionLearnPageState extends State<ProgressionLearnPage> {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Hazırım · Teste Geç'),
+                child: Text(
+                  t(
+                    en: "I'm Ready · Start the Test",
+                    tr: 'Hazırım · Teste Geç',
+                  ),
+                ),
               ),
             ],
           ),
@@ -146,7 +171,9 @@ class _ProgressionLearnPageState extends State<ProgressionLearnPage> {
                 ),
               ),
               Icon(
-                playing ? Icons.graphic_eq_rounded : Icons.playlist_play_rounded,
+                playing
+                    ? Icons.graphic_eq_rounded
+                    : Icons.playlist_play_rounded,
                 color: playing
                     ? theme.colorScheme.onPrimaryContainer
                     : theme.colorScheme.onSurfaceVariant,

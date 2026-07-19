@@ -3,7 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/major_key.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/play_button.dart';
 import '../lesson/lesson.dart';
 import 'function_lesson.dart';
 
@@ -44,6 +47,7 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
   late DegreeChord _target;
   HarmonicFunction? _selected;
   bool _answered = false;
+  final List<String> _mistakes = [];
   int _index = 0;
   int _correct = 0;
 
@@ -81,7 +85,11 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
     setState(() {
       _selected = f;
       _answered = true;
-      if (f == _target.function) _correct++;
+      if (f == _target.function) {
+        _correct++;
+      } else {
+        _mistakes.add('function:${_target.function.name}>${f.name}');
+      }
     });
   }
 
@@ -94,8 +102,9 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
     _playTarget();
   }
 
-  void _finish() =>
-      widget.onComplete(LessonResult(_correct, widget.questionCount));
+  void _finish() => widget.onComplete(
+    LessonResult(_correct, widget.questionCount, mistakes: _mistakes),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +116,16 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.majorKey.label} · İşlev ${_index + 1}/${widget.questionCount}'),
+        title: Text(
+          t(
+            en:
+                '${widget.majorKey.label} · Function '
+                '${_index + 1}/${widget.questionCount}',
+            tr:
+                '${widget.majorKey.label} · İşlev '
+                '${_index + 1}/${widget.questionCount}',
+          ),
+        ),
         actions: [
           Center(
             child: Padding(
@@ -124,75 +142,100 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
-          child: LinearProgressIndicator(value: progress.clamp(0, 1), minHeight: 4),
+          child: LinearProgressIndicator(
+            value: progress.clamp(0, 1),
+            minHeight: 4,
+          ),
         ),
       ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
           children: [
-              Text(
-                'Önce ev (tonik), sonra akor. İşlevi ne?',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+            Text(
+              t(
+                en:
+                    'First home (the tonic), then the chord. '
+                    'What is its function?',
+                tr: 'Önce ev (tonik), sonra akor. İşlevi ne?',
               ),
-              const SizedBox(height: 24),
-              _PlayButton(onTap: _playTarget),
-              const SizedBox(height: 12),
-              Text(
-                'tonik → akor · dinlemek için dokun',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(height: 32),
-              GridView.count(
-                crossAxisCount: cols,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 2.6,
-                children: _options.map((f) => _optionButton(theme, f)).toList(),
+            ),
+            const SizedBox(height: 24),
+            PlayButton(onTap: _playTarget),
+            const SizedBox(height: 12),
+            Text(
+              t(
+                en: 'tonic → chord · tap to listen',
+                tr: 'tonik → akor · dinlemek için dokun',
               ),
-              const SizedBox(height: 20),
-              if (_answered)
-                Column(
-                  children: [
-                          Text(
-                            correct
-                                ? 'Doğru! ✓  ${_target.function.label}'
-                                : 'Bu ${_target.function.label} idi (${_target.roman} · ${_target.chord.label})',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: correct
-                                  ? const Color(0xFF56C271)
-                                  : const Color(0xFFD25872),
-                              fontWeight: FontWeight.w600,
-                            ),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 32),
+            GridView.count(
+              crossAxisCount: cols,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 2.6,
+              children: _options.map((f) => _optionButton(theme, f)).toList(),
+            ),
+            const SizedBox(height: 20),
+            if (_answered)
+              Column(
+                children: [
+                  Text(
+                    correct
+                        ? t(
+                            en: 'Correct! ✓  ${_target.function.label}',
+                            tr: 'Doğru! ✓  ${_target.function.label}',
+                          )
+                        : t(
+                            en:
+                                'That was ${_target.function.label} '
+                                '(${_target.roman} · ${_target.chord.label})',
+                            tr:
+                                'Bu ${_target.function.label} idi '
+                                '(${_target.roman} · ${_target.chord.label})',
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _target.roleHint,
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          FilledButton(
-                            onPressed: isLast ? _finish : _next,
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 14),
-                            ),
-                            child: Text(isLast ? 'Bitir' : 'Sonraki'),
-                          ),
-                  ],
-                ),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: correct ? AppColors.success : AppColors.danger,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _target.roleHint,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  FilledButton(
+                    onPressed: isLast ? _finish : _next,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 14,
+                      ),
+                    ),
+                    child: Text(
+                      isLast
+                          ? t(en: 'Finish', tr: 'Bitir')
+                          : t(en: 'Next', tr: 'Sonraki'),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -204,10 +247,10 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
     Color fg = theme.colorScheme.onSurface;
     if (_answered) {
       if (f == _target.function) {
-        bg = const Color(0xFF2E7D4F);
+        bg = AppColors.success;
         fg = Colors.white;
       } else if (f == _selected) {
-        bg = const Color(0xFF9E3B4E);
+        bg = AppColors.danger;
         fg = Colors.white;
       } else {
         bg = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
@@ -233,37 +276,6 @@ class _FunctionRecognitionPageState extends State<FunctionRecognitionPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 128,
-        height: 128,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.colorScheme.primary,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.35),
-              blurRadius: 30,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Icon(Icons.volume_up_rounded,
-            size: 54, color: theme.colorScheme.onPrimary),
       ),
     );
   }

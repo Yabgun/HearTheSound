@@ -6,6 +6,7 @@ import 'package:hear_the_sound/features/chords/chord_inversion_recognition_page.
 import 'package:hear_the_sound/features/chords/chord_arpeggio_page.dart';
 import 'package:hear_the_sound/features/chords/chord_lesson.dart';
 import 'package:hear_the_sound/features/chords/chord_quality_recognition_page.dart';
+import 'package:hear_the_sound/features/chords/chord_recognition_page.dart';
 import 'package:hear_the_sound/features/function/function_build_page.dart';
 import 'package:hear_the_sound/features/function/function_learn_page.dart';
 import 'package:hear_the_sound/features/function/function_lesson.dart';
@@ -71,7 +72,11 @@ void main() {
     await tester.tap(firstOption);
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
-    expect(tester.takeException(), isNull, reason: 'cevap sonrası taşma olmamalı');
+    expect(
+      tester.takeException(),
+      isNull,
+      reason: 'cevap sonrası taşma olmamalı',
+    );
   }
 
   testWidgets('A1/A4 nitelik tanıma çizilir', (t) async {
@@ -98,7 +103,9 @@ void main() {
     );
   });
 
-  testWidgets('A2 aralık öğren + kur + yön + uygula + tanıma çizilir', (t) async {
+  testWidgets('A2 aralık öğren + kur + yön + uygula + tanıma çizilir', (
+    t,
+  ) async {
     await smoke(
       t,
       IntervalLearnPage(
@@ -142,6 +149,50 @@ void main() {
     );
   });
 
+  testWidgets('A7 harmonik aralık öğren + kur + tanıma çizilir', (t) async {
+    final harmonicLesson = intervalLessons.firstWhere((l) => l.harmonic);
+    await smoke(
+      t,
+      IntervalLearnPage(
+        lesson: harmonicLesson,
+        player: fake,
+        harmonic: true,
+        onReady: () {},
+      ),
+    );
+    await smoke(
+      t,
+      IntervalBuildPage(
+        pool: harmonicLesson.pool,
+        player: fake,
+        harmonic: true,
+        onComplete: () {},
+      ),
+    );
+    await smoke(
+      t,
+      IntervalRecognitionPage(
+        pool: harmonicLesson.pool,
+        player: fake,
+        harmonic: true,
+        questionCount: 4,
+        onComplete: (_) {},
+      ),
+    );
+  });
+
+  testWidgets('A8 yeni kök akor tanıma çizilir', (t) async {
+    await smoke(
+      t,
+      ChordRecognitionPage(
+        pool: _chordLesson('ch11').pool,
+        player: fake,
+        questionCount: 4,
+        onComplete: (_) {},
+      ),
+    );
+  });
+
   testWidgets('A5 işlev öğren + kur + kök söyle + tanıma çizilir', (t) async {
     await smoke(
       t,
@@ -178,7 +229,9 @@ void main() {
     );
   });
 
-  testWidgets('işlev ekranları kısa yükseklikte cevap sonrası taşmaz', (t) async {
+  testWidgets('işlev ekranları kısa yükseklikte cevap sonrası taşmaz', (
+    t,
+  ) async {
     await compactAnsweredSmoke(
       t,
       FunctionBuildPage(

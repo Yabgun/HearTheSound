@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../concept/concept_sheet.dart';
 import 'function_lesson.dart';
 
@@ -47,18 +48,37 @@ class _FunctionLearnPageState extends State<FunctionLearnPage> {
     final theme = Theme.of(context);
     final concept = widget.lesson.concept;
     return Scaffold(
-      appBar: AppBar(title: Text('İşlevleri Tanı · ${widget.lesson.key.label}')),
+      appBar: AppBar(
+        title: Text(
+          t(
+            en: 'Meet the Functions · ${widget.lesson.key.label}',
+            tr: 'İşlevleri Tanı · ${widget.lesson.key.label}',
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Önce davranışı öğren', style: theme.textTheme.headlineSmall),
+              Text(
+                t(en: 'Learn the behavior first', tr: 'Önce davranışı öğren'),
+                style: theme.textTheme.headlineSmall,
+              ),
               const SizedBox(height: 6),
               Text(
-                '${widget.lesson.key.label}de her karta dokun: önce tonik yani ev, sonra hedef akor çalar. '
-                'Akorun ev, hazırlık veya gerilim gibi davranmasına odaklan.',
+                t(
+                  en:
+                      'Tap each card in ${widget.lesson.key.label}: first the '
+                      'tonic — home — then the target chord plays. Focus on '
+                      'whether the chord acts like home, preparation, or '
+                      'tension.',
+                  tr:
+                      '${widget.lesson.key.label}de her karta dokun: önce '
+                      'tonik yani ev, sonra hedef akor çalar. Akorun ev, '
+                      'hazırlık veya gerilim gibi davranmasına odaklan.',
+                ),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -83,7 +103,12 @@ class _FunctionLearnPageState extends State<FunctionLearnPage> {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Hazırım · Teste Geç'),
+                child: Text(
+                  t(
+                    en: "I'm Ready · Start the Test",
+                    tr: 'Hazırım · Teste Geç',
+                  ),
+                ),
               ),
             ],
           ),
@@ -147,8 +172,9 @@ class _FunctionLearnPageState extends State<FunctionLearnPage> {
     final bg = playing
         ? theme.colorScheme.primaryContainer
         : theme.colorScheme.surfaceContainerHighest;
-    final accent =
-        playing ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.primary;
+    final accent = playing
+        ? theme.colorScheme.onPrimaryContainer
+        : theme.colorScheme.primary;
 
     return Material(
       color: bg,

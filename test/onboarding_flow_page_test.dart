@@ -53,8 +53,9 @@ Future<void> _openPlacementFromOffer(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('placement sayfasından geri dönmek onboarding’i bitirmez',
-      (tester) async {
+  testWidgets('placement sayfasından geri dönmek onboarding’i bitirmez', (
+    tester,
+  ) async {
     final container = await _pumpOnboarding(tester);
     await _openPlacementFromOffer(tester);
 
@@ -65,8 +66,9 @@ void main() {
     expect(container.read(settingsProvider).onboarded, isFalse);
   });
 
-  testWidgets('placement içinde sıfırdan başla seçimi onboarding’i bitirir',
-      (tester) async {
+  testWidgets('placement içinde sıfırdan başla seçimi onboarding’i bitirir', (
+    tester,
+  ) async {
     final container = await _pumpOnboarding(tester);
     await _openPlacementFromOffer(tester);
 

@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../audio/note_player.dart';
 import '../../audio/pitch_service.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
+import '../../ui/app_theme.dart';
 
 // -----------------------------------------------------------------------------
 // SES ARALIĞI KALİBRASYONU — rehberli tırmanış
@@ -49,10 +51,10 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
   // Doğru notayı bu kadar süre tutunca "söyledi" sayılır.
   static const Duration _holdTarget = Duration(milliseconds: 900);
 
-  static const Color _green = Color(0xFF56C271);
+  static const Color _green = AppColors.success;
 
   final PitchService _pitch = PitchService();
-  final NotePlayer _player = SynthNotePlayer();
+  final NotePlayer _player = createNotePlayer();
 
   _Stage _stage = _Stage.intro;
   _Dir _dir = _Dir.down;
@@ -72,12 +74,12 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
   DateTime? _lastTick;
 
   VocalRange get _measured => VocalRange.clamped(
-        comfortLow: _comfortLow,
-        comfortHigh: _comfortHigh,
-        stretchLow: _stretchLow,
-        stretchHigh: _stretchHigh,
-        calibratedAt: DateTime.now(),
-      );
+    comfortLow: _comfortLow,
+    comfortHigh: _comfortHigh,
+    stretchLow: _stretchLow,
+    stretchHigh: _stretchHigh,
+    calibratedAt: DateTime.now(),
+  );
 
   // ---- Akış kontrolü --------------------------------------------------------
 
@@ -148,7 +150,8 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
     final now = DateTime.now();
     final dt = _lastTick == null
         ? 0.0
-        : now.difference(_lastTick!).inMilliseconds / _holdTarget.inMilliseconds;
+        : now.difference(_lastTick!).inMilliseconds /
+              _holdTarget.inMilliseconds;
     _lastTick = now;
     final match = r != null && r.note.midi == _target;
     setState(() {
@@ -248,21 +251,23 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ses aralığın'),
+        title: Text(t(en: 'Your vocal range', tr: 'Ses aralığın')),
         actions: [
           if (_stage == _Stage.walk)
             TextButton(
               onPressed: _endDirection,
-              child: const Text('Bu kadar'),
+              child: Text(t(en: "That's enough", tr: 'Bu kadar')),
             ),
         ],
       ),
-      body: SafeArea(child: switch (_stage) {
-        _Stage.intro => _buildIntro(context),
-        _Stage.walk => _buildWalk(context),
-        _Stage.result => _buildResult(context),
-        _Stage.permissionDenied => _buildPermissionDenied(context),
-      }),
+      body: SafeArea(
+        child: switch (_stage) {
+          _Stage.intro => _buildIntro(context),
+          _Stage.walk => _buildWalk(context),
+          _Stage.result => _buildResult(context),
+          _Stage.permissionDenied => _buildPermissionDenied(context),
+        },
+      ),
     );
   }
 
@@ -273,30 +278,47 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
       child: Column(
         children: [
           const Spacer(),
-          Icon(Icons.graphic_eq_rounded,
-              size: 72, color: theme.colorScheme.primary),
+          Icon(
+            Icons.graphic_eq_rounded,
+            size: 72,
+            color: theme.colorScheme.primary,
+          ),
           const SizedBox(height: 24),
           Text(
-            'Sesini tanıyalım',
-            style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.w700),
+            t(en: "Let's get to know your voice", tr: 'Sesini tanıyalım'),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           Text(
-            'Sana notalar çalacağım, sen de tekrar söyleyeceksin. Her seferinde '
-            '“rahat mıydı, zorlandın mı?” diye soracağım. Böylece dersleri tam '
-            'senin rahat söyleyebildiğin oktavda hazırlarım — tiz notalarda '
-            'boğulmazsın.',
-            style: theme.textTheme.bodyLarge
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            t(
+              en:
+                  "I'll play you notes and you'll sing them back. Each time "
+                  "I'll ask “was that comfortable, or a strain?” That way I "
+                  'can set your lessons in exactly the octave you sing '
+                  'comfortably — no choking on the high notes.',
+              tr:
+                  'Sana notalar çalacağım, sen de tekrar söyleyeceksin. Her '
+                  'seferinde “rahat mıydı, zorlandın mı?” diye soracağım. '
+                  'Böylece dersleri tam senin rahat söyleyebildiğin oktavda '
+                  'hazırlarım — tiz notalarda boğulmazsın.',
+            ),
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Sessiz bir yerde, mikrofon izniyle ~1 dakika sürer.',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            t(
+              en: 'Takes ~1 minute in a quiet spot, with mic permission.',
+              tr: 'Sessiz bir yerde, mikrofon izniyle ~1 dakika sürer.',
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
           const Spacer(),
@@ -305,7 +327,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
             child: FilledButton.icon(
               onPressed: _begin,
               icon: const Icon(Icons.mic_rounded),
-              label: const Text('Başla'),
+              label: Text(t(en: 'Start', tr: 'Başla')),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
@@ -314,7 +336,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
           const SizedBox(height: 8),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Şimdilik atla'),
+            child: Text(t(en: 'Skip for now', tr: 'Şimdilik atla')),
           ),
         ],
       ),
@@ -325,23 +347,29 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
     final theme = Theme.of(context);
     final target = Note(_target);
     final goalText = _dir == _Dir.down
-        ? 'EN PES NOTANI BULUYORUZ'
-        : 'EN TİZ NOTANI BULUYORUZ';
+        ? t(en: 'FINDING YOUR LOWEST NOTE', tr: 'EN PES NOTANI BULUYORUZ')
+        : t(en: 'FINDING YOUR HIGHEST NOTE', tr: 'EN TİZ NOTANI BULUYORUZ');
 
     final exact = _reading != null && _reading!.note.midi == _target;
     final ringColor = (_matched || exact) ? _green : theme.colorScheme.primary;
 
     final String status;
     if (_matched) {
-      status = 'Söyledin ✓  Peki nasıl geldi?';
+      status = t(
+        en: 'You sang it ✓  So how did it feel?',
+        tr: 'Söyledin ✓  Peki nasıl geldi?',
+      );
     } else if (_busy) {
-      status = 'Dinle…';
+      status = t(en: 'Listen…', tr: 'Dinle…');
     } else if (exact) {
-      status = 'tam — böyle tut! 🎯';
+      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
     } else if (_reading != null) {
-      status = 'duyduğum: ${_reading!.note.label}';
+      status = t(
+        en: 'I hear: ${_reading!.note.label}',
+        tr: 'duyduğum: ${_reading!.note.label}',
+      );
     } else {
-      status = 'şimdi sen söyle 👇';
+      status = t(en: 'now you sing it 👇', tr: 'şimdi sen söyle 👇');
     }
 
     return Padding(
@@ -358,7 +386,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
           ),
           const Spacer(),
           Text(
-            'BU NOTAYI SÖYLE',
+            t(en: 'SING THIS NOTE', tr: 'BU NOTAYI SÖYLE'),
             style: theme.textTheme.labelSmall?.copyWith(
               letterSpacing: 2,
               color: theme.colorScheme.onSurfaceVariant,
@@ -378,7 +406,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
           OutlinedButton.icon(
             onPressed: _busy ? null : _replay,
             icon: const Icon(Icons.volume_up_rounded),
-            label: const Text('Tekrar dinle'),
+            label: Text(t(en: 'Listen again', tr: 'Tekrar dinle')),
           ),
           const Spacer(),
           SizedBox(
@@ -403,8 +431,8 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                   color: _matched
                       ? _green
                       : (_micActive
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.outline),
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.outline),
                 ),
               ],
             ),
@@ -430,7 +458,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                   child: FilledButton.icon(
                     onPressed: _answerComfortable,
                     icon: const Text('😌', style: TextStyle(fontSize: 18)),
-                    label: const Text('Rahattı'),
+                    label: Text(t(en: 'Comfortable', tr: 'Rahattı')),
                     style: FilledButton.styleFrom(
                       backgroundColor: _green,
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -442,7 +470,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                   child: OutlinedButton.icon(
                     onPressed: _answerStrain,
                     icon: const Text('😬', style: TextStyle(fontSize: 18)),
-                    label: const Text('Zorlandım'),
+                    label: Text(t(en: 'It was hard', tr: 'Zorlandım')),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
@@ -460,8 +488,11 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                 ),
                 child: Text(
                   _dir == _Dir.down
-                      ? 'Bu notaya inemiyorum'
-                      : 'Bu notaya çıkamıyorum',
+                      ? t(en: "Can't go this low", tr: 'Bu notaya inemiyorum')
+                      : t(
+                          en: "Can't go this high",
+                          tr: 'Bu notaya çıkamıyorum',
+                        ),
                 ),
               ),
             ),
@@ -486,30 +517,38 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
           const Icon(Icons.check_circle_rounded, size: 64, color: _green),
           const SizedBox(height: 20),
           Text(
-            'Ses aralığın hazır',
-            style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.w700),
+            t(en: 'Your vocal range is ready', tr: 'Ses aralığın hazır'),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 20),
           _rangeRow(
             theme,
-            '😌 Rahat',
+            t(en: '😌 Comfortable', tr: '😌 Rahat'),
             '${r.comfortLowNote.label} – ${r.comfortHighNote.label}',
           ),
           if (hasStretch) ...[
             const SizedBox(height: 10),
             _rangeRow(
               theme,
-              '😬 Zorlayarak',
+              t(en: '😬 Pushing it', tr: '😬 Zorlayarak'),
               '${Note(r.stretchLow).label} – ${Note(r.stretchHigh).label}',
             ),
           ],
           const SizedBox(height: 20),
           Text(
-            'Dersleri bu aralığa göre hazırlayacağım. İstediğin zaman '
-            'Ayarlar’dan yeniden ölçebilirsin.',
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            t(
+              en:
+                  "I'll build your lessons around this range. You can "
+                  're-measure anytime from Settings.',
+              tr:
+                  'Dersleri bu aralığa göre hazırlayacağım. İstediğin zaman '
+                  'Ayarlar’dan yeniden ölçebilirsin.',
+            ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
           const Spacer(),
@@ -520,13 +559,13 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('Kaydet'),
+              child: Text(t(en: 'Save', tr: 'Kaydet')),
             ),
           ),
           const SizedBox(height: 8),
           TextButton(
             onPressed: _begin,
-            child: const Text('Baştan ölç'),
+            child: Text(t(en: 'Measure again', tr: 'Baştan ölç')),
           ),
         ],
       ),
@@ -565,11 +604,17 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.mic_off_rounded,
-                size: 56, color: theme.colorScheme.error),
+            Icon(
+              Icons.mic_off_rounded,
+              size: 56,
+              color: theme.colorScheme.error,
+            ),
             const SizedBox(height: 16),
             Text(
-              'Kalibrasyon için mikrofon izni gerekli.',
+              t(
+                en: 'Calibration needs microphone permission.',
+                tr: 'Kalibrasyon için mikrofon izni gerekli.',
+              ),
               textAlign: TextAlign.center,
               style: theme.textTheme.titleMedium,
             ),
@@ -579,12 +624,14 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                 setState(() => _stage = _Stage.walk);
                 _startStep();
               },
-              child: const Text('İzin ver ve tekrar dene'),
+              child: Text(
+                t(en: 'Allow and try again', tr: 'İzin ver ve tekrar dene'),
+              ),
             ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Vazgeç'),
+              child: Text(t(en: 'Cancel', tr: 'Vazgeç')),
             ),
           ],
         ),

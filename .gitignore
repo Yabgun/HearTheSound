@@ -58,3 +58,9 @@ desktop.ini
 
 # FVM (Flutter Version Manager)
 .fvm/flutter_sdk
+
+# Project specific files
+PROJECT.md
+NEXT_SESSION.md
+README.md
+PRIVACY.md

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/content_locale.dart';
 import '../../core/player_progress.dart';
 import '../../state/progress_controller.dart';
 import '../../ui/app_theme.dart';
@@ -29,12 +30,19 @@ class PathMapPage extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
         children: [
-          Text('Yol Haritası', style: theme.textTheme.headlineSmall),
+          Text(
+            t(en: 'Path', tr: 'Yol Haritası'),
+            style: theme.textTheme.headlineSmall,
+          ),
           const SizedBox(height: 4),
           Text(
-            '${prog.done} / ${prog.total} ders tamamlandı',
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            t(
+              en: '${prog.done} / ${prog.total} lessons done',
+              tr: '${prog.done} / ${prog.total} ders tamamlandı',
+            ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 20),
           for (final track in curriculum)
@@ -60,8 +68,10 @@ class PathMapPage extends ConsumerWidget {
             Container(
               width: 12,
               height: 12,
-              decoration:
-                  BoxDecoration(color: track.color, shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: track.color,
+                shape: BoxShape.circle,
+              ),
             ),
             const SizedBox(width: 8),
             Text(
@@ -119,8 +129,11 @@ class PathMapPage extends ConsumerWidget {
     // Kabarcık
     Widget bubble;
     if (completed) {
-      bubble = _bub(AppColors.success.withValues(alpha: 0.16), AppColors.success,
-          const Icon(Icons.check_rounded, color: AppColors.success, size: 20));
+      bubble = _bub(
+        AppColors.success.withValues(alpha: 0.16),
+        AppColors.success,
+        const Icon(Icons.check_rounded, color: AppColors.success, size: 20),
+      );
     } else if (isCurrent) {
       bubble = Container(
         width: 42,
@@ -132,39 +145,54 @@ class PathMapPage extends ConsumerWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-                color: track.color.withValues(alpha: 0.35),
-                blurRadius: 0,
-                spreadRadius: 4)
+              color: track.color.withValues(alpha: 0.35),
+              blurRadius: 0,
+              spreadRadius: 4,
+            ),
           ],
         ),
         alignment: Alignment.center,
-        child: Text('${i + 1}',
-            style: theme.textTheme.titleMedium
-                ?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+        child: Text(
+          '${i + 1}',
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       );
     } else if (unlocked) {
-      bubble = _bub(theme.colorScheme.surface, track.color,
-          Text('${i + 1}',
-              style: theme.textTheme.titleMedium?.copyWith(
-                  color: track.color, fontWeight: FontWeight.w800)));
+      bubble = _bub(
+        theme.colorScheme.surface,
+        track.color,
+        Text(
+          '${i + 1}',
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: track.color,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      );
     } else {
-      bubble = _bub(theme.colorScheme.surface, theme.colorScheme.outlineVariant,
-          Icon(Icons.lock_rounded, color: theme.colorScheme.outline, size: 18));
+      bubble = _bub(
+        theme.colorScheme.surface,
+        theme.colorScheme.outlineVariant,
+        Icon(Icons.lock_rounded, color: theme.colorScheme.outline, size: 18),
+      );
     }
 
     final subtitle = completed
-        ? 'tamamlandı'
+        ? t(en: 'done', tr: 'tamamlandı')
         : isCurrent
-            ? 'devam ediyor'
-            : unlocked
-                ? 'başlamak için dokun'
-                : 'kilitli';
+        ? t(en: 'in progress', tr: 'devam ediyor')
+        : unlocked
+        ? t(en: 'tap to start', tr: 'başlamak için dokun')
+        : t(en: 'locked', tr: 'kilitli');
 
     return InkWell(
       onTap: unlocked
-          ? () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => item.open()),
-              )
+          ? () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute<void>(builder: (_) => item.open()))
           : null,
       borderRadius: BorderRadius.circular(14),
       child: Padding(
@@ -186,9 +214,12 @@ class PathMapPage extends ConsumerWidget {
                           : theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  Text(subtitle,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -199,19 +230,27 @@ class PathMapPage extends ConsumerWidget {
                   color: track.color,
                   borderRadius: BorderRadius.circular(99),
                 ),
-                child: Text('BURADASIN',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    )),
+                child: Text(
+                  t(en: "YOU'RE HERE", tr: 'BURADASIN'),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.5,
+                  ),
+                ),
               )
             else if (unlocked && item.concept != null)
               IconButton(
                 visualDensity: VisualDensity.compact,
-                icon: Icon(Icons.info_outline_rounded,
-                    color: theme.colorScheme.onSurfaceVariant, size: 20),
-                tooltip: 'Bu ders ne anlatıyor?',
+                icon: Icon(
+                  Icons.info_outline_rounded,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+                tooltip: t(
+                  en: "What's this lesson about?",
+                  tr: 'Bu ders ne anlatıyor?',
+                ),
                 onPressed: () => showConceptSheet(context, item.concept!),
               ),
           ],

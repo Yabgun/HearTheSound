@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/content_locale.dart';
 import '../../ui/app_theme.dart';
 import '../mascot/eko_mascot.dart';
 import 'lesson.dart';
@@ -127,24 +128,42 @@ class _LessonCompletePageState extends State<LessonCompletePage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('Ders Tamamlandı!',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.headlineMedium
-                                ?.copyWith(fontWeight: FontWeight.w800)),
+                        Text(
+                          t(en: 'Lesson Complete!', tr: 'Ders Tamamlandı!'),
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                         const SizedBox(height: 6),
-                        Text('%$pct doğruluk',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant)),
+                        Text(
+                          t(en: '$pct% accuracy', tr: '%$pct doğruluk'),
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                         const SizedBox(height: 28),
-                        _statCard(theme, Icons.check_circle_rounded, 'Doğru',
-                            '${widget.result.correct} / ${widget.result.total}'),
+                        _statCard(
+                          theme,
+                          Icons.check_circle_rounded,
+                          t(en: 'Correct', tr: 'Doğru'),
+                          '${widget.result.correct} / ${widget.result.total}',
+                        ),
                         const SizedBox(height: 10),
-                        _statCard(theme, Icons.bolt_rounded, 'Kazanılan XP',
-                            '+${widget.xpEarned}'),
+                        _statCard(
+                          theme,
+                          Icons.bolt_rounded,
+                          t(en: 'XP earned', tr: 'Kazanılan XP'),
+                          '+${widget.xpEarned}',
+                        ),
                         const SizedBox(height: 10),
-                        _statCard(theme, Icons.local_fire_department_rounded,
-                            'Günlük seri', '🔥 ${widget.streak}'),
+                        _statCard(
+                          theme,
+                          Icons.local_fire_department_rounded,
+                          t(en: 'Daily streak', tr: 'Günlük seri'),
+                          '🔥 ${widget.streak}',
+                        ),
                       ],
                     ),
                   ),
@@ -154,12 +173,12 @@ class _LessonCompletePageState extends State<LessonCompletePage>
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: const Text('Devam'),
+                    child: Text(t(en: 'Continue', tr: 'Devam')),
                   ),
                   const SizedBox(height: 8),
                   TextButton(
                     onPressed: widget.onReplay,
-                    child: const Text('Tekrar Oyna'),
+                    child: Text(t(en: 'Play Again', tr: 'Tekrar Oyna')),
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -193,13 +212,20 @@ class _LessonCompletePageState extends State<LessonCompletePage>
         children: [
           Icon(icon, color: theme.colorScheme.secondary),
           const SizedBox(width: 12),
-          Text(label,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            label,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           const Spacer(),
-          Text(value,
-              style: theme.textTheme.titleLarge?.copyWith(
-                  color: theme.colorScheme.primary, fontWeight: FontWeight.w800)),
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ),
     );
@@ -264,7 +290,10 @@ class _ConfettiPainter extends CustomPainter {
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromCenter(
-              center: Offset.zero, width: p.size, height: p.size * 0.6),
+            center: Offset.zero,
+            width: p.size,
+            height: p.size * 0.6,
+          ),
           const Radius.circular(2),
         ),
         Paint()..color = p.color.withValues(alpha: opacity),

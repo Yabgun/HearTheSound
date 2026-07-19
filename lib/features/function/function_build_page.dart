@@ -3,7 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/major_key.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/play_button.dart';
 import 'function_lesson.dart';
 
 // -----------------------------------------------------------------------------
@@ -106,93 +109,126 @@ class _FunctionBuildPageState extends State<FunctionBuildPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Dereceyi Kur · ${_index + 1}/${_rounds.length}'),
-        actions: [TextButton(onPressed: _skip, child: const Text('Geç'))],
+        title: Text(
+          t(
+            en: 'Build the Degree · ${_index + 1}/${_rounds.length}',
+            tr: 'Dereceyi Kur · ${_index + 1}/${_rounds.length}',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _skip,
+            child: Text(t(en: 'Skip', tr: 'Geç')),
+          ),
+        ],
       ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 28),
           children: [
-              Text(
-                '${widget.majorKey.label}de ${_target.roman}. derece hangi akor?',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+            Text(
+              t(
+                en:
+                    'Which chord is ${_target.roman} in '
+                    '${widget.majorKey.label}?',
+                tr:
+                    '${widget.majorKey.label}de ${_target.roman}. derece '
+                    'hangi akor?',
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Önce teorik haritayı kur: derece → akor → işlev ailesi. '
-                'İstersen tonik → hedef akor olarak dinle.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
               ),
-              const SizedBox(height: 20),
-              _DegreeBadge(degree: _target.roman),
-              const SizedBox(height: 18),
-              Center(child: _PlayButton(onTap: _playTarget, playing: _playing)),
-              const SizedBox(height: 8),
-              Text(
-                'tonik → hedef akor',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.outline,
-                ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              t(
+                en:
+                    'Build the theory map first: degree → chord → function '
+                    'family. If you like, listen as tonic → target chord.',
+                tr:
+                    'Önce teorik haritayı kur: derece → akor → işlev ailesi. '
+                    'İstersen tonik → hedef akor olarak dinle.',
               ),
-              const SizedBox(height: 28),
-              GridView.count(
-                crossAxisCount: cols,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 2.15,
-                children: _options.map((d) => _optionButton(theme, d)).toList(),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-              const SizedBox(height: 16),
-              if (answered)
-                Column(
-                  children: [
-                          Text(
-                            correct
-                                ? 'Doğru! ${_target.roman} = ${_target.chord.label}'
-                                : '${_target.roman}, ${_target.chord.label} idi',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: correct
-                                  ? const Color(0xFF56C271)
-                                  : const Color(0xFFD25872),
-                              fontWeight: FontWeight.w700,
-                            ),
+            ),
+            const SizedBox(height: 20),
+            _DegreeBadge(degree: _target.roman),
+            const SizedBox(height: 18),
+            Center(
+              child: PlayButton(onTap: _playTarget, playing: _playing),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              t(en: 'tonic → target chord', tr: 'tonik → hedef akor'),
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 28),
+            GridView.count(
+              crossAxisCount: cols,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 2.15,
+              children: _options.map((d) => _optionButton(theme, d)).toList(),
+            ),
+            const SizedBox(height: 16),
+            if (answered)
+              Column(
+                children: [
+                  Text(
+                    correct
+                        ? t(
+                            en:
+                                'Correct! ${_target.roman} = '
+                                '${_target.chord.label}',
+                            tr:
+                                'Doğru! ${_target.roman} = '
+                                '${_target.chord.label}',
+                          )
+                        : t(
+                            en: '${_target.roman} was ${_target.chord.label}',
+                            tr: '${_target.roman}, ${_target.chord.label} idi',
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${_target.function.label}: ${_target.roleHint}',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          FilledButton(
-                            onPressed: _next,
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 40,
-                                vertical: 14,
-                              ),
-                            ),
-                            child: Text(
-                              _index + 1 >= _rounds.length
-                                  ? 'Teste Geç'
-                                  : 'Sonraki',
-                            ),
-                          ),
-                  ],
-                ),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: correct ? AppColors.success : AppColors.danger,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_target.function.label}: ${_target.roleHint}',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  FilledButton(
+                    onPressed: _next,
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 14,
+                      ),
+                    ),
+                    child: Text(
+                      _index + 1 >= _rounds.length
+                          ? t(en: 'Start the Test', tr: 'Teste Geç')
+                          : t(en: 'Next', tr: 'Sonraki'),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -204,10 +240,10 @@ class _FunctionBuildPageState extends State<FunctionBuildPage> {
     Color fg = theme.colorScheme.onSurface;
     if (_selected != null) {
       if (degree == _target) {
-        bg = const Color(0xFF2E7D4F);
+        bg = AppColors.success;
         fg = Colors.white;
       } else if (degree == _selected) {
-        bg = const Color(0xFF9E3B4E);
+        bg = AppColors.danger;
         fg = Colors.white;
       } else {
         bg = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
@@ -223,27 +259,32 @@ class _FunctionBuildPageState extends State<FunctionBuildPage> {
         onTap: _selected == null ? () => _answer(degree) : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                degree.chord.label,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: fg,
-                  fontWeight: FontWeight.w800,
+          // Sabit oranlı grid hücresi: uzun etiketler (ör. EN "B Diminished")
+          // taşmasın diye içerik gerekirse orantılı küçülür.
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  degree.chord.label,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: fg,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                degree.function.label,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: fg.withValues(alpha: 0.82),
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 4),
+                Text(
+                  degree.function.label,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: fg.withValues(alpha: 0.82),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -278,41 +319,6 @@ class _DegreeBadge extends StatelessWidget {
             color: theme.colorScheme.onPrimaryContainer,
             fontWeight: FontWeight.w900,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.onTap, required this.playing});
-
-  final VoidCallback onTap;
-  final bool playing;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: playing ? null : onTap,
-      child: Container(
-        width: 82,
-        height: 82,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.colorScheme.primary,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.3),
-              blurRadius: 24,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: Icon(
-          playing ? Icons.graphic_eq_rounded : Icons.volume_up_rounded,
-          color: theme.colorScheme.onPrimary,
-          size: 36,
         ),
       ),
     );

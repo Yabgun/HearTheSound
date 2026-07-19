@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/octave_mapping.dart';
 import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
@@ -49,7 +50,7 @@ class _PlacementTestPageState extends ConsumerState<PlacementTestPage> {
   static const int _questionsPerRung = 3;
   static const int _passCorrect = 2; // 3 soruda en az 2 doğru
 
-  final NotePlayer _player = SynthNotePlayer();
+  final NotePlayer _player = createNotePlayer();
   late final VocalRange? _range = ref.read(progressProvider).vocalRange;
 
   late final List<_Rung> _rungs = _buildRungs();
@@ -67,24 +68,28 @@ class _PlacementTestPageState extends ConsumerState<PlacementTestPage> {
     Lesson l(String id) => lessons.firstWhere((e) => e.id == id);
     ChordLesson cl(String id) => chordLessons.firstWhere((e) => e.id == id);
     return [
-      _Rung(track: 'note', note: l('l3_penta'), unlocks: const [
-        'first_notes',
-        'l2_cde',
-        'l3_penta',
-      ]),
-      _Rung(track: 'note', note: l('l5_chromatic'), unlocks: const [
-        'first_notes',
-        'l2_cde',
-        'l3_penta',
-        'l4_diatonic',
-        'l5_chromatic',
-      ]),
+      _Rung(
+        track: 'note',
+        note: l('l3_penta'),
+        unlocks: const ['first_notes', 'l2_cde', 'l3_penta'],
+      ),
+      _Rung(
+        track: 'note',
+        note: l('l5_chromatic'),
+        unlocks: const [
+          'first_notes',
+          'l2_cde',
+          'l3_penta',
+          'l4_diatonic',
+          'l5_chromatic',
+        ],
+      ),
       _Rung(track: 'chord', chord: cl('ch1'), unlocks: const ['ch1']),
-      _Rung(track: 'chord', chord: cl('ch3'), unlocks: const [
-        'ch1',
-        'ch2',
-        'ch3',
-      ]),
+      _Rung(
+        track: 'chord',
+        chord: cl('ch3'),
+        unlocks: const ['ch1', 'ch2', 'ch3'],
+      ),
     ];
   }
 
@@ -150,28 +155,44 @@ class _PlacementTestPageState extends ConsumerState<PlacementTestPage> {
   Widget _buildIntro(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Seni tanıyalım')),
+      appBar: AppBar(
+        title: Text(t(en: "Let's get to know you", tr: 'Seni tanıyalım')),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(28),
           child: Column(
             children: [
               const Spacer(),
-              Icon(Icons.quiz_rounded, size: 72, color: theme.colorScheme.primary),
+              Icon(
+                Icons.quiz_rounded,
+                size: 72,
+                color: theme.colorScheme.primary,
+              ),
               const SizedBox(height: 24),
               Text(
-                'Kısa bir yerleştirme',
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                t(en: 'A quick placement', tr: 'Kısa bir yerleştirme'),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
-                'Birkaç nota ve akoru çalacağım, sen tanıyacaksın (mikrofon yok). '
-                'Bildiklerini bulup seni doğru dersten başlatacağım. Bilemezsen '
-                'sorun değil — sıfırdan başlarız.',
-                style: theme.textTheme.bodyLarge
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                t(
+                  en:
+                      "I'll play a few notes and chords and you name them "
+                      "(no mic). I'll spot what you already know and start "
+                      "you at the right lesson. Can't tell yet? No problem — "
+                      'we begin from scratch.',
+                  tr:
+                      'Birkaç nota ve akoru çalacağım, sen tanıyacaksın (mikrofon yok). '
+                      'Bildiklerini bulup seni doğru dersten başlatacağım. Bilemezsen '
+                      'sorun değil — sıfırdan başlarız.',
+                ),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
@@ -182,13 +203,18 @@ class _PlacementTestPageState extends ConsumerState<PlacementTestPage> {
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Başla'),
+                  child: Text(t(en: 'Start', tr: 'Başla')),
                 ),
               ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Sıfırdan başla (testi atla)'),
+                child: Text(
+                  t(
+                    en: 'Start from scratch (skip the test)',
+                    tr: 'Sıfırdan başla (testi atla)',
+                  ),
+                ),
               ),
             ],
           ),
@@ -239,27 +265,45 @@ class _PlacementTestPageState extends ConsumerState<PlacementTestPage> {
               ),
               const SizedBox(height: 16),
               Text(
-                nothing ? 'Baştan başlıyoruz' : 'Yerin belli! ✨',
+                nothing
+                    ? t(en: 'Starting fresh', tr: 'Baştan başlıyoruz')
+                    : t(en: 'Found your spot! ✨', tr: 'Yerin belli! ✨'),
                 textAlign: TextAlign.center,
-                style: theme.textTheme.headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 nothing
-                    ? 'İlk dersten güzelce başlayalım — acelesi yok.'
-                    : 'Bildiğin bölümleri açtım, kaldığın yerden devam edebilirsin.',
+                    ? t(
+                        en: "We'll start gently from the first lesson — no rush.",
+                        tr: 'İlk dersten güzelce başlayalım — acelesi yok.',
+                      )
+                    : t(
+                        en: "I've unlocked the parts you know — carry on from there.",
+                        tr: 'Bildiğin bölümleri açtım, kaldığın yerden devam edebilirsin.',
+                      ),
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               if (!nothing) ...[
                 const SizedBox(height: 24),
                 if (noteCount > 0)
-                  _statCard(theme, 'Açılan nota dersi', '$noteCount'),
+                  _statCard(
+                    theme,
+                    t(en: 'Note lessons unlocked', tr: 'Açılan nota dersi'),
+                    '$noteCount',
+                  ),
                 if (chordCount > 0) ...[
                   const SizedBox(height: 10),
-                  _statCard(theme, 'Açılan akor dersi', '$chordCount'),
+                  _statCard(
+                    theme,
+                    t(en: 'Chord lessons unlocked', tr: 'Açılan akor dersi'),
+                    '$chordCount',
+                  ),
                 ],
               ],
               const Spacer(flex: 3),
@@ -268,7 +312,7 @@ class _PlacementTestPageState extends ConsumerState<PlacementTestPage> {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Devam'),
+                child: Text(t(en: 'Continue', tr: 'Devam')),
               ),
               const SizedBox(height: 12),
             ],
@@ -288,9 +332,12 @@ class _PlacementTestPageState extends ConsumerState<PlacementTestPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            label,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           Text(
             value,
             style: theme.textTheme.titleLarge?.copyWith(

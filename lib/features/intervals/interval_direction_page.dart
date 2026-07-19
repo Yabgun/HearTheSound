@@ -3,8 +3,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/interval.dart';
 import '../../core/note.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/play_button.dart';
 
 // -----------------------------------------------------------------------------
 // ARALIĞIN YÖNÜ — çıkıcı / inici duyumu
@@ -17,14 +20,14 @@ enum IntervalDirection { ascending, descending }
 
 extension IntervalDirectionLabel on IntervalDirection {
   String get label => switch (this) {
-        IntervalDirection.ascending => 'Çıkıcı',
-        IntervalDirection.descending => 'İnici',
-      };
+    IntervalDirection.ascending => t(en: 'Ascending', tr: 'Çıkıcı'),
+    IntervalDirection.descending => t(en: 'Descending', tr: 'İnici'),
+  };
 
   IconData get icon => switch (this) {
-        IntervalDirection.ascending => Icons.arrow_upward_rounded,
-        IntervalDirection.descending => Icons.arrow_downward_rounded,
-      };
+    IntervalDirection.ascending => Icons.arrow_upward_rounded,
+    IntervalDirection.descending => Icons.arrow_downward_rounded,
+  };
 }
 
 class IntervalDirectionPage extends StatefulWidget {
@@ -70,16 +73,15 @@ class _IntervalDirectionPageState extends State<IntervalDirectionPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _playTarget());
   }
 
-  IntervalDirection _randomDirection() =>
-      _rng.nextBool() ? IntervalDirection.ascending : IntervalDirection.descending;
+  IntervalDirection _randomDirection() => _rng.nextBool()
+      ? IntervalDirection.ascending
+      : IntervalDirection.descending;
 
   Future<void> _playTarget() async {
     if (_playing) return;
     setState(() => _playing = true);
-    final first =
-        _direction == IntervalDirection.ascending ? _root : _top;
-    final second =
-        _direction == IntervalDirection.ascending ? _top : _root;
+    final first = _direction == IntervalDirection.ascending ? _root : _top;
+    final second = _direction == IntervalDirection.ascending ? _top : _root;
     await widget.player.play(first);
     await Future<void>.delayed(const Duration(milliseconds: 650));
     if (!mounted) return;
@@ -117,8 +119,18 @@ class _IntervalDirectionPageState extends State<IntervalDirectionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Aralığın Yönü · ${_index + 1}/${_rounds.length}'),
-        actions: [TextButton(onPressed: _skip, child: const Text('Geç'))],
+        title: Text(
+          t(
+            en: 'Interval Direction · ${_index + 1}/${_rounds.length}',
+            tr: 'Aralığın Yönü · ${_index + 1}/${_rounds.length}',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _skip,
+            child: Text(t(en: 'Skip', tr: 'Geç')),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -136,17 +148,20 @@ class _IntervalDirectionPageState extends State<IntervalDirectionPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Aynı mesafe yukarı mı gitti, aşağı mı indi?',
+                t(
+                  en: 'Did the same distance go up, or come down?',
+                  tr: 'Aynı mesafe yukarı mı gitti, aşağı mı indi?',
+                ),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 26),
-              _PlayButton(onTap: _playTarget, playing: _playing),
+              PlayButton(onTap: _playTarget, playing: _playing),
               const SizedBox(height: 12),
               Text(
-                'dinlemek için dokun',
+                t(en: 'tap to listen', tr: 'dinlemek için dokun'),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
@@ -159,7 +174,10 @@ class _IntervalDirectionPageState extends State<IntervalDirectionPage> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _directionButton(theme, IntervalDirection.descending),
+                    child: _directionButton(
+                      theme,
+                      IntervalDirection.descending,
+                    ),
                   ),
                 ],
               ),
@@ -171,13 +189,19 @@ class _IntervalDirectionPageState extends State<IntervalDirectionPage> {
                         children: [
                           Text(
                             correct
-                                ? 'Doğru! ✓  ${_direction.label}'
-                                : 'Bu ${_direction.label} idi',
+                                ? t(
+                                    en: 'Correct! ✓  ${_direction.label}',
+                                    tr: 'Doğru! ✓  ${_direction.label}',
+                                  )
+                                : t(
+                                    en: 'That was ${_direction.label}',
+                                    tr: 'Bu ${_direction.label} idi',
+                                  ),
                             textAlign: TextAlign.center,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: correct
-                                  ? const Color(0xFF56C271)
-                                  : const Color(0xFFD25872),
+                                  ? AppColors.success
+                                  : AppColors.danger,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -192,8 +216,8 @@ class _IntervalDirectionPageState extends State<IntervalDirectionPage> {
                             ),
                             child: Text(
                               _index + 1 >= _rounds.length
-                                  ? 'Devam'
-                                  : 'Sonraki',
+                                  ? t(en: 'Continue', tr: 'Devam')
+                                  : t(en: 'Next', tr: 'Sonraki'),
                             ),
                           ),
                         ],
@@ -216,10 +240,10 @@ class _IntervalDirectionPageState extends State<IntervalDirectionPage> {
     Color bg = theme.colorScheme.surfaceContainerHighest;
     Color fg = theme.colorScheme.onSurface;
     if (isCorrect) {
-      bg = const Color(0xFF2E7D4F);
+      bg = AppColors.success;
       fg = Colors.white;
     } else if (isWrongSelected) {
-      bg = const Color(0xFF9E3B4E);
+      bg = AppColors.danger;
       fg = Colors.white;
     }
 
@@ -245,41 +269,6 @@ class _IntervalDirectionPageState extends State<IntervalDirectionPage> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.onTap, required this.playing});
-
-  final VoidCallback onTap;
-  final bool playing;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: playing ? null : onTap,
-      child: Container(
-        width: 128,
-        height: 128,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.colorScheme.primary,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.35),
-              blurRadius: 30,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Icon(
-          playing ? Icons.graphic_eq_rounded : Icons.volume_up_rounded,
-          size: 54,
-          color: theme.colorScheme.onPrimary,
         ),
       ),
     );

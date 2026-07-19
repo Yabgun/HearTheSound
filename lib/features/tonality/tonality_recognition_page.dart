@@ -3,7 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/play_button.dart';
 import '../lesson/lesson.dart';
 import 'tonality_lesson.dart';
 
@@ -43,6 +46,7 @@ class _TonalityRecognitionPageState extends State<TonalityRecognitionPage> {
   late List<ScaleDegree> _options;
   ScaleDegree? _selected;
   bool _answered = false;
+  final List<String> _mistakes = [];
   int _index = 0;
   int _correct = 0;
 
@@ -77,7 +81,11 @@ class _TonalityRecognitionPageState extends State<TonalityRecognitionPage> {
     setState(() {
       _selected = choice;
       _answered = true;
-      if (choice == _target) _correct++;
+      if (choice == _target) {
+        _correct++;
+      } else {
+        _mistakes.add('degree:${_target.number}>${choice.number}');
+      }
     });
   }
 
@@ -90,8 +98,9 @@ class _TonalityRecognitionPageState extends State<TonalityRecognitionPage> {
     _playTarget();
   }
 
-  void _finish() =>
-      widget.onComplete(LessonResult(_correct, widget.questionCount));
+  void _finish() => widget.onComplete(
+    LessonResult(_correct, widget.questionCount, mistakes: _mistakes),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +112,12 @@ class _TonalityRecognitionPageState extends State<TonalityRecognitionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Derece ${_index + 1} / ${widget.questionCount}'),
+        title: Text(
+          t(
+            en: 'Degree ${_index + 1} / ${widget.questionCount}',
+            tr: 'Derece ${_index + 1} / ${widget.questionCount}',
+          ),
+        ),
         actions: [
           Center(
             child: Padding(
@@ -133,17 +147,20 @@ class _TonalityRecognitionPageState extends State<TonalityRecognitionPage> {
             children: [
               const Spacer(flex: 2),
               Text(
-                'Tonik → hedef. Bu kaçıncı derece?',
+                t(
+                  en: 'Tonic → target. Which degree is this?',
+                  tr: 'Tonik → hedef. Bu kaçıncı derece?',
+                ),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 24),
-              _PlayButton(onTap: _playTarget),
+              PlayButton(onTap: _playTarget),
               const SizedBox(height: 12),
               Text(
-                'dinlemek için dokun',
+                t(en: 'tap to listen', tr: 'dinlemek için dokun'),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
@@ -166,13 +183,23 @@ class _TonalityRecognitionPageState extends State<TonalityRecognitionPage> {
                         children: [
                           Text(
                             correct
-                                ? 'Doğru! ✓  ${_target.label}'
-                                : 'Bu ${_target.label} idi (${_target.name})',
+                                ? t(
+                                    en: 'Correct! ✓  ${_target.label}',
+                                    tr: 'Doğru! ✓  ${_target.label}',
+                                  )
+                                : t(
+                                    en:
+                                        'That was ${_target.label} '
+                                        '(${_target.name})',
+                                    tr:
+                                        'Bu ${_target.label} idi '
+                                        '(${_target.name})',
+                                  ),
                             textAlign: TextAlign.center,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: correct
-                                  ? const Color(0xFF56C271)
-                                  : const Color(0xFFD25872),
+                                  ? AppColors.success
+                                  : AppColors.danger,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -185,7 +212,11 @@ class _TonalityRecognitionPageState extends State<TonalityRecognitionPage> {
                                 vertical: 14,
                               ),
                             ),
-                            child: Text(isLast ? 'Bitir' : 'Sonraki'),
+                            child: Text(
+                              isLast
+                                  ? t(en: 'Finish', tr: 'Bitir')
+                                  : t(en: 'Next', tr: 'Sonraki'),
+                            ),
                           ),
                         ],
                       )
@@ -204,10 +235,10 @@ class _TonalityRecognitionPageState extends State<TonalityRecognitionPage> {
     Color fg = theme.colorScheme.onSurface;
     if (_answered) {
       if (degree == _target) {
-        bg = const Color(0xFF2E7D4F);
+        bg = AppColors.success;
         fg = Colors.white;
       } else if (degree == _selected) {
-        bg = const Color(0xFF9E3B4E);
+        bg = AppColors.danger;
         fg = Colors.white;
       } else {
         bg = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
@@ -232,40 +263,6 @@ class _TonalityRecognitionPageState extends State<TonalityRecognitionPage> {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 128,
-        height: 128,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.colorScheme.primary,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.35),
-              blurRadius: 30,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Icon(
-          Icons.volume_up_rounded,
-          size: 54,
-          color: theme.colorScheme.onPrimary,
         ),
       ),
     );

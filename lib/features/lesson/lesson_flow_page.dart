@@ -34,7 +34,7 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
   static const int _questionsPerLesson = 8;
   static const int _xpPerCorrect = 10;
 
-  final NotePlayer _player = SynthNotePlayer();
+  final NotePlayer _player = createNotePlayer();
   _Phase _phase = _Phase.learning;
   LessonResult? _result;
   int _xpEarned = 0;
@@ -58,12 +58,16 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
 
   void _onTestComplete(LessonResult result) {
     final xp = result.correct * _xpPerCorrect;
-    final passed = result.accuracy >= 0.7; // dersi "geçme" barajı -> sonrakini açar
-    ref.read(progressProvider.notifier).completeLesson(
+    final passed =
+        result.accuracy >= 0.7; // dersi "geçme" barajı -> sonrakini açar
+    ref
+        .read(progressProvider.notifier)
+        .completeLesson(
           skillId: widget.lesson.id,
           xpEarned: xp,
           masteryGain: result.correct,
           accuracy: result.accuracy,
+          mistakes: result.mistakes,
           completed: passed,
         );
     setState(() {

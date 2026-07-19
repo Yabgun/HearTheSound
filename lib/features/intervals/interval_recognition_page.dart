@@ -3,8 +3,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/interval.dart';
 import '../../core/note.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/play_button.dart';
 import '../lesson/lesson.dart';
 
 // -----------------------------------------------------------------------------
@@ -21,12 +24,16 @@ class IntervalRecognitionPage extends StatefulWidget {
     required this.player,
     required this.questionCount,
     required this.onComplete,
+    this.harmonic = false,
   });
 
   final List<MusicInterval> pool;
   final NotePlayer player;
   final int questionCount;
   final void Function(LessonResult result) onComplete;
+
+  /// true → sorular iki notayı AYNI ANDA çalar (harmonik dersler).
+  final bool harmonic;
 
   @override
   State<IntervalRecognitionPage> createState() =>
@@ -42,6 +49,7 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
   late int _rootMidi;
   MusicInterval? _selected;
   bool _answered = false;
+  final List<String> _mistakes = [];
   int _index = 0;
   int _correct = 0;
 
@@ -69,6 +77,11 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
 
   Future<void> _playTarget() async {
     final root = Note(_rootMidi);
+    if (widget.harmonic) {
+      // Harmonik soru: kök + üst aynı anda.
+      await widget.player.playChord(_target.from(root));
+      return;
+    }
     await widget.player.play(root);
     await Future<void>.delayed(const Duration(milliseconds: 650));
     if (!mounted) return;
@@ -80,7 +93,11 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
     setState(() {
       _selected = choice;
       _answered = true;
-      if (choice == _target) _correct++;
+      if (choice == _target) {
+        _correct++;
+      } else {
+        _mistakes.add('interval:${_target.semitones}>${choice.semitones}');
+      }
     });
   }
 
@@ -93,8 +110,9 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
     _playTarget();
   }
 
-  void _finish() =>
-      widget.onComplete(LessonResult(_correct, widget.questionCount));
+  void _finish() => widget.onComplete(
+    LessonResult(_correct, widget.questionCount, mistakes: _mistakes),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +124,12 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Aralık ${_index + 1} / ${widget.questionCount}'),
+        title: Text(
+          t(
+            en: 'Interval ${_index + 1} / ${widget.questionCount}',
+            tr: 'Aralık ${_index + 1} / ${widget.questionCount}',
+          ),
+        ),
         actions: [
           Center(
             child: Padding(
@@ -123,7 +146,10 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
-          child: LinearProgressIndicator(value: progress.clamp(0, 1), minHeight: 4),
+          child: LinearProgressIndicator(
+            value: progress.clamp(0, 1),
+            minHeight: 4,
+          ),
         ),
       ),
       body: SafeArea(
@@ -133,17 +159,17 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
             children: [
               const Spacer(flex: 2),
               Text(
-                'Bu hangi aralık?',
+                t(en: 'Which interval is this?', tr: 'Bu hangi aralık?'),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 24),
-              _PlayButton(onTap: _playTarget),
+              PlayButton(onTap: _playTarget),
               const SizedBox(height: 12),
               Text(
-                'dinlemek için dokun',
+                t(en: 'tap to listen', tr: 'dinlemek için dokun'),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
@@ -156,7 +182,9 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
                 childAspectRatio: 2.6,
-                children: _options.map((iv) => _optionButton(theme, iv)).toList(),
+                children: _options
+                    .map((iv) => _optionButton(theme, iv))
+                    .toList(),
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -166,13 +194,19 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
                         children: [
                           Text(
                             correct
-                                ? 'Doğru! ✓  ${_target.name}'
-                                : 'Bu ${_target.name} idi',
+                                ? t(
+                                    en: 'Correct! ✓  ${_target.name}',
+                                    tr: 'Doğru! ✓  ${_target.name}',
+                                  )
+                                : t(
+                                    en: 'That was ${_target.name}',
+                                    tr: 'Bu ${_target.name} idi',
+                                  ),
                             textAlign: TextAlign.center,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: correct
-                                  ? const Color(0xFF56C271)
-                                  : const Color(0xFFD25872),
+                                  ? AppColors.success
+                                  : AppColors.danger,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -181,9 +215,15 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
                             onPressed: isLast ? _finish : _next,
                             style: FilledButton.styleFrom(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 40, vertical: 14),
+                                horizontal: 40,
+                                vertical: 14,
+                              ),
                             ),
-                            child: Text(isLast ? 'Bitir' : 'Sonraki'),
+                            child: Text(
+                              isLast
+                                  ? t(en: 'Finish', tr: 'Bitir')
+                                  : t(en: 'Next', tr: 'Sonraki'),
+                            ),
                           ),
                         ],
                       )
@@ -202,10 +242,10 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
     Color fg = theme.colorScheme.onSurface;
     if (_answered) {
       if (interval == _target) {
-        bg = const Color(0xFF2E7D4F);
+        bg = AppColors.success;
         fg = Colors.white;
       } else if (interval == _selected) {
-        bg = const Color(0xFF9E3B4E);
+        bg = AppColors.danger;
         fg = Colors.white;
       } else {
         bg = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
@@ -231,37 +271,6 @@ class _IntervalRecognitionPageState extends State<IntervalRecognitionPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 128,
-        height: 128,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.colorScheme.primary,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.35),
-              blurRadius: 30,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Icon(Icons.volume_up_rounded,
-            size: 54, color: theme.colorScheme.onPrimary),
       ),
     );
   }

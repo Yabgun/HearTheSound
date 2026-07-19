@@ -55,24 +55,27 @@ void main() {
     expect(repo.saved?.dailyXp, 0);
   });
 
-  test('streak, dün değil daha eski bir günde kalmışsa ana ekranda sıfırlanır', () {
-    final repo = _MemoryProgressRepository(
-      const PlayerProgress(
-        xp: 120,
-        streak: 3,
-        longestStreak: 5,
-        lastActiveDay: '2026-07-10',
-        dailyXp: 40,
-      ),
-    );
-    final container = _container(repo: repo, now: DateTime(2026, 7, 13));
+  test(
+    'streak, dün değil daha eski bir günde kalmışsa ana ekranda sıfırlanır',
+    () {
+      final repo = _MemoryProgressRepository(
+        const PlayerProgress(
+          xp: 120,
+          streak: 3,
+          longestStreak: 5,
+          lastActiveDay: '2026-07-10',
+          dailyXp: 40,
+        ),
+      );
+      final container = _container(repo: repo, now: DateTime(2026, 7, 13));
 
-    final progress = container.read(progressProvider);
+      final progress = container.read(progressProvider);
 
-    expect(progress.dailyXp, 0);
-    expect(progress.streak, 0);
-    expect(progress.longestStreak, 5);
-  });
+      expect(progress.dailyXp, 0);
+      expect(progress.streak, 0);
+      expect(progress.longestStreak, 5);
+    },
+  );
 
   test('yeni günde ilk ders bitince streak dünden devam eder', () {
     final repo = _MemoryProgressRepository(
@@ -86,7 +89,9 @@ void main() {
     );
     final container = _container(repo: repo, now: DateTime(2026, 7, 13));
 
-    container.read(progressProvider.notifier).completeLesson(
+    container
+        .read(progressProvider.notifier)
+        .completeLesson(
           skillId: 'first_notes',
           xpEarned: 10,
           masteryGain: 1,

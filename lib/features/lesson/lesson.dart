@@ -1,4 +1,5 @@
 import '../../core/concept.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
 
 /// Bir ders = kimlik + başlık + üzerinde çalışılacak nota havuzu (+ kavram kartı).
@@ -17,118 +18,200 @@ class Lesson {
 }
 
 /// Bir tanıma oturumunun sonucu.
+///
+/// [mistakes] karıştırma kayıtlarıdır: her yanlış cevap için dil-bağımsız bir
+/// anahtar ('tip:beklenen>seçilen', ör. 'note:C>E', 'quality:major7>dominant7').
+/// İlerleme denetleyicisi bunları toplayıp "en çok karıştırılanlar" içgörüsünü
+/// besler — hangi çiftlerin ekstra çalışma istediğini gösterir.
 class LessonResult {
   final int correct;
   final int total;
-  const LessonResult(this.correct, this.total);
+  final List<String> mistakes;
+  const LessonResult(this.correct, this.total, {this.mistakes = const []});
 
   double get accuracy => total == 0 ? 0 : correct / total;
 }
 
-List<Note> _oct(List<String> names, int octave) =>
-    [for (final n in names) Note.fromName(n, octave)];
+List<Note> _oct(List<String> names, int octave) => [
+  for (final n in names) Note.fromName(n, octave),
+];
 
 /// Müfredat — kolaydan zora büyüyen ders dizisi. Her ders aynı Duy→Söyle→Tanı
 /// döngüsüyle çalışır; bir ders geçilince (≥%70) sonraki açılır.
+/// Locale-anahtarlı önbellekten döner (i18n).
 ///
 /// NOT: ilk dersin id'si 'first_notes' korunuyor ki mevcut ilerleme kaybolmasın.
-final List<Lesson> lessons = [
+final Map<String, List<Lesson>> _lessonCache = {};
+
+List<Lesson> get lessons =>
+    _lessonCache.putIfAbsent(ContentLocale.code, _buildLessons);
+
+List<Lesson> _buildLessons() => [
   Lesson(
     id: 'first_notes',
-    title: '1 · İlk Notalar',
+    title: t(en: '1 · First Notes', tr: '1 · İlk Notalar'),
     pool: _oct(['C', 'E', 'G'], 4),
-    concept: const Concept(
-      title: 'Notalar ve Perde',
+    concept: Concept(
+      title: t(en: 'Notes and Pitch', tr: 'Notalar ve Perde'),
       sections: [
         ConceptSection(
-          'Bir "nota", belirli tizlikteki (perde) bir sestir. Her notanın bir '
-          'adı vardır: C, D, E, F, G, A, B. (C = "Do".)',
+          t(
+            en:
+                'A "note" is a sound at a specific height (pitch). Every note '
+                'has a name: C, D, E, F, G, A, B. (C = "Do".)',
+            tr:
+                'Bir "nota", belirli tizlikteki (perde) bir sestir. Her '
+                'notanın bir adı vardır: C, D, E, F, G, A, B. (C = "Do".)',
+          ),
         ),
         ConceptSection(
-          heading: 'Bu derste',
-          'Birbirinden iyi ayrışan üç notayla başlıyoruz: C, E, G. Önce dinleyip '
-          'adıyla tanı, sonra söyle, sonra ipuçsuz tanı.',
+          heading: t(en: 'In this lesson', tr: 'Bu derste'),
+          t(
+            en:
+                'We start with three well-separated notes: C, E, G. First '
+                'listen and learn the names, then sing them, then recognize '
+                'them without hints.',
+            tr:
+                'Birbirinden iyi ayrışan üç notayla başlıyoruz: C, E, G. Önce '
+                'dinleyip adıyla tanı, sonra söyle, sonra ipuçsuz tanı.',
+          ),
         ),
         ConceptSection(
-          heading: 'İpucu',
-          'İsmi ezberlemekten çok sesin "yüksekliğini" hissetmeye çalış.',
+          heading: t(en: 'Tip', tr: 'İpucu'),
+          t(
+            en:
+                'Rather than memorizing the name, try to feel how "high" the '
+                'sound sits.',
+            tr: 'İsmi ezberlemekten çok sesin "yüksekliğini" hissetmeye çalış.',
+          ),
         ),
       ],
     ),
   ),
   Lesson(
     id: 'l2_cde',
-    title: '2 · Komşular',
+    title: t(en: '2 · Neighbors', tr: '2 · Komşular'),
     pool: _oct(['C', 'D', 'E'], 4),
-    concept: const Concept(
-      title: 'Komşu Notalar',
+    concept: Concept(
+      title: t(en: 'Neighbor Notes', tr: 'Komşu Notalar'),
       sections: [
         ConceptSection(
-          'C, D, E birbirine komşu notalar. Aralarındaki mesafe küçük olduğu için '
-          'ayırt etmesi biraz daha zordur.',
+          t(
+            en:
+                'C, D and E are neighbors. Because the distance between them '
+                'is small, they are a bit harder to tell apart.',
+            tr:
+                'C, D, E birbirine komşu notalar. Aralarındaki mesafe küçük '
+                'olduğu için ayırt etmesi biraz daha zordur.',
+          ),
         ),
         ConceptSection(
-          heading: 'Amaç',
-          'Yakın perdeleri karıştırmadan ayırabilmek — kulağın küçük adımları '
-          'duymaya alışır.',
+          heading: t(en: 'Goal', tr: 'Amaç'),
+          t(
+            en:
+                'Separate nearby pitches without mixing them up — the ear '
+                'gets used to hearing small steps.',
+            tr:
+                'Yakın perdeleri karıştırmadan ayırabilmek — kulağın küçük '
+                'adımları duymaya alışır.',
+          ),
         ),
       ],
     ),
   ),
   Lesson(
     id: 'l3_penta',
-    title: '3 · Beşli',
+    title: t(en: '3 · Five Notes', tr: '3 · Beşli'),
     pool: _oct(['C', 'D', 'E', 'F', 'G'], 4),
-    concept: const Concept(
-      title: 'Beş Nota',
+    concept: Concept(
+      title: t(en: 'Five Notes', tr: 'Beş Nota'),
       sections: [
         ConceptSection(
-          'C-D-E-F-G: majör dizinin ilk beş notası (do-re-mi-fa-sol).',
+          t(
+            en:
+                'C-D-E-F-G: the first five notes of the major scale '
+                '(do-re-mi-fa-sol).',
+            tr: 'C-D-E-F-G: majör dizinin ilk beş notası (do-re-mi-fa-sol).',
+          ),
         ),
         ConceptSection(
-          heading: 'Amaç',
-          'Havuz büyüdü — beş nota arasında hızlı ve doğru seçim yapmak.',
+          heading: t(en: 'Goal', tr: 'Amaç'),
+          t(
+            en:
+                'The pool has grown — pick fast and accurately among five '
+                'notes.',
+            tr: 'Havuz büyüdü — beş nota arasında hızlı ve doğru seçim yapmak.',
+          ),
         ),
       ],
     ),
   ),
   Lesson(
     id: 'l4_diatonic',
-    title: '4 · Do Majör',
+    title: t(en: '4 · C Major', tr: '4 · Do Majör'),
     pool: _oct(['C', 'D', 'E', 'F', 'G', 'A', 'B'], 4),
-    concept: const Concept(
-      title: 'Do Majör Dizisi',
+    concept: Concept(
+      title: t(en: 'The C Major Scale', tr: 'Do Majör Dizisi'),
       sections: [
         ConceptSection(
-          'Do majör dizisi yedi notadır: C-D-E-F-G-A-B (do-re-mi-fa-sol-la-si). '
-          'Piyanodaki beyaz tuşlar.',
+          t(
+            en:
+                'The C major scale has seven notes: C-D-E-F-G-A-B '
+                '(do-re-mi-fa-sol-la-si). The white keys of the piano.',
+            tr:
+                'Do majör dizisi yedi notadır: C-D-E-F-G-A-B '
+                '(do-re-mi-fa-sol-la-si). Piyanodaki beyaz tuşlar.',
+          ),
         ),
         ConceptSection(
-          heading: 'Neden önemli?',
-          'Çoğu melodi ve akor bu diziden doğar; müziğin "alfabesi" gibidir.',
+          heading: t(en: 'Why does it matter?', tr: 'Neden önemli?'),
+          t(
+            en:
+                'Most melodies and chords grow from this scale; it is like '
+                'the "alphabet" of music.',
+            tr:
+                'Çoğu melodi ve akor bu diziden doğar; müziğin "alfabesi" '
+                'gibidir.',
+          ),
         ),
       ],
     ),
   ),
   Lesson(
     id: 'l5_chromatic',
-    title: '5 · Kromatik',
+    title: t(en: '5 · Chromatic', tr: '5 · Kromatik'),
     pool: noteRange(Note.fromName('C', 4), Note.fromName('B', 4)),
-    concept: const Concept(
-      title: 'Kromatik — 12 Nota',
+    concept: Concept(
+      title: t(en: 'Chromatic — 12 Notes', tr: 'Kromatik — 12 Nota'),
       sections: [
         ConceptSection(
-          'Bir oktav içindeki tüm 12 nota: beyaz tuşlara ek olarak siyah tuşlar '
-          '(diyez/bemol: C#, D#, F#, G#, A#).',
+          t(
+            en:
+                'All 12 notes within an octave: the black keys join the white '
+                'ones (sharps/flats: C#, D#, F#, G#, A#).',
+            tr:
+                'Bir oktav içindeki tüm 12 nota: beyaz tuşlara ek olarak '
+                'siyah tuşlar (diyez/bemol: C#, D#, F#, G#, A#).',
+          ),
         ),
         ConceptSection(
-          heading: 'Yarım ses',
-          'Ardışık iki nota arasındaki en küçük mesafeye "yarım ses" denir. '
-          'Kromatik dizi baştan sona yarım ses adımlardan oluşur.',
+          heading: t(en: 'Half step', tr: 'Yarım ses'),
+          t(
+            en:
+                'The smallest distance between two adjacent notes is called a '
+                '"half step". The chromatic scale is half steps from start to '
+                'end.',
+            tr:
+                'Ardışık iki nota arasındaki en küçük mesafeye "yarım ses" '
+                'denir. Kromatik dizi baştan sona yarım ses adımlardan oluşur.',
+          ),
         ),
         ConceptSection(
-          heading: 'Amaç',
-          'En zorlu ayrım: 12 perdenin hepsini birbirinden ayırmak.',
+          heading: t(en: 'Goal', tr: 'Amaç'),
+          t(
+            en: 'The toughest distinction: telling all 12 pitches apart.',
+            tr: 'En zorlu ayrım: 12 perdenin hepsini birbirinden ayırmak.',
+          ),
         ),
       ],
     ),

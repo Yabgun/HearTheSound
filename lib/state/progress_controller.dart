@@ -11,12 +11,16 @@ import '../data/progress_repository.dart';
 /// Repository sağlayıcısı — `main` içinde gerçek (prefs destekli) örnekle
 /// override edilir. Böylece uygulama açılışta hazır veriyle başlar.
 final progressRepositoryProvider = Provider<ProgressRepository>((ref) {
-  throw UnimplementedError('progressRepositoryProvider main içinde override edilmeli');
+  throw UnimplementedError(
+    'progressRepositoryProvider main içinde override edilmeli',
+  );
 });
 
 /// Zamanı tek noktadan okur. Testlerde gün devrini güvenle canlandırabilmek için
 /// override edilir; uygulamada gerçek saat kullanılır.
-final progressClockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+final progressClockProvider = Provider<DateTime Function()>(
+  (ref) => DateTime.now,
+);
 
 /// İlerleme durumunu yöneten denetleyici: yükler, günceller, kaydeder.
 class ProgressController extends Notifier<PlayerProgress> {
@@ -25,7 +29,10 @@ class ProgressController extends Notifier<PlayerProgress> {
   @override
   PlayerProgress build() {
     final loaded = _repo.load();
-    final normalized = _normalizeForToday(loaded, ref.read(progressClockProvider)());
+    final normalized = _normalizeForToday(
+      loaded,
+      ref.read(progressClockProvider)(),
+    );
     if (!identical(loaded, normalized)) {
       unawaited(_repo.save(normalized));
     }
@@ -35,12 +42,15 @@ class ProgressController extends Notifier<PlayerProgress> {
   /// Bir ders/oturum tamamlandığında çağrılır: XP ekler, günlük streak'i
   /// günceller, beceri ustalığını artırır, aralıklı tekrarı zamanlar ve kalıcı
   /// olarak kaydeder. [accuracy] (0..1) hem geçme hem tekrar kalitesi için.
+  /// [mistakes] tanıma yanlışlarının karıştırma anahtarları ('note:C>E' gibi);
+  /// sayaçlara eklenir ve profildeki içgörüyü besler.
   void completeLesson({
     required String skillId,
     required int xpEarned,
     required int masteryGain,
     required double accuracy,
     bool completed = false,
+    List<String> mistakes = const [],
   }) {
     final now = ref.read(progressClockProvider)();
     final today = _dayKey(now);
@@ -78,6 +88,15 @@ class ProgressController extends Notifier<PlayerProgress> {
       );
     }
 
+    // Karıştırma sayaçları: her yanlış cevabın anahtarını biriktir.
+    var newConfusions = state.confusionCounts;
+    if (mistakes.isNotEmpty) {
+      newConfusions = Map<String, int>.from(state.confusionCounts);
+      for (final key in mistakes) {
+        newConfusions[key] = (newConfusions[key] ?? 0) + 1;
+      }
+    }
+
     state = state.copyWith(
       xp: state.xp + xpEarned,
       streak: streak,
@@ -87,6 +106,7 @@ class ProgressController extends Notifier<PlayerProgress> {
       skillXp: newSkillXp,
       completedLessons: newCompleted,
       reviews: newReviews,
+      confusionCounts: newConfusions,
     );
     _repo.save(state);
   }
@@ -97,6 +117,7 @@ class ProgressController extends Notifier<PlayerProgress> {
     required String skillId,
     required int xpEarned,
     required double accuracy,
+    List<String> mistakes = const [],
   }) {
     completeLesson(
       skillId: skillId,
@@ -104,6 +125,7 @@ class ProgressController extends Notifier<PlayerProgress> {
       masteryGain: 0,
       accuracy: accuracy,
       completed: false,
+      mistakes: mistakes,
     );
   }
 
@@ -127,6 +149,12 @@ class ProgressController extends Notifier<PlayerProgress> {
     _repo.save(state);
   }
 
+  /// Repo'dan yeniden yükler (bulut birleştirmesi yerele yazıldıktan sonra
+  /// arayüzü tazelemek için — Ayarlar'daki giriş/eşitleme akışı çağırır).
+  void reload() {
+    state = _normalizeForToday(_repo.load(), ref.read(progressClockProvider)());
+  }
+
   /// Geliştirme/test için ilerlemeyi sıfırlar.
   void reset() {
     state = PlayerProgress.empty;
@@ -143,20 +171,19 @@ class ProgressController extends Notifier<PlayerProgress> {
     if (progress.lastActiveDay == today) return progress;
 
     final yesterday = _dayKey(now.subtract(const Duration(days: 1)));
-    final normalizedStreak =
-        progress.lastActiveDay == yesterday ? progress.streak : 0;
+    final normalizedStreak = progress.lastActiveDay == yesterday
+        ? progress.streak
+        : 0;
 
     if (progress.dailyXp == 0 && progress.streak == normalizedStreak) {
       return progress;
     }
 
-    return progress.copyWith(
-      dailyXp: 0,
-      streak: normalizedStreak,
-    );
+    return progress.copyWith(dailyXp: 0, streak: normalizedStreak);
   }
 }
 
 /// İlerleme sağlayıcısı — arayüz bunu izleyerek XP/streak/ustalığı gösterir.
-final progressProvider =
-    NotifierProvider<ProgressController, PlayerProgress>(ProgressController.new);
+final progressProvider = NotifierProvider<ProgressController, PlayerProgress>(
+  ProgressController.new,
+);

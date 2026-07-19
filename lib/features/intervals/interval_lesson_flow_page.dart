@@ -20,9 +20,21 @@ import 'interval_sing_page.dart';
 // transpoze EDİLMEZ; kök seçimini alt ekranlar yapar (söylemede kullanıcının
 // aralığına, tanımada rastgele). Sonuç ilerlemeye işlenir (XP/streak/ustalık/
 // tekrar zamanlama).
+//
+// HARMONİK dersler (lesson.harmonic): iki nota aynı anda çalınır ve akış
+// kısalır — Öğren → Kur → Tanı. Yön/melodi/söyleme melodik kavramlardır;
+// aynı anda tınlayan iki notada yön yoktur ve iki nota birden söylenemez.
 // -----------------------------------------------------------------------------
 
-enum _Phase { learning, building, direction, applying, singing, recognizing, done }
+enum _Phase {
+  learning,
+  building,
+  direction,
+  applying,
+  singing,
+  recognizing,
+  done,
+}
 
 class IntervalLessonFlowPage extends ConsumerStatefulWidget {
   const IntervalLessonFlowPage({super.key, required this.lesson});
@@ -39,7 +51,7 @@ class _IntervalLessonFlowPageState
   static const int _questionCount = 8;
   static const int _xpPerCorrect = 10;
 
-  final NotePlayer _player = SynthNotePlayer();
+  final NotePlayer _player = createNotePlayer();
   _Phase _phase = _Phase.learning;
   LessonResult? _result;
   int _xpEarned = 0;
@@ -52,11 +64,14 @@ class _IntervalLessonFlowPageState
 
   void _onComplete(LessonResult result) {
     final xp = result.correct * _xpPerCorrect;
-    ref.read(progressProvider.notifier).completeLesson(
+    ref
+        .read(progressProvider.notifier)
+        .completeLesson(
           skillId: widget.lesson.id,
           xpEarned: xp,
           masteryGain: result.correct,
           accuracy: result.accuracy,
+          mistakes: result.mistakes,
           completed: result.accuracy >= 0.7,
         );
     setState(() {
@@ -68,18 +83,24 @@ class _IntervalLessonFlowPageState
 
   @override
   Widget build(BuildContext context) {
+    final harmonic = widget.lesson.harmonic;
     switch (_phase) {
       case _Phase.learning:
         return IntervalLearnPage(
           lesson: widget.lesson,
           player: _player,
+          harmonic: harmonic,
           onReady: () => setState(() => _phase = _Phase.building),
         );
       case _Phase.building:
         return IntervalBuildPage(
           pool: widget.lesson.pool,
           player: _player,
-          onComplete: () => setState(() => _phase = _Phase.direction),
+          harmonic: harmonic,
+          // Harmonik derste yön/melodi/söyleme atlanır → doğrudan tanıma.
+          onComplete: () => setState(
+            () => _phase = harmonic ? _Phase.recognizing : _Phase.direction,
+          ),
         );
       case _Phase.direction:
         return IntervalDirectionPage(
@@ -104,6 +125,7 @@ class _IntervalLessonFlowPageState
         return IntervalRecognitionPage(
           pool: widget.lesson.pool,
           player: _player,
+          harmonic: harmonic,
           questionCount: _questionCount,
           onComplete: _onComplete,
         );

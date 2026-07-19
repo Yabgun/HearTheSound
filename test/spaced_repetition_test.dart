@@ -22,12 +22,20 @@ void main() {
       expect(r1.reps, 1);
       expect(r1.dueDay, '2026-07-13');
 
-      final r2 = applyReview(prev: r1, accuracy: 1.0, now: DateTime(2026, 7, 13));
+      final r2 = applyReview(
+        prev: r1,
+        accuracy: 1.0,
+        now: DateTime(2026, 7, 13),
+      );
       expect(r2.intervalDays, 6);
       expect(r2.reps, 2);
       expect(r2.dueDay, '2026-07-19');
 
-      final r3 = applyReview(prev: r2, accuracy: 1.0, now: DateTime(2026, 7, 19));
+      final r3 = applyReview(
+        prev: r2,
+        accuracy: 1.0,
+        now: DateTime(2026, 7, 19),
+      );
       // ease r2 ≈ 2.7 → 6*2.7 = 16.2 → 16 gün.
       expect(r3.intervalDays, 16);
       expect(r3.reps, 3);
@@ -49,11 +57,18 @@ void main() {
   group('applyReview — başarısızlık sıfırlar', () {
     test('q<3 reps sıfırlanır, yarına planlanır, lapse artar', () {
       final r1 = applyReview(prev: null, accuracy: 1.0, now: day0);
-      final r2 = applyReview(prev: r1, accuracy: 1.0, now: DateTime(2026, 7, 13));
+      final r2 = applyReview(
+        prev: r1,
+        accuracy: 1.0,
+        now: DateTime(2026, 7, 13),
+      );
       expect(r2.reps, 2);
 
-      final fail =
-          applyReview(prev: r2, accuracy: 0.4, now: DateTime(2026, 7, 19));
+      final fail = applyReview(
+        prev: r2,
+        accuracy: 0.4,
+        now: DateTime(2026, 7, 19),
+      );
       expect(fail.reps, 0);
       expect(fail.intervalDays, 1);
       expect(fail.lapses, 1);

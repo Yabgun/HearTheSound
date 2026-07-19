@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/content_locale.dart';
 import '../../state/settings_controller.dart';
 import '../calibration/calibration_page.dart';
 import '../mascot/eko_mascot.dart';
@@ -28,9 +29,9 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
   _Step _step = _Step.welcome;
 
   Future<void> _goCalibration() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const CalibrationPage()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const CalibrationPage()));
     if (mounted) setState(() => _step = _Step.placementOffer);
   }
 
@@ -65,22 +66,31 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
               const SizedBox(height: 24),
               Text(
                 'HearTheSound',
-                style: theme.textTheme.headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
               Text(
-                'Duy · anla · sesinle söyle.\nMüzik kulağını adım adım geliştirelim.',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                t(
+                  en: "Hear it · get it · sing it back.\nLet's grow your musical ear step by step.",
+                  tr: 'Duy · anla · sesinle söyle.\nMüzik kulağını adım adım geliştirelim.',
+                ),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
               Text(
-                'Önce sesini tanıyalım ki dersleri tam sana göre hazırlayayım.',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                t(
+                  en: "Let's meet your voice first so I can tailor the lessons to you.",
+                  tr: 'Önce sesini tanıyalım ki dersleri tam sana göre hazırlayayım.',
+                ),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -91,13 +101,18 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Başlayalım'),
+                  child: Text(t(en: "Let's start", tr: 'Başlayalım')),
                 ),
               ),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => setState(() => _step = _Step.placementOffer),
-                child: const Text('Kalibrasyonu sonra yaparım'),
+                child: Text(
+                  t(
+                    en: "I'll calibrate later",
+                    tr: 'Kalibrasyonu sonra yaparım',
+                  ),
+                ),
               ),
             ],
           ),
@@ -115,22 +130,34 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
           child: Column(
             children: [
               const Spacer(flex: 2),
-              Icon(Icons.school_rounded,
-                  size: 80, color: theme.colorScheme.primary),
+              Icon(
+                Icons.school_rounded,
+                size: 80,
+                color: theme.colorScheme.primary,
+              ),
               const SizedBox(height: 24),
               Text(
-                'Nereden başlayalım?',
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                t(en: 'Where should we start?', tr: 'Nereden başlayalım?'),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
-                'Daha önce müzik/nota bilgin varsa, kısa bir testle seni doğru '
-                'dersten başlatabilirim. Yepyeniysen dert değil — sıfırdan '
-                'güzelce ilerleriz.',
-                style: theme.textTheme.bodyLarge
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                t(
+                  en:
+                      'If you already know some music or notes, a short test '
+                      'can start you at the right lesson. Totally new? No '
+                      "worries — we'll build up nicely from scratch.",
+                  tr:
+                      'Daha önce müzik/nota bilgin varsa, kısa bir testle seni doğru '
+                      'dersten başlatabilirim. Yepyeniysen dert değil — sıfırdan '
+                      'güzelce ilerleriz.',
+                ),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
               const Spacer(),
@@ -141,7 +168,9 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Kısa test yap'),
+                  child: Text(
+                    t(en: 'Take the quick test', tr: 'Kısa test yap'),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -152,7 +181,9 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('Sıfırdan başla'),
+                  child: Text(
+                    t(en: 'Start from scratch', tr: 'Sıfırdan başla'),
+                  ),
                 ),
               ),
               const SizedBox(height: 8),

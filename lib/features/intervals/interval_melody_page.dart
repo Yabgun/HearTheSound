@@ -3,8 +3,11 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/interval.dart';
 import '../../core/note.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/play_button.dart';
 
 // -----------------------------------------------------------------------------
 // MELODİ İÇİNDE ARALIK — "Bu atlama müzikte ne yaptı?"
@@ -19,14 +22,14 @@ enum _MelodyDirection { ascending, descending }
 
 extension _MelodyDirectionLabel on _MelodyDirection {
   String get label => switch (this) {
-        _MelodyDirection.ascending => 'çıkıcı',
-        _MelodyDirection.descending => 'inici',
-      };
+    _MelodyDirection.ascending => t(en: 'ascending', tr: 'çıkıcı'),
+    _MelodyDirection.descending => t(en: 'descending', tr: 'inici'),
+  };
 
   IconData get icon => switch (this) {
-        _MelodyDirection.ascending => Icons.trending_up_rounded,
-        _MelodyDirection.descending => Icons.trending_down_rounded,
-      };
+    _MelodyDirection.ascending => Icons.trending_up_rounded,
+    _MelodyDirection.descending => Icons.trending_down_rounded,
+  };
 }
 
 class IntervalMelodyPage extends StatefulWidget {
@@ -88,10 +91,7 @@ class _IntervalMelodyPageState extends State<IntervalMelodyPage> {
     _selected = null;
   }
 
-  List<Note> _buildMotif(
-    MusicInterval interval,
-    _MelodyDirection direction,
-  ) {
+  List<Note> _buildMotif(MusicInterval interval, _MelodyDirection direction) {
     // İlk iki nota hedef aralığı verir. Üçüncü nota küçük bir "devam" hissi
     // ekler; böylece kullanıcı aralığı kuru bir test değil, melodik cümle
     // içinde duyar.
@@ -150,8 +150,18 @@ class _IntervalMelodyPageState extends State<IntervalMelodyPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Melodi İçinde · ${_index + 1}/${_rounds.length}'),
-        actions: [TextButton(onPressed: _skip, child: const Text('Geç'))],
+        title: Text(
+          t(
+            en: 'In the Melody · ${_index + 1}/${_rounds.length}',
+            tr: 'Melodi İçinde · ${_index + 1}/${_rounds.length}',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _skip,
+            child: Text(t(en: 'Skip', tr: 'Geç')),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -159,14 +169,13 @@ class _IntervalMelodyPageState extends State<IntervalMelodyPage> {
           child: Column(
             children: [
               const Spacer(),
-              Icon(
-                _direction.icon,
-                size: 42,
-                color: theme.colorScheme.primary,
-              ),
+              Icon(_direction.icon, size: 42, color: theme.colorScheme.primary),
               const SizedBox(height: 12),
               Text(
-                'Melodideki ilk atlama hangi aralık?',
+                t(
+                  en: 'Which interval is the first leap in the melody?',
+                  tr: 'Melodideki ilk atlama hangi aralık?',
+                ),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w800,
@@ -174,8 +183,15 @@ class _IntervalMelodyPageState extends State<IntervalMelodyPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'İlk iki notaya odaklan: ${_direction.label} bir sıçrama duyacaksın, '
-                'son nota sadece melodiyi tamamlıyor.',
+                t(
+                  en:
+                      'Focus on the first two notes: the leap you hear is '
+                      '${_direction.label}; the last note just completes the '
+                      'melody.',
+                  tr:
+                      'İlk iki notaya odaklan: ${_direction.label} bir sıçrama '
+                      'duyacaksın, son nota sadece melodiyi tamamlıyor.',
+                ),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -184,10 +200,13 @@ class _IntervalMelodyPageState extends State<IntervalMelodyPage> {
               const SizedBox(height: 26),
               _MotifCard(notes: _motif),
               const SizedBox(height: 18),
-              _PlayButton(onTap: _playMotif, playing: _playing),
+              PlayButton(onTap: _playMotif, playing: _playing),
               const SizedBox(height: 10),
               Text(
-                'motifi dinlemek için dokun',
+                t(
+                  en: 'tap to hear the motif',
+                  tr: 'motifi dinlemek için dokun',
+                ),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
@@ -200,7 +219,9 @@ class _IntervalMelodyPageState extends State<IntervalMelodyPage> {
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
                 childAspectRatio: 2.65,
-                children: _options.map((iv) => _optionButton(theme, iv)).toList(),
+                children: _options
+                    .map((iv) => _optionButton(theme, iv))
+                    .toList(),
               ),
               const SizedBox(height: 18),
               SizedBox(
@@ -210,13 +231,19 @@ class _IntervalMelodyPageState extends State<IntervalMelodyPage> {
                         children: [
                           Text(
                             correct
-                                ? 'Doğru! ✓  ${_target.name}'
-                                : 'İlk atlama ${_target.name} idi',
+                                ? t(
+                                    en: 'Correct! ✓  ${_target.name}',
+                                    tr: 'Doğru! ✓  ${_target.name}',
+                                  )
+                                : t(
+                                    en: 'The first leap was ${_target.name}',
+                                    tr: 'İlk atlama ${_target.name} idi',
+                                  ),
                             textAlign: TextAlign.center,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: correct
-                                  ? const Color(0xFF56C271)
-                                  : const Color(0xFFD25872),
+                                  ? AppColors.success
+                                  : AppColors.danger,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -231,8 +258,8 @@ class _IntervalMelodyPageState extends State<IntervalMelodyPage> {
                             ),
                             child: Text(
                               _index + 1 >= _rounds.length
-                                  ? 'Devam'
-                                  : 'Sonraki',
+                                  ? t(en: 'Continue', tr: 'Devam')
+                                  : t(en: 'Next', tr: 'Sonraki'),
                             ),
                           ),
                         ],
@@ -252,10 +279,10 @@ class _IntervalMelodyPageState extends State<IntervalMelodyPage> {
     Color fg = theme.colorScheme.onSurface;
     if (_selected != null) {
       if (interval == _target) {
-        bg = const Color(0xFF2E7D4F);
+        bg = AppColors.success;
         fg = Colors.white;
       } else if (interval == _selected) {
-        bg = const Color(0xFF9E3B4E);
+        bg = AppColors.danger;
         fg = Colors.white;
       } else {
         bg = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
@@ -338,7 +365,9 @@ class _NoteDot extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: theme.colorScheme.surface,
-        border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.45)),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.45),
+        ),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -346,41 +375,6 @@ class _NoteDot extends StatelessWidget {
         style: theme.textTheme.labelLarge?.copyWith(
           color: theme.colorScheme.primary,
           fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-}
-
-class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.onTap, required this.playing});
-
-  final VoidCallback onTap;
-  final bool playing;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: playing ? null : onTap,
-      child: Container(
-        width: 118,
-        height: 118,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.colorScheme.primary,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.35),
-              blurRadius: 30,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Icon(
-          playing ? Icons.graphic_eq_rounded : Icons.music_note_rounded,
-          size: 52,
-          color: theme.colorScheme.onPrimary,
         ),
       ),
     );

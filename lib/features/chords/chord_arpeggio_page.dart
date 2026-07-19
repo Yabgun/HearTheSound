@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import '../../audio/note_player.dart';
 import '../../audio/pitch_service.dart';
 import '../../core/chord.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../../core/vocal_range.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/pitch_meter.dart';
 import '../calibration/reach_badge.dart';
 
 // -----------------------------------------------------------------------------
@@ -24,8 +27,8 @@ class ChordArpeggioPage extends StatefulWidget {
     required this.player,
     required this.onComplete,
     this.range,
-    this.title = 'Akoru Söyle',
-    this.instruction = 'notalarına dokunup dinle, sonra sırayla söyle',
+    this.title,
+    this.instruction,
   });
 
   final List<Chord> chords;
@@ -36,8 +39,10 @@ class ChordArpeggioPage extends StatefulWidget {
   final VocalRange? range;
 
   /// İlerleme gibi bağlamlarda aynı sağlam arpej motorunu farklı dille sunar.
-  final String title;
-  final String instruction;
+  /// null bırakılırsa aktif dile göre varsayılan başlık/yönerge kullanılır
+  /// (varsayılanlar const olamayacağı için burada t() çağrılamaz).
+  final String? title;
+  final String? instruction;
 
   @override
   State<ChordArpeggioPage> createState() => _ChordArpeggioPageState();
@@ -60,11 +65,20 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
   // Ders içi oktav kaydırıcı (keşif/konfor): tüm akoru ±oktav nudge eder.
   int _octaveShift = 0;
   Chord get _chord => Chord(
-        Note(widget.chords[_chordIndex].root.midi + _octaveShift),
-        widget.chords[_chordIndex].quality,
-        inversion: widget.chords[_chordIndex].inversion,
-      );
+    Note(widget.chords[_chordIndex].root.midi + _octaveShift),
+    widget.chords[_chordIndex].quality,
+    inversion: widget.chords[_chordIndex].inversion,
+  );
   Note get _target => _chord.notes[_noteIndex];
+
+  String get _title =>
+      widget.title ?? t(en: 'Sing the Chord', tr: 'Akoru Söyle');
+  String get _instruction =>
+      widget.instruction ??
+      t(
+        en: 'tap its notes to listen, then sing them in order',
+        tr: 'notalarına dokunup dinle, sonra sırayla söyle',
+      );
 
   @override
   void initState() {
@@ -154,7 +168,8 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
     final now = DateTime.now();
     final dt = _lastTick == null
         ? 0.0
-        : now.difference(_lastTick!).inMilliseconds / _holdTarget.inMilliseconds;
+        : now.difference(_lastTick!).inMilliseconds /
+              _holdTarget.inMilliseconds;
     _lastTick = now;
     // Tam oktav eşleşmesi (E4 = E4; farklı oktav kabul edilmez).
     final match = r != null && r.note.midi == _target.midi;
@@ -212,27 +227,36 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
 
     if (_permissionDenied) {
       return Scaffold(
-        appBar: AppBar(title: Text(widget.title)),
+        appBar: AppBar(title: Text(_title)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(28),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Bu adım için mikrofon izni gerekli.',
-                    textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
+                Text(
+                  t(
+                    en: 'This step needs microphone permission.',
+                    tr: 'Bu adım için mikrofon izni gerekli.',
+                  ),
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium,
+                ),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: () {
                     setState(() => _permissionDenied = false);
                     _presentTarget();
                   },
-                  child: const Text('İzin ver ve tekrar dene'),
+                  child: Text(
+                    t(en: 'Allow and try again', tr: 'İzin ver ve tekrar dene'),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextButton(
-                    onPressed: widget.onComplete,
-                    child: const Text('Bu adımı atla')),
+                  onPressed: widget.onComplete,
+                  child: Text(t(en: 'Skip this step', tr: 'Bu adımı atla')),
+                ),
               ],
             ),
           ),
@@ -243,177 +267,248 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
     final exact = _reading != null && _reading!.note.midi == _target.midi;
     final samePitchClass =
         _reading != null && _reading!.note.pitchClass == _target.pitchClass;
-    const green = Color(0xFF56C271);
-    final ringColor = (_celebrating || exact) ? green : theme.colorScheme.primary;
+    const green = AppColors.success;
+    final ringColor = (_celebrating || exact)
+        ? green
+        : theme.colorScheme.primary;
 
     final String status;
     if (_celebrating) {
-      status = 'Doğru! ✓';
+      status = t(en: 'Correct! ✓', tr: 'Doğru! ✓');
     } else if (_hearing) {
-      status = 'dinle: ${_target.label} …';
+      status = t(
+        en: 'listen: ${_target.label} …',
+        tr: 'dinle: ${_target.label} …',
+      );
     } else if (!_micActive) {
-      status = 'Notaları dinle, sonra sırayla söyle 👇';
+      status = t(
+        en: 'Hear the notes, then sing them in order 👇',
+        tr: 'Notaları dinle, sonra sırayla söyle 👇',
+      );
     } else if (exact) {
-      status = 'tam — böyle tut! 🎯';
+      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
     } else if (samePitchClass) {
       status = _reading!.note.midi < _target.midi
-          ? 'doğru nota — bir oktav tiz söyle'
-          : 'doğru nota — bir oktav pes söyle';
+          ? t(
+              en: 'right note — sing an octave higher',
+              tr: 'doğru nota — bir oktav tiz söyle',
+            )
+          : t(
+              en: 'right note — sing an octave lower',
+              tr: 'doğru nota — bir oktav pes söyle',
+            );
     } else if (_reading != null) {
-      status = 'duyduğum: ${_reading!.note.label}';
+      status = t(
+        en: 'I hear: ${_reading!.note.label}',
+        tr: 'duyduğum: ${_reading!.note.label}',
+      );
     } else {
-      status = 'sesini duyayım…';
+      status = t(en: 'let me hear you…', tr: 'sesini duyayım…');
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.title} · ${_chordIndex + 1}/${widget.chords.length}'),
-        actions: [TextButton(onPressed: _skip, child: const Text('Geç'))],
+        title: Text('$_title · ${_chordIndex + 1}/${widget.chords.length}'),
+        actions: [
+          TextButton(
+            onPressed: _skip,
+            child: Text(t(en: 'Skip', tr: 'Geç')),
+          ),
+        ],
       ),
+      // Kısa ekran güvenliği: içerik sığmazsa taşmak yerine kaydırılır;
+      // uzun ekranda Spacer'lar sayesinde görünüm eskisiyle birebir aynıdır.
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            children: [
-              const Spacer(),
-              Text(
-                _chord.label,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.instruction,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: _replayChord,
-                icon: const Icon(Icons.piano_rounded),
-                label: const Text('Akorun tamamını dinle'),
-              ),
-              const SizedBox(height: 6),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton.outlined(
-                    onPressed: _micActive ? null : () => _shiftOctave(-12),
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                    tooltip: 'Bir oktav pes',
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text(
-                      'oktav',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      const Spacer(),
+                      Text(
+                        _chord.label,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
-                    ),
-                  ),
-                  IconButton.outlined(
-                    onPressed: _micActive ? null : () => _shiftOctave(12),
-                    icon: const Icon(Icons.keyboard_arrow_up_rounded),
-                    tooltip: 'Bir oktav tiz',
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              // Bireysel notalar — dokunarak dinlenebilir.
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < _chord.notes.length; i++)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      child: _noteChip(
-                        theme,
-                        _chord.notes[i],
-                        i < _noteIndex
-                            ? _NoteState.done
-                            : i == _noteIndex
-                                ? _NoteState.current
-                                : _NoteState.pending,
+                      const SizedBox(height: 4),
+                      Text(
+                        _instruction,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                ],
-              ),
-              const Spacer(),
-              SizedBox(
-                width: 150,
-                height: 150,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 150,
-                      height: 150,
-                      child: CircularProgressIndicator(
-                        value: _hold,
-                        strokeWidth: 9,
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                        valueColor: AlwaysStoppedAnimation(ringColor),
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('şimdi',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant)),
-                        Text(
-                          _target.label,
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: ringColor,
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: _replayChord,
+                        icon: const Icon(Icons.piano_rounded),
+                        label: Text(
+                          t(
+                            en: 'Hear the full chord',
+                            tr: 'Akorun tamamını dinle',
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              ReachBadge(target: _target, range: widget.range),
-              const SizedBox(height: 8),
-              Text(
-                status,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: (_celebrating || exact)
-                      ? green
-                      : theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(flex: 2),
-              SizedBox(
-                width: double.infinity,
-                child: _micActive
-                    ? OutlinedButton.icon(
-                        onPressed: _stopListening,
-                        icon: const Icon(Icons.stop_rounded),
-                        label: const Text('Durdur'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                      )
-                    : FilledButton.icon(
-                        onPressed: _hearing ? null : _presentTarget,
-                        icon: const Icon(Icons.mic_rounded),
-                        label: Text('${_target.label} notasını söyle'),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton.outlined(
+                            onPressed: _micActive
+                                ? null
+                                : () => _shiftOctave(-12),
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                            tooltip: t(
+                              en: 'One octave lower',
+                              tr: 'Bir oktav pes',
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: Text(
+                              t(en: 'octave', tr: 'oktav'),
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          IconButton.outlined(
+                            onPressed: _micActive
+                                ? null
+                                : () => _shiftOctave(12),
+                            icon: const Icon(Icons.keyboard_arrow_up_rounded),
+                            tooltip: t(
+                              en: 'One octave higher',
+                              tr: 'Bir oktav tiz',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      // Bireysel notalar — dokunarak dinlenebilir.
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          for (var i = 0; i < _chord.notes.length; i++)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              child: _noteChip(
+                                theme,
+                                _chord.notes[i],
+                                i < _noteIndex
+                                    ? _NoteState.done
+                                    : i == _noteIndex
+                                    ? _NoteState.current
+                                    : _NoteState.pending,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const Spacer(),
+                      SizedBox(
+                        width: 150,
+                        height: 150,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            SizedBox(
+                              width: 150,
+                              height: 150,
+                              child: CircularProgressIndicator(
+                                value: _hold,
+                                strokeWidth: 9,
+                                backgroundColor:
+                                    theme.colorScheme.surfaceContainerHighest,
+                                valueColor: AlwaysStoppedAnimation(ringColor),
+                              ),
+                            ),
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  t(en: 'now', tr: 'şimdi'),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                Text(
+                                  _target.label,
+                                  style: theme.textTheme.headlineMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: ringColor,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 14),
+                      ReachBadge(target: _target, range: widget.range),
+                      const SizedBox(height: 8),
+                      Text(
+                        status,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: (_celebrating || exact)
+                              ? green
+                              : theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Canlı perde ibresi: sesin hedefe göre tam nerede olduğunu gösterir.
+                      PitchMeter(
+                        target: _target,
+                        reading: _reading,
+                        active: _micActive,
+                      ),
+                      const Spacer(flex: 2),
+                      SizedBox(
+                        width: double.infinity,
+                        child: _micActive
+                            ? OutlinedButton.icon(
+                                onPressed: _stopListening,
+                                icon: const Icon(Icons.stop_rounded),
+                                label: Text(t(en: 'Stop', tr: 'Durdur')),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                              )
+                            : FilledButton.icon(
+                                onPressed: _hearing ? null : _presentTarget,
+                                icon: const Icon(Icons.mic_rounded),
+                                label: Text(
+                                  t(
+                                    en: 'Sing ${_target.label}',
+                                    tr: '${_target.label} notasını söyle',
+                                  ),
+                                ),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                ),
+                              ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
-            ],
+            ),
           ),
         ),
       ),
@@ -425,7 +520,7 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
     late final Color fg;
     switch (state) {
       case _NoteState.done:
-        bg = const Color(0xFF56C271);
+        bg = AppColors.success;
         fg = Colors.white;
       case _NoteState.current:
         bg = theme.colorScheme.primary;

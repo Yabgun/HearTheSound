@@ -1,0 +1,12 @@
+# Yayın imzası şablonu — DOLDURUP 'key.properties' ADIYLA KAYDET (o dosya
+# gitignore'dadır; bu örnek dosya repoda kalabilir).
+#
+# Keystore üretmek için (bir kez):
+#   keytool -genkey -v -keystore %USERPROFILE%\hearthesound-release.jks ^
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias hearthesound
+#
+# Sonra değerleri buraya yaz:
+storeFile=C:\\Users\\MONSTER\\hearthesound-release.jks
+storePassword=BURAYA_STORE_SIFRESI
+keyAlias=hearthesound
+keyPassword=BURAYA_KEY_SIFRESI

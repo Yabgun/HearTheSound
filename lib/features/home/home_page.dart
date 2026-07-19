@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/content_locale.dart';
 import 'home_destinations.dart';
 import 'path_map_page.dart';
 import 'today_page.dart';
@@ -36,26 +37,26 @@ class _HomePageState extends State<HomePage> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.wb_sunny_outlined),
-            selectedIcon: Icon(Icons.wb_sunny_rounded),
-            label: 'Bugün',
+            icon: const Icon(Icons.wb_sunny_outlined),
+            selectedIcon: const Icon(Icons.wb_sunny_rounded),
+            label: t(en: 'Today', tr: 'Bugün'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.map_outlined),
-            selectedIcon: Icon(Icons.map_rounded),
-            label: 'Yol',
+            icon: const Icon(Icons.map_outlined),
+            selectedIcon: const Icon(Icons.map_rounded),
+            label: t(en: 'Path', tr: 'Yol'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.headphones_outlined),
-            selectedIcon: Icon(Icons.headphones_rounded),
-            label: 'Pratik',
+            icon: const Icon(Icons.headphones_outlined),
+            selectedIcon: const Icon(Icons.headphones_rounded),
+            label: t(en: 'Practice', tr: 'Pratik'),
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Profil',
+            icon: const Icon(Icons.person_outline_rounded),
+            selectedIcon: const Icon(Icons.person_rounded),
+            label: t(en: 'Profile', tr: 'Profil'),
           ),
         ],
       ),

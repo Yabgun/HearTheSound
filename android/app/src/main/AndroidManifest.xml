@@ -3,8 +3,11 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <!-- Günlük hatırlatma bildirimleri (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Ağ erişimi: Supabase senkron + google_fonts (Sora) runtime indirmesi.
+         Debug'da Flutter otomatik ekler; RELEASE için burada şart. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="hear_the_sound"
+        android:label="HearTheSound"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

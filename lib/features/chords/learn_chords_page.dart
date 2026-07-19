@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
 import '../../core/chord.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../concept/concept_sheet.dart';
 import 'chord_lesson.dart';
@@ -29,17 +30,25 @@ class LearnChordsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Akorları Tanı')),
+      appBar: AppBar(
+        title: Text(t(en: 'Meet the Chords', tr: 'Akorları Tanı')),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Önce dinle, öğren', style: theme.textTheme.headlineSmall),
+              Text(
+                t(en: 'Listen first, then learn', tr: 'Önce dinle, öğren'),
+                style: theme.textTheme.headlineSmall,
+              ),
               const SizedBox(height: 6),
               Text(
-                'Her akoru ve onu oluşturan notaları tek tek dinle. Notalara dokunarak seslerini öğren.',
+                t(
+                  en: 'Listen to each chord and the notes inside it, one by one. Tap the notes to learn their sounds.',
+                  tr: 'Her akoru ve onu oluşturan notaları tek tek dinle. Notalara dokunarak seslerini öğren.',
+                ),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -62,7 +71,9 @@ class LearnChordsPage extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Hazırım · Devam'),
+                child: Text(
+                  t(en: "I'm Ready · Continue", tr: 'Hazırım · Devam'),
+                ),
               ),
             ],
           ),
@@ -94,13 +105,13 @@ class LearnChordsPage extends StatelessWidget {
               FilledButton.tonalIcon(
                 onPressed: () => player.playChord(chord.notes),
                 icon: const Icon(Icons.piano_rounded, size: 18),
-                label: const Text('Akor'),
+                label: Text(t(en: 'Chord', tr: 'Akor')),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            'notaları:',
+            t(en: 'notes:', tr: 'notaları:'),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -141,8 +152,11 @@ class LearnChordsPage extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            Icon(Icons.volume_up_rounded,
-                size: 16, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.volume_up_rounded,
+              size: 16,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
 import '../chords/chord_arpeggio_page.dart';
@@ -36,15 +37,16 @@ class _ProgressionLessonFlowPageState
   static const int _questionCount = 8;
   static const int _xpPerCorrect = 10;
 
-  final NotePlayer _player = SynthNotePlayer();
+  final NotePlayer _player = createNotePlayer();
   _Phase _phase = _Phase.learning;
   LessonResult? _result;
   int _xpEarned = 0;
 
   // Akor zinciri, söyleme eklenince de ders boyunca tek oktavda kalır.
   late final VocalRange? _range = ref.read(progressProvider).vocalRange;
-  late final ProgressionLesson _keyLesson =
-      widget.lesson.inKey(widget.lesson.key);
+  late final ProgressionLesson _keyLesson = widget.lesson.inKey(
+    widget.lesson.key,
+  );
   late final ProgressionLesson _lesson = ProgressionLesson(
     id: _keyLesson.id,
     title: _keyLesson.title,
@@ -61,11 +63,14 @@ class _ProgressionLessonFlowPageState
 
   void _onComplete(LessonResult result) {
     final xp = result.correct * _xpPerCorrect;
-    ref.read(progressProvider.notifier).completeLesson(
+    ref
+        .read(progressProvider.notifier)
+        .completeLesson(
           skillId: widget.lesson.id,
           xpEarned: xp,
           masteryGain: result.correct,
           accuracy: result.accuracy,
+          mistakes: result.mistakes,
           completed: result.accuracy >= 0.7,
         );
     setState(() {
@@ -98,9 +103,15 @@ class _ProgressionLessonFlowPageState
           chords: _lesson.pool.first.chords.take(2).toList(),
           player: _player,
           range: _range,
-          title: 'İlerlemeyi Arpejle',
-          instruction:
-              'İlerleme içindeki akorları sırayla kur: her birini kökünden başlat.',
+          title: t(en: 'Arpeggiate the Progression', tr: 'İlerlemeyi Arpejle'),
+          instruction: t(
+            en:
+                'Build the chords of the progression in order: start each '
+                'one from its root.',
+            tr:
+                'İlerleme içindeki akorları sırayla kur: her birini kökünden '
+                'başlat.',
+          ),
           onComplete: () => setState(() => _phase = _Phase.recognizing),
         );
       case _Phase.recognizing:

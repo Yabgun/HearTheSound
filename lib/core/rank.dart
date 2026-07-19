@@ -1,18 +1,21 @@
+import 'content_locale.dart';
+
 /// RPG rütbe merdiveni — kullanıcının toplam XP'sine göre unvanı.
 /// İçerik planındaki "Sağır Kulak → … → Mutlak Kulak" merdiveni.
+/// Rütbe adları aktif içerik diline göre çözülür (i18n).
 class Rank {
   final String name;
   final int minXp;
   const Rank(this.name, this.minXp);
 }
 
-const List<Rank> ranks = [
-  Rank('Sağır Kulak', 0),
-  Rank('Çırak', 100),
-  Rank('Kalfa', 300),
-  Rank('Usta', 700),
-  Rank('Virtüöz', 1500),
-  Rank('Mutlak Kulak', 3000),
+List<Rank> get ranks => [
+  Rank(t(en: 'Deaf Ear', tr: 'Sağır Kulak'), 0),
+  Rank(t(en: 'Apprentice', tr: 'Çırak'), 100),
+  Rank(t(en: 'Journeyman', tr: 'Kalfa'), 300),
+  Rank(t(en: 'Master', tr: 'Usta'), 700),
+  Rank(t(en: 'Virtuoso', tr: 'Virtüöz'), 1500),
+  Rank(t(en: 'Absolute Ear', tr: 'Mutlak Kulak'), 3000),
 ];
 
 /// Verilen XP'deki güncel rütbe.

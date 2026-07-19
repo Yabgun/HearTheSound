@@ -4,7 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/play_button.dart';
 import '../dev/pitch_spike_page.dart';
 import '../lesson/lesson.dart';
 
@@ -44,6 +47,7 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
   late List<Note> _options;
   Note? _selected;
   bool _answered = false;
+  final List<String> _mistakes = [];
   int _index = 0; // 0-tabanlı soru numarası
   int _correct = 0; // doğru sayısı
   int _streak = 0; // ders içi seri (ateş göstergesi)
@@ -90,12 +94,15 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
         _streak++;
       } else {
         _streak = 0;
+        _mistakes.add('note:${_target.name}>${choice.name}');
       }
     });
   }
 
   void _finish() {
-    widget.onComplete?.call(LessonResult(_correct, widget.questionCount));
+    widget.onComplete?.call(
+      LessonResult(_correct, widget.questionCount, mistakes: _mistakes),
+    );
   }
 
   @override
@@ -108,18 +115,26 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Soru ${_index + 1} / ${widget.questionCount}'),
+        title: Text(
+          t(
+            en: 'Question ${_index + 1} / ${widget.questionCount}',
+            tr: 'Soru ${_index + 1} / ${widget.questionCount}',
+          ),
+        ),
         actions: [
           if (widget.onRelearn != null)
             IconButton(
               icon: const Icon(Icons.school_rounded),
-              tooltip: 'Tekrar öğren',
+              tooltip: t(en: 'Learn again', tr: 'Tekrar öğren'),
               onPressed: widget.onRelearn,
             ),
           if (kDebugMode)
             IconButton(
               icon: const Icon(Icons.graphic_eq_rounded),
-              tooltip: 'Perde tespiti (geliştirici)',
+              tooltip: t(
+                en: 'Pitch detection (dev)',
+                tr: 'Perde tespiti (geliştirici)',
+              ),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const PitchSpikePage()),
               ),
@@ -139,7 +154,10 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
-          child: LinearProgressIndicator(value: progress.clamp(0, 1), minHeight: 4),
+          child: LinearProgressIndicator(
+            value: progress.clamp(0, 1),
+            minHeight: 4,
+          ),
         ),
       ),
       body: SafeArea(
@@ -149,16 +167,21 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
             children: [
               const Spacer(flex: 2),
               Text(
-                _streak > 1 ? '🔥 $_streak seri' : 'Çalınan notayı bul',
+                _streak > 1
+                    ? t(en: '🔥 $_streak streak', tr: '🔥 $_streak seri')
+                    : t(
+                        en: 'Find the note you heard',
+                        tr: 'Çalınan notayı bul',
+                      ),
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 24),
-              _PlayButton(onTap: _playTarget),
+              PlayButton(onTap: _playTarget),
               const SizedBox(height: 12),
               Text(
-                'dinlemek için dokun',
+                t(en: 'tap to listen', tr: 'dinlemek için dokun'),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
@@ -175,18 +198,24 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
               ),
               const SizedBox(height: 20),
               SizedBox(
-                height: 84,
+                height: 92,
                 child: _answered
                     ? Column(
                         children: [
                           Text(
                             correct
-                                ? 'Doğru! ✓  ${_target.label}'
-                                : 'Bu ${_target.label} idi',
+                                ? t(
+                                    en: 'Correct! ✓  ${_target.label}',
+                                    tr: 'Doğru! ✓  ${_target.label}',
+                                  )
+                                : t(
+                                    en: 'It was ${_target.label}',
+                                    tr: 'Bu ${_target.label} idi',
+                                  ),
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: correct
-                                  ? const Color(0xFF56C271)
-                                  : const Color(0xFFD25872),
+                                  ? AppColors.success
+                                  : AppColors.danger,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -199,7 +228,11 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
                                 vertical: 14,
                               ),
                             ),
-                            child: Text(isLast ? 'Bitir' : 'Sonraki'),
+                            child: Text(
+                              isLast
+                                  ? t(en: 'Finish', tr: 'Bitir')
+                                  : t(en: 'Next', tr: 'Sonraki'),
+                            ),
                           ),
                         ],
                       )
@@ -220,10 +253,10 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
 
     if (_answered) {
       if (note == _target) {
-        bg = const Color(0xFF2E7D4F);
+        bg = AppColors.success;
         fg = Colors.white;
       } else if (note == _selected) {
-        bg = const Color(0xFF9E3B4E);
+        bg = AppColors.danger;
         fg = Colors.white;
       } else {
         bg = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
@@ -252,36 +285,3 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
 }
 
 /// Büyük dairesel "çal" düğmesi.
-class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 128,
-        height: 128,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.colorScheme.primary,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.35),
-              blurRadius: 30,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Icon(
-          Icons.volume_up_rounded,
-          size: 54,
-          color: theme.colorScheme.onPrimary,
-        ),
-      ),
-    );
-  }
-}

@@ -23,8 +23,15 @@ class PlayerProgress {
   final int dailyXp; // bugün kazanılan XP (gün değişince sıfırlanır)
   final Map<String, int> skillXp; // beceri kimliği -> ustalık puanı
   final List<String> completedLessons; // geçilmiş ders kimlikleri (kilit açar)
-  final VocalRange? vocalRange; // ölçülmüş ses aralığı; null = kalibre edilmemiş
-  final Map<String, ReviewState> reviews; // beceri kimliği -> aralıklı tekrar durumu
+  final VocalRange?
+  vocalRange; // ölçülmüş ses aralığı; null = kalibre edilmemiş
+  final Map<String, ReviewState>
+  reviews; // beceri kimliği -> aralıklı tekrar durumu
+
+  /// Karıştırma sayaçları: 'tip:beklenen>seçilen' -> kaç kez.
+  /// (Ör. 'quality:major7>dominant7' -> 3). Profildeki "en çok karıştırdıkların"
+  /// içgörüsünü besler; anahtarlar dil-bağımsızdır (i18n'e dayanıklı).
+  final Map<String, int> confusionCounts;
 
   const PlayerProgress({
     this.xp = 0,
@@ -36,6 +43,7 @@ class PlayerProgress {
     this.completedLessons = const [],
     this.vocalRange,
     this.reviews = const {},
+    this.confusionCounts = const {},
   });
 
   static const empty = PlayerProgress();
@@ -47,10 +55,16 @@ class PlayerProgress {
   bool get isCalibrated => vocalRange != null;
 
   /// [todayKey] ('yyyy-mm-dd') itibarıyla vadesi gelmiş tekrar becerileri.
-  List<String> dueReviewSkills(String todayKey) => reviews.entries
-      .where((e) => e.value.isDueOn(todayKey))
-      .map((e) => e.key)
-      .toList();
+  /// En çok UNUTULAN (lapses yüksek) beceriler öne gelir — zor olan önce çalışılır.
+  List<String> dueReviewSkills(String todayKey) {
+    final due = reviews.entries.where((e) => e.value.isDueOn(todayKey)).toList()
+      ..sort((a, b) {
+        final byLapses = b.value.lapses.compareTo(a.value.lapses);
+        // Eşitlikte anahtar sırası: deterministik kalsın (test edilebilirlik).
+        return byLapses != 0 ? byLapses : a.key.compareTo(b.key);
+      });
+    return [for (final e in due) e.key];
+  }
 
   /// [vocalRange] için özel: null geçilebilmesi gerektiğinden (temizleme)
   /// [copyWith] yerine sentinel kullanır — verilmezse mevcut değer korunur.
@@ -64,6 +78,7 @@ class PlayerProgress {
     List<String>? completedLessons,
     Object? vocalRange = _unset,
     Map<String, ReviewState>? reviews,
+    Map<String, int>? confusionCounts,
   }) {
     return PlayerProgress(
       xp: xp ?? this.xp,
@@ -77,20 +92,22 @@ class PlayerProgress {
           ? this.vocalRange
           : vocalRange as VocalRange?,
       reviews: reviews ?? this.reviews,
+      confusionCounts: confusionCounts ?? this.confusionCounts,
     );
   }
 
   Map<String, dynamic> toMap() => {
-        'xp': xp,
-        'streak': streak,
-        'longestStreak': longestStreak,
-        'lastActiveDay': lastActiveDay,
-        'dailyXp': dailyXp,
-        'skillXp': skillXp,
-        'completedLessons': completedLessons,
-        'vocalRange': vocalRange?.toMap(),
-        'reviews': reviews.map((k, v) => MapEntry(k, v.toMap())),
-      };
+    'xp': xp,
+    'streak': streak,
+    'longestStreak': longestStreak,
+    'lastActiveDay': lastActiveDay,
+    'dailyXp': dailyXp,
+    'skillXp': skillXp,
+    'completedLessons': completedLessons,
+    'vocalRange': vocalRange?.toMap(),
+    'reviews': reviews.map((k, v) => MapEntry(k, v.toMap())),
+    'confusionCounts': confusionCounts,
+  };
 
   factory PlayerProgress.fromMap(Map<String, dynamic> map) {
     return PlayerProgress(
@@ -99,22 +116,32 @@ class PlayerProgress {
       longestStreak: (map['longestStreak'] as num?)?.toInt() ?? 0,
       lastActiveDay: map['lastActiveDay'] as String?,
       dailyXp: (map['dailyXp'] as num?)?.toInt() ?? 0,
-      skillXp: (map['skillXp'] as Map?)?.map(
+      skillXp:
+          (map['skillXp'] as Map?)?.map(
             (key, value) => MapEntry(key as String, (value as num).toInt()),
           ) ??
           const {},
-      completedLessons: (map['completedLessons'] as List?)
+      completedLessons:
+          (map['completedLessons'] as List?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
       vocalRange: map['vocalRange'] == null
           ? null
-          : VocalRange.fromMap((map['vocalRange'] as Map).cast<String, dynamic>()),
-      reviews: (map['reviews'] as Map?)?.map(
+          : VocalRange.fromMap(
+              (map['vocalRange'] as Map).cast<String, dynamic>(),
+            ),
+      reviews:
+          (map['reviews'] as Map?)?.map(
             (key, value) => MapEntry(
               key as String,
               ReviewState.fromMap((value as Map).cast<String, dynamic>()),
             ),
+          ) ??
+          const {},
+      confusionCounts:
+          (map['confusionCounts'] as Map?)?.map(
+            (key, value) => MapEntry(key as String, (value as num).toInt()),
           ) ??
           const {},
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../concept/concept_sheet.dart';
 import 'tonality_lesson.dart';
@@ -61,18 +62,30 @@ class _TonalityLearnPageState extends State<TonalityLearnPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Diziler ve Tonalite')),
+      appBar: AppBar(
+        title: Text(t(en: 'Scales and Tonality', tr: 'Diziler ve Tonalite')),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Önce evi duy', style: theme.textTheme.headlineSmall),
+              Text(
+                t(en: 'Hear home first', tr: 'Önce evi duy'),
+                style: theme.textTheme.headlineSmall,
+              ),
               const SizedBox(height: 6),
               Text(
-                'Tonik C4 bizim evimiz. Önce majör diziyi dinle, sonra her '
-                'derecenin eve göre nasıl hissettirdiğini karşılaştır.',
+                t(
+                  en:
+                      'The tonic C4 is our home. Listen to the major scale '
+                      'first, then compare how each degree feels next to home.',
+                  tr:
+                      'Tonik C4 bizim evimiz. Önce majör diziyi dinle, sonra '
+                      'her derecenin eve göre nasıl hissettirdiğini '
+                      'karşılaştır.',
+                ),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -83,7 +96,12 @@ class _TonalityLearnPageState extends State<TonalityLearnPage> {
               OutlinedButton.icon(
                 onPressed: _playingScale ? null : _playScale,
                 icon: const Icon(Icons.piano_rounded),
-                label: const Text('Do majör dizisini dinle'),
+                label: Text(
+                  t(
+                    en: 'Listen to the C major scale',
+                    tr: 'Do majör dizisini dinle',
+                  ),
+                ),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -102,7 +120,12 @@ class _TonalityLearnPageState extends State<TonalityLearnPage> {
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Hazırım · Tanımaya geç'),
+                child: Text(
+                  t(
+                    en: "I'm Ready · Start Recognizing",
+                    tr: 'Hazırım · Tanımaya geç',
+                  ),
+                ),
               ),
             ],
           ),

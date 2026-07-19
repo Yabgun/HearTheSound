@@ -3,7 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
+import '../../core/content_locale.dart';
 import '../../core/major_key.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/play_button.dart';
 import 'progression_lesson.dart';
 
 // -----------------------------------------------------------------------------
@@ -97,8 +100,22 @@ class _ProgressionBuildPageState extends State<ProgressionBuildPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('${widget.majorKey.label} · Kur · ${_index + 1}/${_rounds.length}'),
-        actions: [TextButton(onPressed: _skip, child: const Text('Geç'))],
+        title: Text(
+          t(
+            en:
+                '${widget.majorKey.label} · Build · '
+                '${_index + 1}/${_rounds.length}',
+            tr:
+                '${widget.majorKey.label} · Kur · '
+                '${_index + 1}/${_rounds.length}',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _skip,
+            child: Text(t(en: 'Skip', tr: 'Geç')),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -117,7 +134,12 @@ class _ProgressionBuildPageState extends State<ProgressionBuildPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Bu zincir müzikte nasıl bir hareket kuruyor?',
+                t(
+                  en:
+                      'What kind of motion does this chain create in the '
+                      'music?',
+                  tr: 'Bu zincir müzikte nasıl bir hareket kuruyor?',
+                ),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -126,10 +148,15 @@ class _ProgressionBuildPageState extends State<ProgressionBuildPage> {
               const SizedBox(height: 20),
               _ChordChainCard(progression: _target),
               const SizedBox(height: 18),
-              Center(child: _PlayButton(onTap: _playTarget, playing: _playing)),
+              Center(
+                child: PlayButton(onTap: _playTarget, playing: _playing),
+              ),
               const SizedBox(height: 8),
               Text(
-                'akor dizisini dinlemek için dokun',
+                t(
+                  en: 'tap to hear the chord sequence',
+                  tr: 'akor dizisini dinlemek için dokun',
+                ),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
@@ -149,12 +176,17 @@ class _ProgressionBuildPageState extends State<ProgressionBuildPage> {
                     ? Column(
                         children: [
                           Text(
-                            correct ? 'Doğru! ✓' : 'Bu hareket şöyleydi:',
+                            correct
+                                ? t(en: 'Correct! ✓', tr: 'Doğru! ✓')
+                                : t(
+                                    en: 'The motion went like this:',
+                                    tr: 'Bu hareket şöyleydi:',
+                                  ),
                             textAlign: TextAlign.center,
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: correct
-                                  ? const Color(0xFF56C271)
-                                  : const Color(0xFFD25872),
+                                  ? AppColors.success
+                                  : AppColors.danger,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -178,8 +210,8 @@ class _ProgressionBuildPageState extends State<ProgressionBuildPage> {
                             ),
                             child: Text(
                               _index + 1 >= _rounds.length
-                                  ? 'Teste Geç'
-                                  : 'Sonraki',
+                                  ? t(en: 'Start the Test', tr: 'Teste Geç')
+                                  : t(en: 'Next', tr: 'Sonraki'),
                             ),
                           ),
                         ],
@@ -198,10 +230,10 @@ class _ProgressionBuildPageState extends State<ProgressionBuildPage> {
     Color fg = theme.colorScheme.onSurface;
     if (_selected != null) {
       if (progression == _target) {
-        bg = const Color(0xFF2E7D4F);
+        bg = AppColors.success;
         fg = Colors.white;
       } else if (progression == _selected) {
-        bg = const Color(0xFF9E3B4E);
+        bg = AppColors.danger;
         fg = Colors.white;
       } else {
         bg = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
@@ -266,41 +298,6 @@ class _ChordChainCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.onTap, required this.playing});
-
-  final VoidCallback onTap;
-  final bool playing;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: playing ? null : onTap,
-      child: Container(
-        width: 88,
-        height: 88,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: theme.colorScheme.primary,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withValues(alpha: 0.3),
-              blurRadius: 24,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: Icon(
-          playing ? Icons.graphic_eq_rounded : Icons.playlist_play_rounded,
-          color: theme.colorScheme.onPrimary,
-          size: 38,
-        ),
       ),
     );
   }

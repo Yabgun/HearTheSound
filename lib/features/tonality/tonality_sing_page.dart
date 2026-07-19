@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
 import '../../audio/pitch_service.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../../core/octave_mapping.dart';
 import '../../core/vocal_range.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/pitch_meter.dart';
 import '../calibration/reach_badge.dart';
 import 'tonality_lesson.dart';
 
@@ -35,7 +38,7 @@ class TonalitySingPage extends StatefulWidget {
 
 class _TonalitySingPageState extends State<TonalitySingPage> {
   static const Duration _holdTarget = Duration(seconds: 3);
-  static const Color _green = Color(0xFF56C271);
+  static const Color _green = AppColors.success;
 
   final PitchService _pitch = PitchService();
 
@@ -153,7 +156,8 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
     final now = DateTime.now();
     final dt = _lastTick == null
         ? 0.0
-        : now.difference(_lastTick!).inMilliseconds / _holdTarget.inMilliseconds;
+        : now.difference(_lastTick!).inMilliseconds /
+              _holdTarget.inMilliseconds;
     _lastTick = now;
     final match = r != null && r.note.midi == _target.midi;
     setState(() {
@@ -201,7 +205,9 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
 
     if (_permissionDenied) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Dereceyi Söyle')),
+        appBar: AppBar(
+          title: Text(t(en: 'Sing the Degree', tr: 'Dereceyi Söyle')),
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(28),
@@ -209,7 +215,10 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Bu adım için mikrofon izni gerekli.',
+                  t(
+                    en: 'This step needs microphone permission.',
+                    tr: 'Bu adım için mikrofon izni gerekli.',
+                  ),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleMedium,
                 ),
@@ -219,12 +228,14 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
                     setState(() => _permissionDenied = false);
                     _startListening();
                   },
-                  child: const Text('İzin ver ve tekrar dene'),
+                  child: Text(
+                    t(en: 'Allow and try again', tr: 'İzin ver ve tekrar dene'),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: widget.onComplete,
-                  child: const Text('Bu adımı atla'),
+                  child: Text(t(en: 'Skip this step', tr: 'Bu adımı atla')),
                 ),
               ],
             ),
@@ -236,31 +247,58 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
     final exact = _reading != null && _reading!.note.midi == _target.midi;
     final samePitchClass =
         _reading != null && _reading!.note.pitchClass == _target.pitchClass;
-    final ringColor = (_celebrating || exact) ? _green : theme.colorScheme.primary;
+    final ringColor = (_celebrating || exact)
+        ? _green
+        : theme.colorScheme.primary;
 
     final String status;
     if (_celebrating) {
-      status = 'Doğru! ✓';
+      status = t(en: 'Correct! ✓', tr: 'Doğru! ✓');
     } else if (_busy) {
-      status = 'dinle: ${_tonic.label} → ${_target.label}';
+      status = t(
+        en: 'listen: ${_tonic.label} → ${_target.label}',
+        tr: 'dinle: ${_tonic.label} → ${_target.label}',
+      );
     } else if (!_micActive) {
-      status = 'Evi duydun. Şimdi ${_degree.label} notasını söyle';
+      status = t(
+        en: 'You heard home. Now sing ${_degree.label}',
+        tr: 'Evi duydun. Şimdi ${_degree.label} notasını söyle',
+      );
     } else if (exact) {
-      status = 'tam — böyle tut! 🎯';
+      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
     } else if (samePitchClass) {
       status = _reading!.note.midi < _target.midi
-          ? 'doğru nota — bir oktav tiz söyle'
-          : 'doğru nota — bir oktav pes söyle';
+          ? t(
+              en: 'right note — sing an octave higher',
+              tr: 'doğru nota — bir oktav tiz söyle',
+            )
+          : t(
+              en: 'right note — sing an octave lower',
+              tr: 'doğru nota — bir oktav pes söyle',
+            );
     } else if (_reading != null) {
-      status = 'duyduğum: ${_reading!.note.label}';
+      status = t(
+        en: 'I hear: ${_reading!.note.label}',
+        tr: 'duyduğum: ${_reading!.note.label}',
+      );
     } else {
-      status = 'sesini duyayım…';
+      status = t(en: 'let me hear you…', tr: 'sesini duyayım…');
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Dereceyi Söyle · ${_index + 1}/${_toSing.length}'),
-        actions: [TextButton(onPressed: _skip, child: const Text('Geç'))],
+        title: Text(
+          t(
+            en: 'Sing the Degree · ${_index + 1}/${_toSing.length}',
+            tr: 'Dereceyi Söyle · ${_index + 1}/${_toSing.length}',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _skip,
+            child: Text(t(en: 'Skip', tr: 'Geç')),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -278,7 +316,10 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Tonik: ${_tonic.label}  →  hedef: ${_target.label}',
+                t(
+                  en: 'Tonic: ${_tonic.label}  →  target: ${_target.label}',
+                  tr: 'Tonik: ${_tonic.label}  →  hedef: ${_target.label}',
+                ),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
@@ -288,7 +329,9 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
               OutlinedButton.icon(
                 onPressed: _busy ? null : _replay,
                 icon: const Icon(Icons.volume_up_rounded),
-                label: const Text('Tonik → hedef dinle'),
+                label: Text(
+                  t(en: 'Hear tonic → target', tr: 'Tonik → hedef dinle'),
+                ),
               ),
               const SizedBox(height: 6),
               Row(
@@ -298,12 +341,12 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
                   IconButton.outlined(
                     onPressed: _micActive ? null : () => _shiftOctave(-12),
                     icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                    tooltip: 'Bir oktav pes',
+                    tooltip: t(en: 'One octave lower', tr: 'Bir oktav pes'),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: Text(
-                      'oktav',
+                      t(en: 'octave', tr: 'oktav'),
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -312,7 +355,7 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
                   IconButton.outlined(
                     onPressed: _micActive ? null : () => _shiftOctave(12),
                     icon: const Icon(Icons.keyboard_arrow_up_rounded),
-                    tooltip: 'Bir oktav tiz',
+                    tooltip: t(en: 'One octave higher', tr: 'Bir oktav tiz'),
                   ),
                 ],
               ),
@@ -331,7 +374,8 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
                       child: CircularProgressIndicator(
                         value: _hold,
                         strokeWidth: 10,
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
                         valueColor: AlwaysStoppedAnimation(ringColor),
                       ),
                     ),
@@ -339,7 +383,7 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'söyle',
+                          t(en: 'sing', tr: 'söyle'),
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -367,6 +411,13 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              const SizedBox(height: 12),
+              // Canlı perde ibresi: sesin hedefe göre tam nerede olduğunu gösterir.
+              PitchMeter(
+                target: _target,
+                reading: _reading,
+                active: _micActive,
+              ),
               const Spacer(flex: 2),
               SizedBox(
                 width: double.infinity,
@@ -374,16 +425,17 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
                     ? OutlinedButton.icon(
                         onPressed: _celebrating ? null : _stopListening,
                         icon: const Icon(Icons.stop_rounded),
-                        label: const Text('Durdur'),
+                        label: Text(t(en: 'Stop', tr: 'Durdur')),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       )
                     : FilledButton.icon(
-                        onPressed:
-                            (_celebrating || _busy) ? null : _startListening,
+                        onPressed: (_celebrating || _busy)
+                            ? null
+                            : _startListening,
                         icon: const Icon(Icons.mic_rounded),
-                        label: const Text('Söyle'),
+                        label: Text(t(en: 'Sing', tr: 'Söyle')),
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),

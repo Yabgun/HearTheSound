@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 
 import '../../audio/note_player.dart';
 import '../../audio/pitch_service.dart';
+import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../../core/vocal_range.dart';
+import '../../ui/app_theme.dart';
+import '../../ui/pitch_meter.dart';
 import '../calibration/reach_badge.dart';
 import 'function_lesson.dart';
 
@@ -37,7 +40,7 @@ class FunctionRootSingPage extends StatefulWidget {
 
 class _FunctionRootSingPageState extends State<FunctionRootSingPage> {
   static const Duration _holdTarget = Duration(seconds: 3);
-  static const Color _green = Color(0xFF56C271);
+  static const Color _green = AppColors.success;
 
   final PitchService _pitch = PitchService();
   final Random _random = Random();
@@ -114,7 +117,8 @@ class _FunctionRootSingPageState extends State<FunctionRootSingPage> {
     final now = DateTime.now();
     final elapsed = _lastTick == null
         ? 0.0
-        : now.difference(_lastTick!).inMilliseconds / _holdTarget.inMilliseconds;
+        : now.difference(_lastTick!).inMilliseconds /
+              _holdTarget.inMilliseconds;
     _lastTick = now;
     final match = reading != null && reading.note.midi == _target.midi;
     setState(() {
@@ -163,7 +167,9 @@ class _FunctionRootSingPageState extends State<FunctionRootSingPage> {
     final theme = Theme.of(context);
     if (_permissionDenied) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Kökü Söyle')),
+        appBar: AppBar(
+          title: Text(t(en: 'Sing the Root', tr: 'Kökü Söyle')),
+        ),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(28),
@@ -171,7 +177,10 @@ class _FunctionRootSingPageState extends State<FunctionRootSingPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Bu adım için mikrofon izni gerekli.',
+                  t(
+                    en: 'This step needs microphone permission.',
+                    tr: 'Bu adım için mikrofon izni gerekli.',
+                  ),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleMedium,
                 ),
@@ -181,10 +190,15 @@ class _FunctionRootSingPageState extends State<FunctionRootSingPage> {
                     setState(() => _permissionDenied = false);
                     _startListening();
                   },
-                  child: const Text('İzin ver ve tekrar dene'),
+                  child: Text(
+                    t(en: 'Allow and try again', tr: 'İzin ver ve tekrar dene'),
+                  ),
                 ),
                 const SizedBox(height: 8),
-                TextButton(onPressed: _skip, child: const Text('Bu turu geç')),
+                TextButton(
+                  onPressed: _skip,
+                  child: Text(t(en: 'Skip this round', tr: 'Bu turu geç')),
+                ),
               ],
             ),
           ),
@@ -195,30 +209,60 @@ class _FunctionRootSingPageState extends State<FunctionRootSingPage> {
     final exact = _reading != null && _reading!.note.midi == _target.midi;
     final samePitchClass =
         _reading != null && _reading!.note.pitchClass == _target.pitchClass;
-    final ringColor = (_celebrating || exact) ? _green : theme.colorScheme.primary;
+    final ringColor = (_celebrating || exact)
+        ? _green
+        : theme.colorScheme.primary;
     final String status;
     if (_celebrating) {
-      status = 'Doğru! Kök yerine oturdu. ✓';
+      status = t(
+        en: 'Correct! The root locked in. ✓',
+        tr: 'Doğru! Kök yerine oturdu. ✓',
+      );
     } else if (_busy) {
-      status = 'dinle: ev → akor → kök';
+      status = t(
+        en: 'listen: home → chord → root',
+        tr: 'dinle: ev → akor → kök',
+      );
     } else if (!_micActive) {
-      status = '${_degree.roman} akorunun kökünü söyle';
+      status = t(
+        en: 'Sing the root of the ${_degree.roman} chord',
+        tr: '${_degree.roman} akorunun kökünü söyle',
+      );
     } else if (exact) {
-      status = 'tam — böyle tut! 🎯';
+      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
     } else if (samePitchClass) {
       status = _reading!.note.midi < _target.midi
-          ? 'doğru nota — bir oktav tiz söyle'
-          : 'doğru nota — bir oktav pes söyle';
+          ? t(
+              en: 'right note — sing an octave higher',
+              tr: 'doğru nota — bir oktav tiz söyle',
+            )
+          : t(
+              en: 'right note — sing an octave lower',
+              tr: 'doğru nota — bir oktav pes söyle',
+            );
     } else if (_reading != null) {
-      status = 'duyduğum: ${_reading!.note.label}';
+      status = t(
+        en: 'I hear: ${_reading!.note.label}',
+        tr: 'duyduğum: ${_reading!.note.label}',
+      );
     } else {
-      status = 'sesini duyayım…';
+      status = t(en: 'let me hear you…', tr: 'sesini duyayım…');
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Kökü Söyle · ${_index + 1}/${_rounds.length}'),
-        actions: [TextButton(onPressed: _skip, child: const Text('Geç'))],
+        title: Text(
+          t(
+            en: 'Sing the Root · ${_index + 1}/${_rounds.length}',
+            tr: 'Kökü Söyle · ${_index + 1}/${_rounds.length}',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _skip,
+            child: Text(t(en: 'Skip', tr: 'Geç')),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -246,7 +290,12 @@ class _FunctionRootSingPageState extends State<FunctionRootSingPage> {
               OutlinedButton.icon(
                 onPressed: _busy ? null : _presentChord,
                 icon: const Icon(Icons.volume_up_rounded),
-                label: const Text('Ev → akor → kök dinle'),
+                label: Text(
+                  t(
+                    en: 'Hear home → chord → root',
+                    tr: 'Ev → akor → kök dinle',
+                  ),
+                ),
               ),
               const Spacer(),
               SizedBox(
@@ -261,14 +310,18 @@ class _FunctionRootSingPageState extends State<FunctionRootSingPage> {
                       child: CircularProgressIndicator(
                         value: _hold,
                         strokeWidth: 10,
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
                         valueColor: AlwaysStoppedAnimation(ringColor),
                       ),
                     ),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('KÖK', style: theme.textTheme.labelSmall),
+                        Text(
+                          t(en: 'ROOT', tr: 'KÖK'),
+                          style: theme.textTheme.labelSmall,
+                        ),
                         Text(
                           _target.label,
                           style: theme.textTheme.headlineMedium?.copyWith(
@@ -294,6 +347,13 @@ class _FunctionRootSingPageState extends State<FunctionRootSingPage> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              const SizedBox(height: 12),
+              // Canlı perde ibresi: sesin hedefe göre tam nerede olduğunu gösterir.
+              PitchMeter(
+                target: _target,
+                reading: _reading,
+                active: _micActive,
+              ),
               const Spacer(flex: 2),
               SizedBox(
                 width: double.infinity,
@@ -301,16 +361,22 @@ class _FunctionRootSingPageState extends State<FunctionRootSingPage> {
                     ? OutlinedButton.icon(
                         onPressed: _celebrating ? null : _stopListening,
                         icon: const Icon(Icons.stop_rounded),
-                        label: const Text('Durdur'),
+                        label: Text(t(en: 'Stop', tr: 'Durdur')),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       )
                     : FilledButton.icon(
-                        onPressed:
-                            (_busy || _celebrating) ? null : _startListening,
+                        onPressed: (_busy || _celebrating)
+                            ? null
+                            : _startListening,
                         icon: const Icon(Icons.mic_rounded),
-                        label: Text('${_target.label} notasını söyle'),
+                        label: Text(
+                          t(
+                            en: 'Sing ${_target.label}',
+                            tr: '${_target.label} notasını söyle',
+                          ),
+                        ),
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
