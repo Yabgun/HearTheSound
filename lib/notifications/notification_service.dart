@@ -68,8 +68,8 @@ class NotificationService {
       id: _testId,
       title: 'HearTheSound',
       body: t(
-        en: '🔥 Notifications are working! This is how I\'ll remind you.',
-        tr: '🔥 Bildirimler çalışıyor! Seni böyle hatırlatacağım.',
+        en: 'Notifications are working! This is how I\'ll remind you.',
+        tr: 'Bildirimler çalışıyor! Seni böyle hatırlatacağım.',
       ),
       notificationDetails: _details(),
     );
@@ -82,10 +82,10 @@ class NotificationService {
     await _plugin.cancel(id: _dailyId);
     await _plugin.zonedSchedule(
       id: _dailyId,
-      title: t(en: '🔥 Keep your streak!', tr: '🔥 Serini koru!'),
+      title: t(en: 'Keep your streak!', tr: 'Serini koru!'),
       body: t(
-        en: 'Do today\'s lesson and sharpen your ear. 🎵',
-        tr: 'Bugünkü dersini yap, kulağını geliştir. 🎵',
+        en: 'Do today\'s lesson and sharpen your ear.',
+        tr: 'Bugünkü dersini yap, kulağını geliştir.',
       ),
       scheduledDate: _nextInstanceOf(hour, minute),
       notificationDetails: _details(),

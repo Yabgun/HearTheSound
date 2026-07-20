@@ -39,6 +39,17 @@ class _TonalityLessonFlowPageState
   LessonResult? _result;
   int _xpEarned = 0;
 
+  // Ustalık/taç seviyesi (0 = temel; ≥1 tekrar oynanışta zorlaşır).
+  late final int _level;
+
+  @override
+  void initState() {
+    super.initState();
+    _level = ref.read(progressProvider).skillLevelOf(widget.lesson.id);
+    // Taç tekrarında öğren/söyle atlanır → doğrudan (ipuçsuz) tanıma.
+    if (_level >= 1) _phase = _Phase.recognizing;
+  }
+
   @override
   void dispose() {
     _player.dispose();
@@ -46,7 +57,7 @@ class _TonalityLessonFlowPageState
   }
 
   void _onComplete(LessonResult result) {
-    final xp = result.correct * _xpPerCorrect;
+    final xp = result.correct * _xpPerCorrect * (1 + _level);
     ref
         .read(progressProvider.notifier)
         .completeLesson(
@@ -55,7 +66,8 @@ class _TonalityLessonFlowPageState
           masteryGain: result.correct,
           accuracy: result.accuracy,
           mistakes: result.mistakes,
-          completed: result.accuracy >= 0.7,
+          completed: result.accuracy >= kPassAccuracy,
+          reachedLevel: _level + 1,
         );
     setState(() {
       _result = result;
@@ -84,7 +96,7 @@ class _TonalityLessonFlowPageState
         return TonalityRecognitionPage(
           pool: widget.lesson.pool,
           player: _player,
-          questionCount: _questionCount,
+          questionCount: _questionCount + _level * 2,
           onComplete: _onComplete,
         );
       case _Phase.done:

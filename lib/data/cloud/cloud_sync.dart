@@ -50,6 +50,24 @@ class CloudSync {
 
   Future<void> signOut() => _client.auth.signOut();
 
+  /// Hesabı ve TÜM sunucu verisini kalıcı olarak siler (Play Store "veri silme"
+  /// zorunluluğu). Sunucuda `delete_account` RPC'si (SECURITY DEFINER) progress
+  /// satırını ve auth.users kaydını siler; ardından oturum kapatılır ve YEREL
+  /// ilerleme sıfırlanır. Bekleyen buluta-itme iptal edilir (silinmiş hesaba
+  /// yazma denemesi olmasın).
+  Future<void> deleteAccount(ProgressRepository local) async {
+    _pushDebounce?.cancel();
+    _pendingPush = null;
+    if (!isConfigured) return;
+    try {
+      await _client.rpc('delete_account');
+    } finally {
+      // Hesap sunucuda gitti; yerel oturumu ve ilerlemeyi de temizle.
+      await _client.auth.signOut();
+      await local.save(PlayerProgress.empty);
+    }
+  }
+
   /// Buluttaki ilerlemeyi indirir, yerelle KAYIPSIZ birleştirir, iki tarafı da
   /// günceller. Birleşik ilerlemeyi döndürür (hata/kapalıysa null).
   Future<PlayerProgress?> pullAndMerge(ProgressRepository local) async {

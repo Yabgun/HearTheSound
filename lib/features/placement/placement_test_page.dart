@@ -267,7 +267,7 @@ class _PlacementTestPageState extends ConsumerState<PlacementTestPage> {
               Text(
                 nothing
                     ? t(en: 'Starting fresh', tr: 'Baştan başlıyoruz')
-                    : t(en: 'Found your spot! ✨', tr: 'Yerin belli! ✨'),
+                    : t(en: 'Found your spot!', tr: 'Yerin belli!'),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w700,

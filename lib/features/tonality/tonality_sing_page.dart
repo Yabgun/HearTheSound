@@ -265,7 +265,7 @@ class _TonalitySingPageState extends State<TonalitySingPage> {
         tr: 'Evi duydun. Şimdi ${_degree.label} notasını söyle',
       );
     } else if (exact) {
-      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
+      status = t(en: 'spot on — hold it!', tr: 'tam — böyle tut!');
     } else if (samePitchClass) {
       status = _reading!.note.midi < _target.midi
           ? t(

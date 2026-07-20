@@ -50,6 +50,17 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
     concept: widget.lesson.concept,
   );
 
+  // Ustalık/taç seviyesi (0 = temel; ≥1 tekrar oynanışta zorlaşır).
+  late final int _level;
+
+  @override
+  void initState() {
+    super.initState();
+    _level = ref.read(progressProvider).skillLevelOf(widget.lesson.id);
+    // Taç tekrarında öğren/söyle atlanır → doğrudan (ipuçsuz) tanıma.
+    if (_level >= 1) _phase = _Phase.testing;
+  }
+
   @override
   void dispose() {
     _player.dispose();
@@ -57,9 +68,9 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
   }
 
   void _onTestComplete(LessonResult result) {
-    final xp = result.correct * _xpPerCorrect;
+    final xp = result.correct * _xpPerCorrect * (1 + _level);
     final passed =
-        result.accuracy >= 0.7; // dersi "geçme" barajı -> sonrakini açar
+        result.accuracy >= kPassAccuracy; // "geçme" barajı -> sonrakini açar
     ref
         .read(progressProvider.notifier)
         .completeLesson(
@@ -69,6 +80,7 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
           accuracy: result.accuracy,
           mistakes: result.mistakes,
           completed: passed,
+          reachedLevel: _level + 1,
         );
     setState(() {
       _result = result;
@@ -97,7 +109,7 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
         return NoteRecognitionPage(
           pool: _lesson.pool,
           player: _player,
-          questionCount: _questionsPerLesson,
+          questionCount: _questionsPerLesson + _level * 2,
           onComplete: _onTestComplete,
           onRelearn: () => setState(() => _phase = _Phase.learning),
         );

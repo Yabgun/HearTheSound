@@ -47,6 +47,12 @@ PlayerProgress mergeProgress(PlayerProgress a, PlayerProgress b) {
     skillXp[k] = v > (skillXp[k] ?? 0) ? v : skillXp[k]!;
   });
 
+  // skillLevel: anahtar başına max (taç/ustalık seviyesi geri düşmez).
+  final skillLevel = Map<String, int>.from(a.skillLevel);
+  b.skillLevel.forEach((k, v) {
+    skillLevel[k] = v > (skillLevel[k] ?? 0) ? v : skillLevel[k]!;
+  });
+
   // confusionCounts: anahtar başına max (ortak geçmişi çift saymamak için
   // toplama DEĞİL max — iki cihaz da aynı geçmişten türedi).
   final confusions = Map<String, int>.from(a.confusionCounts);
@@ -104,9 +110,14 @@ PlayerProgress mergeProgress(PlayerProgress a, PlayerProgress b) {
     lastActiveDay: newer.lastActiveDay,
     dailyXp: newer.dailyXp,
     skillXp: skillXp,
+    skillLevel: skillLevel,
     completedLessons: completed,
     vocalRange: range,
     reviews: reviews,
     confusionCounts: confusions,
+    // Günün meydan okuması: daha yeni gün hangi taraftaysa onunki.
+    lastChallengeDay: compareDay(a.lastChallengeDay, b.lastChallengeDay) >= 0
+        ? a.lastChallengeDay
+        : b.lastChallengeDay,
   );
 }

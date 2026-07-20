@@ -168,7 +168,7 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
               const Spacer(flex: 2),
               Text(
                 _streak > 1
-                    ? t(en: '🔥 $_streak streak', tr: '🔥 $_streak seri')
+                    ? t(en: '$_streak in a row', tr: '$_streak seri')
                     : t(
                         en: 'Find the note you heard',
                         tr: 'Çalınan notayı bul',

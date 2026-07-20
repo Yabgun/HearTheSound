@@ -32,6 +32,11 @@ class LessonResult {
   double get accuracy => total == 0 ? 0 : correct / total;
 }
 
+/// Bir tanıma oturumunu "geçme" barajı — dersi tamamlar (kilit açar), taç
+/// yükseltir ve tamamlama ekranında kutlama/tekrar-dene ayrımını belirler.
+/// Tek kaynak: hem akış sayfaları hem tamamlama ekranı bunu kullanır.
+const double kPassAccuracy = 0.7;
+
 List<Note> _oct(List<String> names, int octave) => [
   for (final n in names) Note.fromName(n, octave),
 ];

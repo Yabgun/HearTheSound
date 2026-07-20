@@ -14,8 +14,11 @@
 // veri güvenliğini RLS (satır seviyesi güvenlik) kuralları sağlar.
 // -----------------------------------------------------------------------------
 
-const String kSupabaseUrl = '';
-const String kSupabaseAnonKey = '';
+const String kSupabaseUrl = 'https://sjrfnrczypwuquvzycid.supabase.co';
+const String kSupabaseAnonKey =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6In'
+    'NqcmZucmN6eXB3dXF1dnp5Y2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NzQ1MzIsIm'
+    'V4cCI6MjEwMDE1MDUzMn0.AQ_VY4glslYQkmQW5MpvzVx3Q8gaZ2DnrWE1bVZeICs';
 
 /// Bulut senkron açık mı? (İki değer de girilmişse)
 bool get isCloudConfigured =>

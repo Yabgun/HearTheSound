@@ -249,7 +249,7 @@ class _IntervalSingPageState extends State<IntervalSingPage> {
         tr: 'Kökü duydun. Şimdi üst notayı söyle 👇',
       );
     } else if (exact) {
-      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
+      status = t(en: 'spot on — hold it!', tr: 'tam — böyle tut!');
     } else if (samePitchClass) {
       status = _reading!.note.midi < _top.midi
           ? t(

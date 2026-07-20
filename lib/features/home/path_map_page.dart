@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/content_locale.dart';
 import '../../core/player_progress.dart';
 import '../../state/progress_controller.dart';
+import '../../ui/app_icons.dart';
 import '../../ui/app_theme.dart';
 import '../concept/concept_sheet.dart';
 import 'curriculum.dart';
@@ -180,8 +181,15 @@ class PathMapPage extends ConsumerWidget {
       );
     }
 
+    // Ustalık/taç seviyesi: tamamlanan ders tekrar oynanınca zorlaşarak yükselir.
+    final level = progress.skillLevelOf(item.id);
     final subtitle = completed
-        ? t(en: 'done', tr: 'tamamlandı')
+        ? (level >= kMaxSkillLevel
+              ? t(en: 'mastered · replay', tr: 'ustalaşıldı · tekrar oyna')
+              : t(
+                  en: 'done · tap to level up',
+                  tr: 'tamam · dokun, seviye atla',
+                ))
         : isCurrent
         ? t(en: 'in progress', tr: 'devam ediyor')
         : unlocked
@@ -237,6 +245,33 @@ class PathMapPage extends ConsumerWidget {
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.5,
                   ),
+                ),
+              )
+            else if (completed && level >= 1)
+              // Taç rozeti: kaç kez zorlaşarak ustalaşıldı (0..kMaxSkillLevel).
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.amber.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      AppIcons.crown,
+                      size: 14,
+                      color: AppColors.amberDeep,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      '$level',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: AppColors.amberDeep,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
               )
             else if (unlocked && item.concept != null)

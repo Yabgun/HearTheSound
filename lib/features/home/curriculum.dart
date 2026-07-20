@@ -65,6 +65,12 @@ final Map<String, List<Track>> _curriculumCache = {};
 List<Track> get curriculum =>
     _curriculumCache.putIfAbsent(ContentLocale.code, _buildCurriculum);
 
+// Müfredat tek bir SIRALI zincir (zorluk/bağımlılık düzeni): Notalar → Aralıklar
+// → Akorlar → Tonalite → İşlev → İlerlemeler → Yolculuk. Her track bir öncekinin
+// SON dersi geçilince açılır → yeni başlayan YALNIZCA Notalar'ı görür, sırayla
+// ilerler. (Aralıklar akorların yapı taşı olduğu için Akorlar'dan ÖNCE gelir.)
+// Başlangıç noktası seviyeye göre değişir: onboarding'deki seviye seçimi önceki
+// track'leri "tamam" işaretler (applyPlacement) → o track'ler açık başlar.
 List<Track> _buildCurriculum() => [
   Track(
     name: t(en: 'Notes', tr: 'Notalar'),
@@ -81,23 +87,10 @@ List<Track> _buildCurriculum() => [
     ],
   ),
   Track(
-    name: t(en: 'Chords', tr: 'Akorlar'),
-    color: AppColors.catChords,
-    icon: Icons.piano_rounded,
-    items: [
-      for (final l in chordLessons)
-        TrackItem(
-          id: l.id,
-          title: l.title,
-          concept: l.concept,
-          open: () => ChordLessonFlowPage(lesson: l),
-        ),
-    ],
-  ),
-  Track(
     name: t(en: 'Intervals', tr: 'Aralıklar'),
     color: AppColors.catIntervals,
     icon: Icons.straighten_rounded,
+    unlockAfter: lessons.last.id,
     items: [
       for (final l in intervalLessons)
         TrackItem(
@@ -109,9 +102,25 @@ List<Track> _buildCurriculum() => [
     ],
   ),
   Track(
+    name: t(en: 'Chords', tr: 'Akorlar'),
+    color: AppColors.catChords,
+    icon: Icons.piano_rounded,
+    unlockAfter: intervalLessons.last.id,
+    items: [
+      for (final l in chordLessons)
+        TrackItem(
+          id: l.id,
+          title: l.title,
+          concept: l.concept,
+          open: () => ChordLessonFlowPage(lesson: l),
+        ),
+    ],
+  ),
+  Track(
     name: t(en: 'Scales & Tonality', tr: 'Diziler ve Tonalite'),
     color: AppColors.catTonality,
     icon: Icons.hub_rounded,
+    unlockAfter: chordLessons.last.id,
     items: [
       for (final l in tonalityLessons)
         TrackItem(
@@ -152,6 +161,39 @@ List<Track> _buildCurriculum() => [
         ),
     ],
   ),
+  // §1C — Tonalite Yolculuğu: üretilen işlev + ilerleme dersleri, beşler
+  // çemberindeki yeni merkezlerde (A/E/F). Önce işlev transferleri, sonra
+  // ilerleme transferleri (for-in: closure her dersi doğru yakalar).
+  Track(
+    name: t(en: 'Key Journey', tr: 'Tonalite Yolculuğu'),
+    color: AppColors.grape,
+    icon: Icons.travel_explore_rounded,
+    unlockAfter: progressionLessons.last.id,
+    items: [
+      for (final l in functionJourneyLessons)
+        TrackItem(
+          id: l.id,
+          title: l.title,
+          concept: l.concept,
+          open: () => FunctionLessonFlowPage(lesson: l),
+        ),
+      for (final l in progressionJourneyLessons)
+        TrackItem(
+          id: l.id,
+          title: l.title,
+          concept: l.concept,
+          open: () => ProgressionLessonFlowPage(lesson: l),
+        ),
+    ],
+  ),
+];
+
+/// Onboarding seviye seçimi için: müfredatın ilk [trackCount] track'indeki TÜM
+/// ders kimlikleri. Seçilen seviyede bunlar "tamam" işaretlenir (applyPlacement)
+/// → zincir gereği bir sonraki track açık başlar. trackCount 0 → boş (sıfırdan).
+List<String> lessonIdsInFirstTracks(int trackCount) => [
+  for (var i = 0; i < trackCount && i < curriculum.length; i++)
+    for (final it in curriculum[i].items) it.id,
 ];
 
 bool _trackStartUnlocked(Track t, PlayerProgress p) =>

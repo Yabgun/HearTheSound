@@ -118,18 +118,36 @@ class HearTheSoundApp extends ConsumerWidget {
 /// Mevcut kullanıcı (zaten ilerlemesi/kalibrasyonu olan) onboarding'i hiç
 /// görmez — `onboarded` bayrağı sonradan eklendiğinden geçmişi olanı da
 /// "onboarded" sayarız.
-class _RootGate extends ConsumerWidget {
+class _RootGate extends ConsumerStatefulWidget {
   const _RootGate();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_RootGate> createState() => _RootGateState();
+}
+
+class _RootGateState extends ConsumerState<_RootGate> {
+  // "Zaten geçmişi olan kullanıcı" kararı AÇILIŞTA BİR KEZ verilir (snapshot).
+  // Aksi halde bu gate ilerlemeyi CANLI izler ve onboarding SIRASINDA kalibrasyon
+  // (isCalibrated) ya da seviye seçimi (completedLessons) ilerlemeyi değiştirince
+  // kullanıcıyı ana ekrana atardı → "vokal aralığını bulunca seviye seçme adımı
+  // atlanıyor" hatası. Snapshot ile onboarding kesintisiz akar; ana ekrana yalnızca
+  // 'onboarded' set edilince (akışın sonu) geçilir.
+  late final bool _legacyUser;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = ref.read(progressProvider);
+    // isCalibrated DAHİL DEĞİL: kalibrasyon onboarding'in İÇİNDE yapılır; onu
+    // "geçmiş" saymak kullanıcıyı akıştan atardı. Gerçek geçmiş = öğrenme
+    // ilerlemesi (XP / tamamlanmış ders).
+    _legacyUser = p.xp > 0 || p.completedLessons.isNotEmpty;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final onboarded = ref.watch(settingsProvider.select((s) => s.onboarded));
-    final progress = ref.watch(progressProvider);
-    final hasHistory =
-        progress.xp > 0 ||
-        progress.completedLessons.isNotEmpty ||
-        progress.isCalibrated;
-    final showOnboarding = !onboarded && !hasHistory;
+    final showOnboarding = !onboarded && !_legacyUser;
     return showOnboarding ? const OnboardingFlowPage() : const HomePage();
   }
 }

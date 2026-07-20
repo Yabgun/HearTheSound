@@ -286,7 +286,7 @@ class _ChordArpeggioPageState extends State<ChordArpeggioPage> {
         tr: 'Notaları dinle, sonra sırayla söyle 👇',
       );
     } else if (exact) {
-      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
+      status = t(en: 'spot on — hold it!', tr: 'tam — böyle tut!');
     } else if (samePitchClass) {
       status = _reading!.note.midi < _target.midi
           ? t(

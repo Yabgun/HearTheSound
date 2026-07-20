@@ -51,6 +51,7 @@ class ProgressController extends Notifier<PlayerProgress> {
     required double accuracy,
     bool completed = false,
     List<String> mistakes = const [],
+    int? reachedLevel,
   }) {
     final now = ref.read(progressClockProvider)();
     final today = _dayKey(now);
@@ -68,6 +69,18 @@ class ProgressController extends Notifier<PlayerProgress> {
 
     final newSkillXp = Map<String, int>.from(state.skillXp);
     newSkillXp[skillId] = (newSkillXp[skillId] ?? 0) + masteryGain;
+
+    // Ustalık/taç seviyesi: yalnızca beceri GEÇİLDİYSE (completed) ve daha yüksek
+    // bir seviye ulaşıldıysa yüksel; tavanla sınırlı, asla geri düşmez.
+    final newSkillLevel = Map<String, int>.from(state.skillLevel);
+    if (completed && reachedLevel != null) {
+      final target = reachedLevel > kMaxSkillLevel
+          ? kMaxSkillLevel
+          : reachedLevel;
+      if (target > (newSkillLevel[skillId] ?? 0)) {
+        newSkillLevel[skillId] = target;
+      }
+    }
 
     final newCompleted = List<String>.from(state.completedLessons);
     if (completed && !newCompleted.contains(skillId)) {
@@ -104,6 +117,7 @@ class ProgressController extends Notifier<PlayerProgress> {
       lastActiveDay: today,
       dailyXp: newDailyXp,
       skillXp: newSkillXp,
+      skillLevel: newSkillLevel,
       completedLessons: newCompleted,
       reviews: newReviews,
       confusionCounts: newConfusions,
@@ -134,6 +148,15 @@ class ProgressController extends Notifier<PlayerProgress> {
   void applyPlacement(Iterable<String> knownSkillIds) {
     final set = <String>{...state.completedLessons, ...knownSkillIds};
     state = state.copyWith(completedLessons: set.toList());
+    _repo.save(state);
+  }
+
+  /// Günün meydan okuması tamamlandı: bugünü işaretle (Bugün ekranındaki rozet).
+  /// XP/ustalık/karıştırma zaten mini-turlar sırasında [completeLesson] ile işlendi.
+  void completeDailyChallenge() {
+    final today = _dayKey(ref.read(progressClockProvider)());
+    if (state.lastChallengeDay == today) return;
+    state = state.copyWith(lastChallengeDay: today);
     _repo.save(state);
   }
 

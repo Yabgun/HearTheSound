@@ -229,7 +229,7 @@ class _FunctionRootSingPageState extends State<FunctionRootSingPage> {
         tr: '${_degree.roman} akorunun kökünü söyle',
       );
     } else if (exact) {
-      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
+      status = t(en: 'spot on — hold it!', tr: 'tam — böyle tut!');
     } else if (samePitchClass) {
       status = _reading!.note.midi < _target.midi
           ? t(

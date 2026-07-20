@@ -43,11 +43,19 @@ class _LessonCompletePageState extends State<LessonCompletePage>
   );
   late final List<_Particle> _particles = _makeParticles();
 
+  /// Ders geçildi mi? (kutlama vs. "tekrar dene" ayrımı — akış sayfalarıyla
+  /// AYNI baraj `kPassAccuracy`.)
+  bool get _passed => widget.result.accuracy >= kPassAccuracy;
+
   @override
   void initState() {
     super.initState();
-    _confetti.forward();
-    HapticFeedback.mediumImpact();
+    if (_passed) {
+      _confetti.forward(); // kutlama YALNIZCA geçilince
+      HapticFeedback.mediumImpact();
+    } else {
+      HapticFeedback.lightImpact(); // geçemedi: nazik dokunuş, kutlama yok
+    }
   }
 
   List<_Particle> _makeParticles() {
@@ -106,20 +114,29 @@ class _LessonCompletePageState extends State<LessonCompletePage>
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [AppColors.grape, AppColors.coral],
+                          gradient: LinearGradient(
+                            // Geçince canlı mor→mercan; geçemeyince yumuşak amber
+                            // (teşvik edici, kutlama değil).
+                            colors: _passed
+                                ? const [AppColors.grape, AppColors.coral]
+                                : [
+                                    AppColors.amber.withValues(alpha: 0.85),
+                                    AppColors.coral.withValues(alpha: 0.6),
+                                  ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.grape.withValues(alpha: 0.35),
-                              blurRadius: 30,
-                              spreadRadius: 4,
+                              color:
+                                  (_passed ? AppColors.grape : AppColors.amber)
+                                      .withValues(alpha: 0.3),
+                              blurRadius: 28,
+                              spreadRadius: 3,
                             ),
                           ],
                         ),
-                        child: const EkoMascot(size: 96, celebrate: true),
+                        child: EkoMascot(size: 96, celebrate: _passed),
                       ),
                     ),
                   ),
@@ -129,7 +146,12 @@ class _LessonCompletePageState extends State<LessonCompletePage>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          t(en: 'Lesson Complete!', tr: 'Ders Tamamlandı!'),
+                          _passed
+                              ? t(
+                                  en: 'Lesson Complete!',
+                                  tr: 'Ders Tamamlandı!',
+                                )
+                              : t(en: 'Almost there!', tr: 'Az kaldı!'),
                           textAlign: TextAlign.center,
                           style: theme.textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w800,
@@ -137,7 +159,18 @@ class _LessonCompletePageState extends State<LessonCompletePage>
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          t(en: '$pct% accuracy', tr: '%$pct doğruluk'),
+                          _passed
+                              ? t(en: '$pct% accuracy', tr: '%$pct doğruluk')
+                              : t(
+                                  en:
+                                      '$pct% — you need '
+                                      '${(kPassAccuracy * 100).round()}% to pass. '
+                                      'Give it another go!',
+                                  tr:
+                                      '%$pct — geçmek için '
+                                      '%${(kPassAccuracy * 100).round()} '
+                                      'gerekiyor. Bir daha dene!',
+                                ),
                           textAlign: TextAlign.center,
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
@@ -162,23 +195,33 @@ class _LessonCompletePageState extends State<LessonCompletePage>
                           theme,
                           Icons.local_fire_department_rounded,
                           t(en: 'Daily streak', tr: 'Günlük seri'),
-                          '🔥 ${widget.streak}',
+                          '${widget.streak}',
                         ),
                       ],
                     ),
                   ),
                   const Spacer(flex: 3),
+                  // Geçince birincil = Devam; geçemeyince birincil = Tekrar dene
+                  // (teşvik edici — kullanıcı geçtiğini sanmasın).
                   FilledButton(
-                    onPressed: widget.onDone,
+                    onPressed: _passed ? widget.onDone : widget.onReplay,
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: Text(t(en: 'Continue', tr: 'Devam')),
+                    child: Text(
+                      _passed
+                          ? t(en: 'Continue', tr: 'Devam')
+                          : t(en: 'Try again', tr: 'Tekrar dene'),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TextButton(
-                    onPressed: widget.onReplay,
-                    child: Text(t(en: 'Play Again', tr: 'Tekrar Oyna')),
+                    onPressed: _passed ? widget.onReplay : widget.onDone,
+                    child: Text(
+                      _passed
+                          ? t(en: 'Play Again', tr: 'Tekrar Oyna')
+                          : t(en: 'Back', tr: 'Geri'),
+                    ),
                   ),
                   const SizedBox(height: 8),
                 ],

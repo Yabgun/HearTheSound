@@ -259,6 +259,68 @@ final Map<String, List<FunctionLesson>> _lessonCache = {};
 List<FunctionLesson> get functionLessons =>
     _lessonCache.putIfAbsent(ContentLocale.code, _buildFunctionLessons);
 
+// ---------------------------------------------------------------------------
+// TONALİTE YOLCULUĞU (§1C) — beşler çemberindeki yeni merkezler için ÜRETİLEN
+// işlev dersleri. El yazımı fn1–fn3 (C/G/D) girişten sonra gelen ustalık
+// transferi: her ders TÜM 7 dereceyi içerir (C-kanonik havuz; akış inKey ile
+// hedef merkeze taşır). Kimlikler benzersiz ('fn_j_<tonik>') → çakışmaz.
+// El yazımı içerik dokunulmaz; hacim "bedava" büyür.
+// ---------------------------------------------------------------------------
+
+/// Yolculuğun geçtiği yeni merkezler (C/G/D handwritten; bunlar üretilir).
+/// İlerleme yolculuğu da (progression_lesson.dart) aynı sırayı kullanır.
+const List<MajorKey> journeyKeys = [MajorKey.a, MajorKey.e, MajorKey.f];
+
+Concept _journeyFunctionConcept() => Concept(
+  title: t(en: 'Key Journey · Functions', tr: 'Tonalite Yolculuğu · İşlevler'),
+  sections: [
+    ConceptSection(
+      t(
+        en:
+            'The same seven functions (I–vii°) you learned in C — now heard from '
+            'a new home key. The Roman numerals and their feelings stay '
+            'identical; only the absolute pitches move.',
+        tr:
+            'C’de öğrendiğin aynı yedi işlev (I–vii°) — şimdi yeni bir ev '
+            'tonaliteden. Roman rakamları ve hisleri birebir aynı; yalnızca '
+            'mutlak perdeler kayar.',
+      ),
+    ),
+    ConceptSection(
+      heading: t(en: 'Why', tr: 'Neden'),
+      t(
+        en:
+            'Recognizing function independent of the key is real harmonic '
+            'hearing — here it becomes portable across the whole circle.',
+        tr:
+            'İşlevi tonaliteden bağımsız tanımak gerçek armonik duyuştur — burada '
+            'tüm çember boyunca taşınabilir hale gelir.',
+      ),
+    ),
+  ],
+);
+
+final Map<String, List<FunctionLesson>> _journeyCache = {};
+
+/// Üretilen işlev yolculuğu dersleri (locale-anahtarlı önbellek).
+List<FunctionLesson> get functionJourneyLessons =>
+    _journeyCache.putIfAbsent(ContentLocale.code, _buildFunctionJourney);
+
+List<FunctionLesson> _buildFunctionJourney() => [
+  for (final key in journeyKeys)
+    FunctionLesson(
+      id: 'fn_j_${key.tonicName.toLowerCase()}',
+      title: t(
+        en: 'Functions in ${key.tonicName} Major',
+        tr: '${key.tonicName} Majörde İşlevler',
+      ),
+      // Tüm 7 derece (C-kanonik); akış inKey(key) ile hedefe taşır.
+      pool: [degI, degII, degIII, degIV, degV, degVI, degVII],
+      key: key,
+      concept: _journeyFunctionConcept(),
+    ),
+];
+
 List<FunctionLesson> _buildFunctionLessons() => [
   FunctionLesson(
     id: 'fn1',

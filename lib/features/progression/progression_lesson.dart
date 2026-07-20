@@ -141,6 +141,91 @@ final Map<String, List<ProgressionLesson>> _lessonCache = {};
 List<ProgressionLesson> get progressionLessons =>
     _lessonCache.putIfAbsent(ContentLocale.code, _buildProgressionLessons);
 
+// ---------------------------------------------------------------------------
+// TONALİTE YOLCULUĞU (§1C) — üretilen ilerleme dersleri (bkz. functionJourneyLessons).
+// El yazımı pr1–pr3 (C/G/D) sonrası, aynı kalıplar yeni merkezlere taşınır.
+// Kimlikler benzersiz ('pr_j_<tonik>'); [journeyKeys] işlevle ortak sırayı verir.
+// ---------------------------------------------------------------------------
+
+Concept _journeyProgressionConcept() => Concept(
+  title: t(
+    en: 'Key Journey · Progressions',
+    tr: 'Tonalite Yolculuğu · İlerlemeler',
+  ),
+  sections: [
+    ConceptSection(
+      t(
+        en:
+            'The same chord journeys (I–IV–V–I, ii–V–I…) transposed to a new '
+            'home key. The movement — home, tension, return — is identical; only '
+            'the pitch level changes.',
+        tr:
+            'Aynı akor yolculukları (I–IV–V–I, ii–V–I…) yeni bir ev tonaliteye '
+            'taşınmış. Hareket — ev, gerilim, dönüş — birebir aynı; yalnızca '
+            'perde seviyesi değişir.',
+      ),
+    ),
+    ConceptSection(
+      heading: t(en: 'Why', tr: 'Neden'),
+      t(
+        en:
+            'Hearing a progression by its shape, not its exact notes, is what '
+            'lets you follow any song in any key.',
+        tr:
+            'Bir ilerlemeyi notalarından değil şeklinden duymak, herhangi bir '
+            'tonalitedeki her şarkıyı takip etmeni sağlar.',
+      ),
+    ),
+  ],
+);
+
+/// Yolculuk için ortak dört kalıp (C-kanonik; akış inKey ile hedefe taşır).
+List<Progression> _journeyPatterns() => [
+  _pIivVi, // I – IV – V – I
+  _pIvViIv, // I – V – vi – IV
+  _p(
+    'ii – V – I',
+    [degII, degV, degI],
+    story: t(en: 'Preparation → tension → home', tr: 'Hazırlık → gerilim → ev'),
+    cadenceHint: t(
+      en: 'The jazz cadence: a strong pull that lands squarely home.',
+      tr: 'Caz kadansı: güçlü bir çekiş, tam eve oturur.',
+    ),
+  ),
+  _p(
+    'I – vi – IV – V',
+    [degI, degVI, degIV, degV],
+    story: t(
+      en: 'Home → shadow → preparation → tension',
+      tr: 'Ev → gölge → hazırlık → gerilim',
+    ),
+    cadenceHint: t(
+      en: 'The classic loop; it keeps turning back to the top.',
+      tr: 'Klasik döngü; sürekli başa döner.',
+    ),
+  ),
+];
+
+final Map<String, List<ProgressionLesson>> _journeyCache = {};
+
+/// Üretilen ilerleme yolculuğu dersleri (locale-anahtarlı önbellek).
+List<ProgressionLesson> get progressionJourneyLessons =>
+    _journeyCache.putIfAbsent(ContentLocale.code, _buildProgressionJourney);
+
+List<ProgressionLesson> _buildProgressionJourney() => [
+  for (final key in journeyKeys)
+    ProgressionLesson(
+      id: 'pr_j_${key.tonicName.toLowerCase()}',
+      title: t(
+        en: 'Progressions in ${key.tonicName} Major',
+        tr: '${key.tonicName} Majörde İlerlemeler',
+      ),
+      pool: _journeyPatterns(),
+      key: key,
+      concept: _journeyProgressionConcept(),
+    ),
+];
+
 List<ProgressionLesson> _buildProgressionLessons() => [
   ProgressionLesson(
     id: 'pr1',

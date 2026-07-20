@@ -18,6 +18,7 @@ class AppSettings {
   final bool reminderEnabled;
   final int reminderHour; // 0-23, dakika :00
   final bool onboarded; // ilk açılış akışı tamamlandı mı
+  final bool tutorialSeen; // ana ekran ilk-açılış coach-mark turu görüldü mü
   final Instrument instrument; // egzersiz tınısı (piyano/sentez)
   final String localeCode; // 'en' (varsayılan) | 'tr'
 
@@ -25,6 +26,7 @@ class AppSettings {
     this.reminderEnabled = false,
     this.reminderHour = 19,
     this.onboarded = false,
+    this.tutorialSeen = false,
     this.instrument = Instrument.piano,
     this.localeCode = 'en',
   });
@@ -33,6 +35,7 @@ class AppSettings {
     bool? reminderEnabled,
     int? reminderHour,
     bool? onboarded,
+    bool? tutorialSeen,
     Instrument? instrument,
     String? localeCode,
   }) {
@@ -40,6 +43,7 @@ class AppSettings {
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderHour: reminderHour ?? this.reminderHour,
       onboarded: onboarded ?? this.onboarded,
+      tutorialSeen: tutorialSeen ?? this.tutorialSeen,
       instrument: instrument ?? this.instrument,
       localeCode: localeCode ?? this.localeCode,
     );
@@ -64,6 +68,7 @@ class SettingsController extends Notifier<AppSettings> {
     reminderEnabled: _prefs.getBool('reminder_enabled') ?? false,
     reminderHour: _prefs.getInt('reminder_hour') ?? 19,
     onboarded: _prefs.getBool('onboarded') ?? false,
+    tutorialSeen: _prefs.getBool('tutorial_seen') ?? false,
     instrument: instrumentFromPrefs(_prefs),
     localeCode: localeFromPrefs(_prefs),
   );
@@ -81,6 +86,12 @@ class SettingsController extends Notifier<AppSettings> {
   Future<void> setOnboarded(bool value) async {
     await _prefs.setBool('onboarded', value);
     state = state.copyWith(onboarded: value);
+  }
+
+  /// Ana ekran ilk-açılış coach-mark turu görüldü olarak işaretle (bir kez).
+  Future<void> setTutorialSeen(bool value) async {
+    await _prefs.setBool('tutorial_seen', value);
+    state = state.copyWith(tutorialSeen: value);
   }
 
   /// Tınıyı değiştirir: prefs'e yazar, global çalıcı fabrikasını günceller ve

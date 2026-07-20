@@ -43,10 +43,14 @@ Future<ProviderContainer> _pumpOnboarding(WidgetTester tester) async {
 }
 
 Future<void> _openPlacementFromOffer(WidgetTester tester) async {
-  await tester.tap(find.byType(TextButton));
+  // Welcome ekranındaki dil seçici (EN/TR) de TextButton içerir → spesifik ol.
+  await tester.tap(find.widgetWithText(TextButton, "I'll calibrate later"));
   await tester.pumpAndSettle();
 
-  await tester.tap(find.byType(FilledButton));
+  // Seviye seçici → "kısa test" linki yerleştirme testine götürür.
+  await tester.tap(
+    find.widgetWithText(TextButton, 'Not sure? Take a quick test'),
+  );
   await tester.pumpAndSettle();
 
   expect(find.byType(PlacementTestPage), findsOneWidget);
@@ -76,5 +80,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(container.read(settingsProvider).onboarded, isTrue);
+  });
+
+  testWidgets('seviye seçimi onboarding’i bitirir ve doğru dersleri açar', (
+    tester,
+  ) async {
+    final container = await _pumpOnboarding(tester);
+    // Welcome → seviye seçici
+    await tester.tap(find.widgetWithText(TextButton, "I'll calibrate later"));
+    await tester.pumpAndSettle();
+    // "Notaları biliyorum" → Notalar tamam sayılır, Aralıklardan başlar.
+    await tester.tap(find.text('I can name notes'));
+    await tester.pumpAndSettle();
+
+    expect(container.read(settingsProvider).onboarded, isTrue);
+    final p = container.read(progressProvider);
+    expect(p.isLessonCompleted('first_notes'), isTrue); // Notalar tamam
+    expect(p.isLessonCompleted('iv1'), isFalse); // Aralıklar değil
   });
 }

@@ -316,7 +316,7 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
         tr: 'Dinle, sonra söylemeyi dene',
       );
     } else if (exact) {
-      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
+      status = t(en: 'spot on — hold it!', tr: 'tam — böyle tut!');
     } else if (_reading != null) {
       status = t(
         en: 'I hear: ${_reading!.note.label}',

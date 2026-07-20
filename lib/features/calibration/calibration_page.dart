@@ -9,7 +9,9 @@ import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
+import '../../ui/app_icons.dart';
 import '../../ui/app_theme.dart';
+import '../../ui/pitch_meter.dart';
 
 // -----------------------------------------------------------------------------
 // SES ARALIĞI KALİBRASYONU — rehberli tırmanış
@@ -362,7 +364,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
     } else if (_busy) {
       status = t(en: 'Listen…', tr: 'Dinle…');
     } else if (exact) {
-      status = t(en: 'spot on — hold it! 🎯', tr: 'tam — böyle tut! 🎯');
+      status = t(en: 'spot on — hold it!', tr: 'tam — böyle tut!');
     } else if (_reading != null) {
       status = t(
         en: 'I hear: ${_reading!.note.label}',
@@ -448,6 +450,12 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
               fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(height: 12),
+          // Canlı perde ibresi — derslerin "söyle" ekranlarıyla AYNI çubuk.
+          // Söylenen sesin hedefe göre tam nerede olduğunu (cent sapması) ve
+          // hangi notaya denk geldiğini canlı gösterir; kalibrasyonu derslerle
+          // aynı netliğe taşır (kullanıcı geri bildirimi: bu çubuk çok daha anlaşılır).
+          PitchMeter(target: target, reading: _reading, active: _micActive),
           const Spacer(flex: 2),
           // Eylem alanı: notayı söyleyene kadar sadece "çıkaramıyorum";
           // söyledikten sonra konfor sorusu.
@@ -457,7 +465,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                 Expanded(
                   child: FilledButton.icon(
                     onPressed: _answerComfortable,
-                    icon: const Text('😌', style: TextStyle(fontSize: 18)),
+                    icon: const Icon(AppIcons.comfortable, size: 20),
                     label: Text(t(en: 'Comfortable', tr: 'Rahattı')),
                     style: FilledButton.styleFrom(
                       backgroundColor: _green,
@@ -469,7 +477,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _answerStrain,
-                    icon: const Text('😬', style: TextStyle(fontSize: 18)),
+                    icon: const Icon(AppIcons.strained, size: 20),
                     label: Text(t(en: 'It was hard', tr: 'Zorlandım')),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -525,14 +533,14 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
           const SizedBox(height: 20),
           _rangeRow(
             theme,
-            t(en: '😌 Comfortable', tr: '😌 Rahat'),
+            t(en: 'Comfortable', tr: 'Rahat'),
             '${r.comfortLowNote.label} – ${r.comfortHighNote.label}',
           ),
           if (hasStretch) ...[
             const SizedBox(height: 10),
             _rangeRow(
               theme,
-              t(en: '😬 Pushing it', tr: '😬 Zorlayarak'),
+              t(en: 'Pushing it', tr: 'Zorlayarak'),
               '${Note(r.stretchLow).label} – ${Note(r.stretchHigh).label}',
             ),
           ],

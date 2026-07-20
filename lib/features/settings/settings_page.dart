@@ -95,6 +95,72 @@ class _AccountSectionState extends ConsumerState<_AccountSection> {
     ref.read(progressProvider.notifier).reload();
   });
 
+  /// Hesap silme — Play Store "veri silme" zorunluluğu. Çift onaylı, geri alınamaz.
+  Future<void> _deleteAccount() async {
+    final first = await _confirmDelete(
+      title: t(en: 'Delete account & data?', tr: 'Hesabı ve veriyi sil?'),
+      body: t(
+        en:
+            'This permanently deletes your account and all synced progress from '
+            'the server, and clears it from this device.',
+        tr:
+            'Bu, hesabını ve sunucudaki tüm eşitlenmiş ilerlemeni kalıcı olarak '
+            'siler; bu cihazdan da temizler.',
+      ),
+      confirm: t(en: 'Continue', tr: 'Devam et'),
+    );
+    if (first != true || !mounted) return;
+    final second = await _confirmDelete(
+      title: t(en: 'This cannot be undone', tr: 'Bu geri alınamaz'),
+      body: t(
+        en: 'Are you sure you want to permanently delete your account?',
+        tr: 'Hesabını kalıcı olarak silmek istediğine emin misin?',
+      ),
+      confirm: t(en: 'Delete', tr: 'Sil'),
+    );
+    if (second != true || !mounted) return;
+    await _run(() async {
+      await CloudSync.instance.deleteAccount(
+        ref.read(progressRepositoryProvider),
+      );
+      if (!mounted) return;
+      ref.read(progressProvider.notifier).reload(); // yerel temizlendi → tazele
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t(en: 'Account deleted.', tr: 'Hesap silindi.')),
+        ),
+      );
+    });
+  }
+
+  Future<bool?> _confirmDelete({
+    required String title,
+    required String body,
+    required String confirm,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(t(en: 'Cancel', tr: 'Vazgeç')),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(confirm),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -134,6 +200,22 @@ class _AccountSectionState extends ConsumerState<_AccountSection> {
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Hesap silme — Play Store "veri silme" zorunluluğu (çift onaylı).
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _busy ? null : _deleteAccount,
+              icon: Icon(
+                Icons.delete_forever_rounded,
+                color: theme.colorScheme.error,
+              ),
+              label: Text(
+                t(en: 'Delete account & data', tr: 'Hesabımı ve verimi sil'),
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
             ),
           ),
           const SizedBox(height: 8),

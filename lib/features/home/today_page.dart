@@ -6,9 +6,12 @@ import '../../core/player_progress.dart';
 import '../../core/rank.dart';
 import '../../core/spaced_repetition.dart';
 import '../../state/progress_controller.dart';
+import '../../ui/app_icons.dart';
 import '../../ui/app_theme.dart';
 import '../calibration/calibration_page.dart';
 import '../mascot/eko_mascot.dart';
+import '../practice/daily_challenge_page.dart';
+import '../practice/endless_drill_page.dart';
 import '../review/review_session_page.dart';
 import 'curriculum.dart';
 
@@ -44,7 +47,7 @@ class TodayPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      t(en: 'Hey! 👋', tr: 'Selam! 👋'),
+                      t(en: 'Hey!', tr: 'Selam!'),
                       style: theme.textTheme.titleLarge,
                     ),
                     Text(
@@ -90,38 +93,113 @@ class TodayPage extends ConsumerWidget {
     final onSoft = Colors.white.withValues(alpha: 0.88);
 
     if (next == null) {
-      // Her şey tamam — kutlama hero'su.
-      return Container(
-        padding: const EdgeInsets.all(22),
+      // Tüm dersler bitti — ama ÖLÜ UÇ YOK: hero doğrudan Sonsuz Pratik'e
+      // götürür. "Normal kullanım zaten endless" → kullanıcı "uygulama tükendi"
+      // demez; kaldığı yerden bitmeyen karışık pratikle devam eder.
+      return DecoratedBox(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.teal, AppColors.grape],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
           borderRadius: BorderRadius.circular(26),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const EkoMascot(size: 54, celebrate: true),
-            const SizedBox(height: 12),
-            Text(
-              t(
-                en: 'You finished every lesson! 🎉',
-                tr: 'Tüm dersleri bitirdin! 🎉',
-              ),
-              style: theme.textTheme.headlineSmall?.copyWith(color: onHero),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              t(
-                en: 'Keep it fresh with reviews — keep your ear sharp.',
-                tr: 'Tekrarlarla taze tut, kulağını keskin bırakma.',
-              ),
-              style: theme.textTheme.bodyMedium?.copyWith(color: onSoft),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.grape.withValues(alpha: 0.35),
+              blurRadius: 26,
+              offset: const Offset(0, 14),
             ),
           ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(26),
+          clipBehavior: Clip.antiAlias,
+          child: Ink(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.teal, AppColors.grape],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: InkWell(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const EndlessDrillPage(),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const EkoMascot(size: 50, celebrate: true),
+                          const SizedBox(height: 10),
+                          Text(
+                            t(
+                              en: 'You’ve learned it all!',
+                              tr: 'Hepsini öğrendin!',
+                            ),
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              color: onHero,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            t(
+                              en:
+                                  'Now keep your ear sharp with endless mixed '
+                                  'practice.',
+                              tr:
+                                  'Şimdi bitmeyen karışık pratikle kulağını '
+                                  'keskin tut.',
+                            ),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: onSoft,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 11,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Text(
+                              t(
+                                en: 'Endless practice →',
+                                tr: 'Sonsuz pratik →',
+                              ),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: AppColors.grape,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 62,
+                      height: 62,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.22),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.all_inclusive_rounded,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       );
     }
@@ -240,6 +318,8 @@ class TodayPage extends ConsumerWidget {
     List<String> due,
   ) {
     final pct = (progress.dailyXp / kDailyXpGoal).clamp(0.0, 1.0);
+    // Günün meydan okuması bugün tamamlandı mı? (rozet + kart durumu)
+    final challengeDone = progress.isChallengeDoneOn(dayKeyFor(DateTime.now()));
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -259,6 +339,34 @@ class TodayPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 12),
+          // Günün Meydan Okuması — günlük dönüş kancası (yalnızca drill edilecek
+          // beceri, yani tamamlanmış ders varsa görünür).
+          if (progress.completedLessons.isNotEmpty)
+            _planRow(
+              context,
+              theme,
+              icon: challengeDone
+                  ? Icons.check_circle_rounded
+                  : Icons.bolt_rounded,
+              color: AppColors.amber,
+              title: challengeDone
+                  ? t(
+                      en: 'Daily challenge done',
+                      tr: 'Günün meydan okuması tamam',
+                    )
+                  : t(en: 'Daily challenge', tr: 'Günün meydan okuması'),
+              subtitle: challengeDone
+                  ? t(en: 'A fresh one arrives tomorrow', tr: 'Yarın yenisi gelir')
+                  : t(
+                      en: 'A short mixed set — feed your streak',
+                      tr: 'Kısa karışık set — serini besle',
+                    ),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const DailyChallengePage(),
+                ),
+              ),
+            ),
           if (next != null)
             _planRow(
               context,
@@ -294,16 +402,22 @@ class TodayPage extends ConsumerWidget {
                 ),
               ),
             ),
-          if (next == null && due.isEmpty)
+          // Dersler bitti → ölü uç değil, bitmeyen karışık pratik (normal akış).
+          if (next == null)
             _planRow(
               context,
               theme,
-              icon: Icons.check_circle_rounded,
-              color: AppColors.success,
-              title: t(en: 'Done for today!', tr: 'Bugünlük tamam!'),
+              icon: Icons.all_inclusive_rounded,
+              color: AppColors.grape,
+              title: t(en: 'Endless practice', tr: 'Sonsuz pratik'),
               subtitle: t(
-                en: 'Keep exploring in Practice if you like',
-                tr: 'Dilersen Pratik’ten keşfe devam et',
+                en: 'Mixed questions from everything you know',
+                tr: 'Bildiğin her şeyden karışık sorular',
+              ),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const EndlessDrillPage(),
+                ),
               ),
             ),
           const SizedBox(height: 14),
@@ -444,12 +558,19 @@ class TodayPage extends ConsumerWidget {
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: const Color(0xFFF6E2AE)),
       ),
-      child: Text(
-        '🔥 $streak',
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w800,
-          color: const Color(0xFFC9871A),
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(AppIcons.streak, size: 18, color: Color(0xFFC9871A)),
+          const SizedBox(width: 5),
+          Text(
+            '$streak',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFFC9871A),
+            ),
+          ),
+        ],
       ),
     );
   }

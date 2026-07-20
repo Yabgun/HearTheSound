@@ -6,6 +6,11 @@ import 'vocal_range.dart';
 /// Günlük XP hedefi (alışkanlık motoru) — kullanıcının her gün ulaşması istenen XP.
 const int kDailyXpGoal = 30;
 
+/// En yüksek ustalık/taç seviyesi. Tamamlanmış bir ders, her geçişte bir üst
+/// seviyeye taşınarak (daha çok soru · ipuçsuz · XP çarpanı) bu tavana dek
+/// yeniden oynanabilir — "crown" tekrar-oynanabilirliği.
+const int kMaxSkillLevel = 5;
+
 /// [PlayerProgress.copyWith] için "verilmedi" işaretçisi. `null` geçerli bir
 /// değer olduğundan (vocalRange'i temizlemek) null ile ayırt edilmesi gerekir.
 const Object _unset = Object();
@@ -22,6 +27,8 @@ class PlayerProgress {
   final String? lastActiveDay; // 'yyyy-mm-dd' — streak & günlük hedef için
   final int dailyXp; // bugün kazanılan XP (gün değişince sıfırlanır)
   final Map<String, int> skillXp; // beceri kimliği -> ustalık puanı
+  final Map<String, int>
+  skillLevel; // beceri kimliği -> ustalık/taç seviyesi (0..kMaxSkillLevel)
   final List<String> completedLessons; // geçilmiş ders kimlikleri (kilit açar)
   final VocalRange?
   vocalRange; // ölçülmüş ses aralığı; null = kalibre edilmemiş
@@ -33,6 +40,10 @@ class PlayerProgress {
   /// içgörüsünü besler; anahtarlar dil-bağımsızdır (i18n'e dayanıklı).
   final Map<String, int> confusionCounts;
 
+  /// Günün meydan okumasının son tamamlandığı gün ('yyyy-mm-dd'); null = hiç.
+  /// Bugün ekranındaki "Günün Meydan Okuması" rozetini besler.
+  final String? lastChallengeDay;
+
   const PlayerProgress({
     this.xp = 0,
     this.streak = 0,
@@ -40,16 +51,24 @@ class PlayerProgress {
     this.lastActiveDay,
     this.dailyXp = 0,
     this.skillXp = const {},
+    this.skillLevel = const {},
     this.completedLessons = const [],
     this.vocalRange,
     this.reviews = const {},
     this.confusionCounts = const {},
+    this.lastChallengeDay,
   });
 
   static const empty = PlayerProgress();
 
   bool isLessonCompleted(String id) => completedLessons.contains(id);
   bool get dailyGoalMet => dailyXp >= kDailyXpGoal;
+
+  /// Günün meydan okuması [dayKey] ('yyyy-mm-dd') gününde tamamlandı mı?
+  bool isChallengeDoneOn(String dayKey) => lastChallengeDay == dayKey;
+
+  /// Bir becerinin ustalık/taç seviyesi (0 = temel; kilitli değilse hep ≥0).
+  int skillLevelOf(String id) => skillLevel[id] ?? 0;
 
   /// Kullanıcı ses aralığını kalibre etmiş mi? (Söyleme oktavları buna uyarlanır.)
   bool get isCalibrated => vocalRange != null;
@@ -75,10 +94,12 @@ class PlayerProgress {
     String? lastActiveDay,
     int? dailyXp,
     Map<String, int>? skillXp,
+    Map<String, int>? skillLevel,
     List<String>? completedLessons,
     Object? vocalRange = _unset,
     Map<String, ReviewState>? reviews,
     Map<String, int>? confusionCounts,
+    String? lastChallengeDay,
   }) {
     return PlayerProgress(
       xp: xp ?? this.xp,
@@ -87,12 +108,14 @@ class PlayerProgress {
       lastActiveDay: lastActiveDay ?? this.lastActiveDay,
       dailyXp: dailyXp ?? this.dailyXp,
       skillXp: skillXp ?? this.skillXp,
+      skillLevel: skillLevel ?? this.skillLevel,
       completedLessons: completedLessons ?? this.completedLessons,
       vocalRange: identical(vocalRange, _unset)
           ? this.vocalRange
           : vocalRange as VocalRange?,
       reviews: reviews ?? this.reviews,
       confusionCounts: confusionCounts ?? this.confusionCounts,
+      lastChallengeDay: lastChallengeDay ?? this.lastChallengeDay,
     );
   }
 
@@ -103,10 +126,12 @@ class PlayerProgress {
     'lastActiveDay': lastActiveDay,
     'dailyXp': dailyXp,
     'skillXp': skillXp,
+    'skillLevel': skillLevel,
     'completedLessons': completedLessons,
     'vocalRange': vocalRange?.toMap(),
     'reviews': reviews.map((k, v) => MapEntry(k, v.toMap())),
     'confusionCounts': confusionCounts,
+    'lastChallengeDay': lastChallengeDay,
   };
 
   factory PlayerProgress.fromMap(Map<String, dynamic> map) {
@@ -118,6 +143,11 @@ class PlayerProgress {
       dailyXp: (map['dailyXp'] as num?)?.toInt() ?? 0,
       skillXp:
           (map['skillXp'] as Map?)?.map(
+            (key, value) => MapEntry(key as String, (value as num).toInt()),
+          ) ??
+          const {},
+      skillLevel:
+          (map['skillLevel'] as Map?)?.map(
             (key, value) => MapEntry(key as String, (value as num).toInt()),
           ) ??
           const {},
@@ -144,6 +174,7 @@ class PlayerProgress {
             (key, value) => MapEntry(key as String, (value as num).toInt()),
           ) ??
           const {},
+      lastChallengeDay: map['lastChallengeDay'] as String?,
     );
   }
 

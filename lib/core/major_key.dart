@@ -12,7 +12,12 @@ import 'note.dart';
 enum MajorKey {
   c('C', 0),
   g('G', 7),
-  d('D', 2);
+  d('D', 2),
+  // Beşler çemberi genişlemesi (§1C) — işlev/ilerleme "Tonalite Yolculuğu"
+  // üretimini besler. Tonik adları Note.fromName ile uyumlu (doğal/diyez).
+  a('A', 9),
+  e('E', 4),
+  f('F', 5);
 
   const MajorKey(this.tonicName, this.semitonesFromC);
 

@@ -563,4 +563,47 @@ List<ChordLesson> _buildChordLessons() => [
       ],
     ),
   ),
+  // §1C — kapstone: dokuz niteliğin tümü karışık köklerde (renk ustalığı).
+  // El yazımı ch1–ch12 spine'ının sonuna eklenir; nitelik-tanıma modunda.
+  ChordLesson(
+    id: 'ch_quality_master',
+    title: t(en: '★ Quality Master', tr: '★ Nitelik Ustası'),
+    recognizeBy: ChordRecognizeBy.quality,
+    pool: [
+      _c('C', ChordQuality.major),
+      _c('D', ChordQuality.minor),
+      _c('E', ChordQuality.diminished),
+      _c('F', ChordQuality.augmented),
+      _c('G', ChordQuality.dominant7),
+      _c('A', ChordQuality.major7),
+      _c('B', ChordQuality.minor7),
+      _c('C', ChordQuality.halfDiminished7),
+      _c('D', ChordQuality.diminished7),
+    ],
+    concept: Concept(
+      title: t(en: 'Quality Master', tr: 'Nitelik Ustası'),
+      sections: [
+        ConceptSection(
+          t(
+            en:
+                'All nine colors you have met — major, minor, diminished, '
+                'augmented, and the five sevenths — shuffled across different '
+                'roots. The ultimate color-recognition test.',
+            tr:
+                'Tanıştığın dokuz rengin tümü — majör, minör, eksik, artık ve '
+                'beş yedili — farklı köklerde karışık. Nihai renk-tanıma sınavı.',
+          ),
+        ),
+        ConceptSection(
+          heading: t(en: 'Tip', tr: 'İpucu'),
+          t(
+            en:
+                'Forget the root; listen only to the mood and tension of the '
+                'color.',
+            tr: 'Kökü unut; yalnızca rengin havasını ve gerilimini dinle.',
+          ),
+        ),
+      ],
+    ),
+  ),
 ];
