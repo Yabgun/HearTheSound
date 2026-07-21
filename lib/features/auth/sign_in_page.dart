@@ -14,10 +14,15 @@ import '../../state/progress_controller.dart';
 // Ayarlar'ın içine gömülü küçük bir form yerine kendi ekranı: çok kullanıcılı
 // yayında giriş, uygulamanın birinci sınıf bir akışıdır.
 //
-// Dört yol, tek varış: Google · e-posta kodu · e-posta+şifre · misafir.
+// ÜÇ yol, tek varış: Google · e-posta+şifre · misafir.
 // Hangi yoldan gelinirse gelinsin oturum açılınca [_afterSignIn] çalışır →
 // buluttaki ilerleme YERELLE KAYIPSIZ birleşir (mergeProgress). "Misafir olarak
 // oynadım, sonra giriş yaptım" senaryosunda hiçbir emek kaybolmaz.
+//
+// NEDEN "her girişte e-posta kodu" YOK: iki e-posta yolunu (kod + şifre) yan
+// yana sunmak hem seçim yorgunluğu yaratıyor hem de aynı adreste iki farklı
+// hesap-oluşturma yolu doğurup çakışmaya yol açıyordu. Kod mekanizması duruyor —
+// yalnızca kayıt onayı ve şifre sıfırlamada kullanılıyor.
 //
 // Ekran, akış sayfalarındaki desenle aynı: tek bir [_Step] durumu, iç içe
 // Navigator yok — geri tuşu adım adım geri alır.
@@ -25,11 +30,8 @@ import '../../state/progress_controller.dart';
 
 /// Ekranın hangi adımda olduğu.
 enum _Step {
-  /// Yol seçimi (dört seçenek).
+  /// Yol seçimi (Google · e-posta+şifre · misafir).
   chooser,
-
-  /// E-posta → 6 haneli kod.
-  emailCode,
 
   /// E-posta + şifre (giriş veya kayıt).
   password,
@@ -62,9 +64,6 @@ class _SignInPageState extends ConsumerState<SignInPage> {
 
   /// Şifre yolunda: kayıt mı, giriş mi?
   bool _creatingAccount = false;
-
-  /// Kod gönderildi mi (e-posta kodu yolunda ikinci alanı açar).
-  bool _codeSent = false;
 
   bool _obscurePassword = true;
 
@@ -171,22 +170,30 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     await _afterSignIn();
   });
 
-  Future<void> _sendCode() => _run(() async {
-    await CloudSync.instance.sendOtp(_emailText);
-    setState(() => _codeSent = true);
-  });
-
-  Future<void> _verifyCode() => _run(() async {
-    await CloudSync.instance.verifyOtp(email: _emailText, code: _code.text.trim());
-    await _afterSignIn();
-  });
-
   Future<void> _passwordSubmit() => _run(() async {
     if (_creatingAccount) {
-      final needsConfirmation = await CloudSync.instance.signUpWithPassword(
-        email: _emailText,
-        password: _password.text,
-      );
+      final bool needsConfirmation;
+      try {
+        needsConfirmation = await CloudSync.instance.signUpWithPassword(
+          email: _emailText,
+          password: _password.text,
+        );
+      } on EmailAlreadyRegistered {
+        // Kullanıcıyı gelmeyecek bir kodla bekletmek yerine doğrudan GİRİŞ
+        // moduna al — zaten yapmak istediği buydu.
+        setState(() {
+          _creatingAccount = false;
+          _error = t(
+            en:
+                'This email already has an account. Enter your password to '
+                'sign in, or use "Forgot password?".',
+            tr:
+                'Bu e-postayla zaten hesap var. Giriş için şifreni gir ya da '
+                '"Şifremi unuttum"u kullan.',
+          );
+        });
+        return;
+      }
       if (needsConfirmation) {
         // Supabase'te "Confirm email" açık → koda geç.
         _code.clear();
@@ -241,7 +248,6 @@ class _SignInPageState extends ConsumerState<SignInPage> {
                   if (_step == _Step.chooser) {
                     Navigator.of(context).pop(false);
                   } else {
-                    _codeSent = false;
                     _goTo(_Step.chooser);
                   }
                 },
@@ -280,13 +286,6 @@ class _SignInPageState extends ConsumerState<SignInPage> {
           tr:
               'İlerlemeni yedeklemek ve her cihazda devam etmek için giriş yap. '
               'Şimdiye kadar yaptığın her şey seninle gelir.',
-        ),
-      ),
-      _Step.emailCode => (
-        t(en: 'Continue with email', tr: 'E-posta ile devam'),
-        t(
-          en: 'We send a 6-digit code — no password to remember.',
-          tr: '6 haneli bir kod göndeririz — hatırlanacak şifre yok.',
         ),
       ),
       _Step.password => (
@@ -343,7 +342,6 @@ class _SignInPageState extends ConsumerState<SignInPage> {
 
   List<Widget> _stepBody(BuildContext context) => switch (_step) {
     _Step.chooser => _chooserBody(context),
-    _Step.emailCode => _emailCodeBody(),
     _Step.password => _passwordBody(),
     _Step.confirmSignUp => _confirmSignUpBody(),
     _Step.forgotRequest => _forgotRequestBody(),
@@ -376,24 +374,15 @@ class _SignInPageState extends ConsumerState<SignInPage> {
       ],
       const SizedBox(height: 12),
       OutlinedButton.icon(
-        onPressed: _busy ? null : () => _goTo(_Step.emailCode),
-        icon: const Icon(Icons.mail_outline_rounded),
-        label: Text(
-          t(en: 'Continue with email code', tr: 'E-posta kodu ile devam et'),
-        ),
-        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-      ),
-      const SizedBox(height: 12),
-      OutlinedButton.icon(
         onPressed: _busy
             ? null
             : () {
                 _creatingAccount = false;
                 _goTo(_Step.password);
               },
-        icon: const Icon(Icons.password_rounded),
+        icon: const Icon(Icons.mail_outline_rounded),
         label: Text(
-          t(en: 'Email and password', tr: 'E-posta ve şifre'),
+          t(en: 'Continue with email', tr: 'E-posta ile devam et'),
         ),
         style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
       ),
@@ -421,37 +410,6 @@ class _SignInPageState extends ConsumerState<SignInPage> {
       ),
     ];
   }
-
-  // E-posta kodu yolu ----------------------------------------------------------
-
-  List<Widget> _emailCodeBody() => [
-    _emailField(enabled: !_codeSent),
-    if (_codeSent) ...[
-      const SizedBox(height: 12),
-      _codeField(),
-    ],
-    const SizedBox(height: 16),
-    if (!_codeSent)
-      _primaryButton(
-        label: t(en: 'Send code', tr: 'Kod gönder'),
-        // Geçersiz e-postayla istek göndermeyiz.
-        onPressed: isValidEmail(_emailText) ? _sendCode : null,
-      )
-    else ...[
-      _primaryButton(
-        label: t(en: 'Verify and sign in', tr: 'Doğrula ve giriş yap'),
-        // KOD BOŞKEN PASİF — sunucuya eksik istek gitmesini engeller.
-        onPressed: isValidOtpCode(_code.text) ? _verifyCode : null,
-      ),
-      const SizedBox(height: 8),
-      Center(
-        child: TextButton(
-          onPressed: _busy ? null : _sendCode,
-          child: Text(t(en: 'Send a new code', tr: 'Yeni kod gönder')),
-        ),
-      ),
-    ],
-  ];
 
   // E-posta + şifre yolu -------------------------------------------------------
 

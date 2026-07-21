@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hear_the_sound/core/content_locale.dart';
+import 'package:hear_the_sound/data/cloud/google_config.dart';
 import 'package:hear_the_sound/features/auth/sign_in_page.dart';
 
 // -----------------------------------------------------------------------------
@@ -43,54 +44,65 @@ void main() {
 
   tearDown(() => ContentLocale.code = 'en');
 
-  testWidgets('seçim ekranı dört yolu da sunar', (tester) async {
+  testWidgets('seçim ekranı ÜÇ yolu sunar — fazlası değil', (tester) async {
     await pumpSignIn(tester);
 
     expect(find.text('Continue with Google'), findsOneWidget);
-    expect(find.text('Continue with email code'), findsOneWidget);
-    expect(find.text('Email and password'), findsOneWidget);
+    expect(find.text('Continue with email'), findsOneWidget);
     expect(find.text('Continue as guest'), findsOneWidget);
+
+    // "Her girişte kod" yolu bilerek kaldırıldı (seçim yorgunluğu + aynı
+    // adreste iki hesap-oluşturma yolu çakışması). Geri sızmasın.
+    expect(find.text('Continue with email code'), findsNothing);
+    expect(find.text('Send code'), findsNothing);
   });
 
-  testWidgets('Google yapılandırılmamışsa düğme pasif ve açıklanır', (
+  testWidgets('Google düğmesi yapılandırma durumunu doğru yansıtır', (
     tester,
   ) async {
     await pumpSignIn(tester);
 
-    // google_config.dart boş olduğu sürece: görünür ama basılamaz + gerekçe yazar.
-    expect(isEnabled(tester, 'Continue with Google'), isFalse);
-    expect(
-      find.text('Google sign-in is not set up in this build yet.'),
-      findsOneWidget,
+    // Sözleşme iki yönlü: client ID varsa basılabilir; YOKSA görünür ama pasif
+    // ve gerekçesi yazılı kalır (sessizce çalışmayan düğme bırakmayız).
+    // Duruma göre iddia ediyoruz ki `google_config.dart` doldurulunca da
+    // boşaltılınca da test anlamını korusun.
+    final explanation = find.text(
+      'Google sign-in is not set up in this build yet.',
     );
+    if (isGoogleSignInConfigured) {
+      expect(isEnabled(tester, 'Continue with Google'), isTrue);
+      expect(explanation, findsNothing);
+    } else {
+      expect(isEnabled(tester, 'Continue with Google'), isFalse);
+      expect(explanation, findsOneWidget);
+    }
   });
 
-  testWidgets('e-posta kodu yolu: geçersiz e-postayla kod istenemez', (
-    tester,
-  ) async {
+  testWidgets('geçersiz e-postayla giriş denenemez', (tester) async {
     await pumpSignIn(tester);
-    await tester.tap(find.text('Continue with email code'));
+    await tester.tap(find.text('Continue with email'));
     await tester.pumpAndSettle();
 
-    // Boşken pasif.
-    expect(isEnabled(tester, 'Send code'), isFalse);
+    final email = find.byType(TextField).first;
+    final password = find.byType(TextField).last;
+    await tester.enterText(password, 'birsifre');
 
-    // Yarım adres — hâlâ pasif.
-    await tester.enterText(find.byType(TextField).first, 'yarim@');
+    // Yarım adres — pasif.
+    await tester.enterText(email, 'yarim@');
     await tester.pump();
-    expect(isEnabled(tester, 'Send code'), isFalse);
+    expect(isEnabled(tester, 'Sign in'), isFalse);
 
     // Geçerli adres — aktifleşir (basmıyoruz: sunucuya gitmesin).
-    await tester.enterText(find.byType(TextField).first, 'kisi@ornek.com');
+    await tester.enterText(email, 'kisi@ornek.com');
     await tester.pump();
-    expect(isEnabled(tester, 'Send code'), isTrue);
+    expect(isEnabled(tester, 'Sign in'), isTrue);
   });
 
   testWidgets('şifre yolu: kayıtta 8 karakter şartı, girişte değil', (
     tester,
   ) async {
     await pumpSignIn(tester);
-    await tester.tap(find.text('Email and password'));
+    await tester.tap(find.text('Continue with email'));
     await tester.pumpAndSettle();
 
     final email = find.byType(TextField).first;
@@ -116,7 +128,7 @@ void main() {
     tester,
   ) async {
     await pumpSignIn(tester);
-    await tester.tap(find.text('Email and password'));
+    await tester.tap(find.text('Continue with email'));
     await tester.pumpAndSettle();
     expect(find.text('Continue as guest'), findsNothing);
 
@@ -133,8 +145,7 @@ void main() {
     await pumpSignIn(tester);
 
     expect(find.text('Google ile devam et'), findsOneWidget);
-    expect(find.text('E-posta kodu ile devam et'), findsOneWidget);
-    expect(find.text('E-posta ve şifre'), findsOneWidget);
+    expect(find.text('E-posta ile devam et'), findsOneWidget);
     expect(find.text('Misafir olarak devam et'), findsOneWidget);
   });
 }

@@ -19,11 +19,19 @@ import 'supabase_config.dart';
 // - SESSİZ hata: ağ/RLS hataları kullanıcı akışını asla bozmaz; bir sonraki
 //   kayıtta yeniden denenir.
 //
-// Kimlik: DÖRT yol — Google · e-posta + 6 haneli kod (OTP) · e-posta + şifre ·
-// misafir (hiç giriş yapmadan). Hepsi aynı yere varır: Supabase oturumu + ardından
-// pullAndMerge. Şifre sıfırlama mobilde LİNK değil KOD ile çalışır (deep-link
-// kurulumu gerekmez). Akışı `features/auth/sign_in_page.dart` yönetir.
+// Kimlik: ÜÇ yol — Google · e-posta + şifre · misafir (hiç giriş yapmadan).
+// Hepsi aynı yere varır: Supabase oturumu + ardından pullAndMerge. Kayıt onayı
+// ve şifre sıfırlama mobilde LİNK değil KOD ile çalışır (deep-link kurulumu
+// gerekmez). Akışı `features/auth/sign_in_page.dart` yönetir.
 // -----------------------------------------------------------------------------
+
+/// Kayıt denenen e-posta adresinde ZATEN hesap var.
+///
+/// Supabase bunu bir hata olarak döndürmez (e-posta sızdırmamak için) — biz
+/// tespit edip fırlatırız ki kullanıcı, gelmeyecek bir kodu beklemesin.
+class EmailAlreadyRegistered implements Exception {
+  const EmailAlreadyRegistered();
+}
 
 class CloudSync {
   CloudSync._();
@@ -56,28 +64,41 @@ class CloudSync {
   /// kullanılacak — şu an senkron sessizce durur).
   bool get isBlockedByNewerSchema => _blockedByNewerSchema;
 
-  // --- Yol 1: e-posta + tek kullanımlık kod (şifresiz) ------------------------
-
-  /// E-postaya 6 haneli giriş kodu gönderir (hesap yoksa oluşturur).
-  Future<void> sendOtp(String email) =>
-      _client.auth.signInWithOtp(email: email);
-
-  /// Gönderilen kodu doğrular; başarılıysa oturum açılır.
-  Future<void> verifyOtp({required String email, required String code}) =>
-      _client.auth.verifyOTP(type: OtpType.email, email: email, token: code);
-
-  // --- Yol 2: e-posta + şifre -------------------------------------------------
+  // --- Yol 1: e-posta + şifre -------------------------------------------------
+  //
+  // NOT: "her girişte 6 haneli kod" (signInWithOtp) yolu KASITLI olarak
+  // kaldırıldı — iki e-posta yolunu yan yana sunmak seçim yorgunluğu yaratıyor
+  // ve aynı adreste iki farklı hesap-oluşturma yolu doğurup çakışmaya yol
+  // açıyordu. Kod mekanizması duruyor: kayıt onayı (confirmSignUp) ve şifre
+  // sıfırlama (confirmPasswordReset). OTP ile açılmış eski hesaplar "şifremi
+  // unuttum" ile kendilerine şifre belirler.
 
   /// Yeni hesap oluşturur.
   ///
   /// **true** dönerse e-posta onayı gerekiyor demektir (Supabase'te "Confirm
   /// email" açık): oturum henüz yok, kullanıcıya gelen kodu [confirmSignUp] ile
   /// doğrulatmak gerekir. **false** dönerse oturum doğrudan açılmıştır.
+  ///
+  /// E-posta zaten kayıtlıysa [EmailAlreadyRegistered] fırlatır — bkz. aşağıdaki
+  /// "identities boş" hilesi.
   Future<bool> signUpWithPassword({
     required String email,
     required String password,
   }) async {
     final res = await _client.auth.signUp(email: email, password: password);
+
+    // VAR OLAN HESAP TUZAĞI: Supabase, e-posta adresi sızdırmamak için (birinin
+    // "bu adres kayıtlı mı?" diye tarama yapmasını engellemek) zaten kayıtlı bir
+    // adreste de 200 + oturumsuz yanıt döner ve HİÇBİR e-posta göndermez.
+    // Yani "onay bekleniyor" ile "zaten kayıtlı" aynı görünür; ayırt eden tek
+    // işaret `identities` listesinin BOŞ gelmesidir.
+    // (Yalnızca AÇIKÇA boşsa karar veriyoruz: alan hiç gelmediyse eski davranışa
+    // düşeriz, yoksa gerçek bir kaydı yanlışlıkla engelleyebiliriz.)
+    final identities = res.user?.identities;
+    if (res.session == null && identities != null && identities.isEmpty) {
+      throw const EmailAlreadyRegistered();
+    }
+
     return res.session == null;
   }
 
@@ -91,7 +112,7 @@ class CloudSync {
     required String password,
   }) => _client.auth.signInWithPassword(email: email, password: password);
 
-  // --- Yol 3: şifremi unuttum (mobilde LİNK değil KOD) ------------------------
+  // --- Yol 2: şifremi unuttum (mobilde LİNK değil KOD) ------------------------
 
   /// Şifre sıfırlama kodu gönderir.
   ///
@@ -116,7 +137,7 @@ class CloudSync {
     await _client.auth.updateUser(UserAttributes(password: newPassword));
   }
 
-  // --- Yol 4: Google -----------------------------------------------------------
+  // --- Yol 3: Google -----------------------------------------------------------
 
   /// Google hesabıyla giriş.
   ///

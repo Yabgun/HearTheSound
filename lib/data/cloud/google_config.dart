@@ -18,8 +18,9 @@
 // -----------------------------------------------------------------------------
 
 /// Google Cloud Console'daki **Web application** OAuth client ID'si.
-/// Biçim: `1234567890-abc123def456.apps.googleusercontent.com`
-const String kGoogleWebClientId = '';
+/// Proje: `hearthesound` · client adı: "HearTheSound Web".
+const String kGoogleWebClientId =
+    '757029080067-lquf41ftpq1gfp320n0bgqlevd1ad98h.apps.googleusercontent.com';
 
 /// Google ile giriş kullanılabilir mi?
 bool get isGoogleSignInConfigured => kGoogleWebClientId.isNotEmpty;
