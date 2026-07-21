@@ -1,3 +1,4 @@
+import 'player_profile.dart';
 import 'player_progress.dart';
 import 'spaced_repetition.dart';
 import 'vocal_range.dart';
@@ -15,6 +16,7 @@ import 'vocal_range.dart';
 //   streak / dailyXp / lastActiveDay .. daha YENİ gün hangi taraftaysa onunki
 //   vocalRange ........................ daha yeni kalibrasyon
 //   reviews ........................... beceri başına daha yeni tekrar durumu
+//   profile ........................... dolu olan kazanır; joinedAt en erken
 //   schemaVersion ..................... max (bkz. aşağıdaki not)
 //
 // Kural: merge(a, b) simetrik olmalı (merge(b, a) aynı sonucu verir) — testler
@@ -125,6 +127,8 @@ PlayerProgress mergeProgress(PlayerProgress a, PlayerProgress b) {
     lastChallengeDay: compareDay(a.lastChallengeDay, b.lastChallengeDay) >= 0
         ? a.lastChallengeDay
         : b.lastChallengeDay,
+    // Profil: dolu olan kazanır, üyelik tarihi en erken (bkz. mergeProfile).
+    profile: mergeProfile(a.profile, b.profile),
     schemaVersion: a.schemaVersion > b.schemaVersion
         ? a.schemaVersion
         : b.schemaVersion,

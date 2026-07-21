@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/player_profile.dart';
 import '../core/player_progress.dart';
 import '../core/spaced_repetition.dart';
 import '../core/vocal_range.dart';
@@ -29,14 +30,47 @@ class ProgressController extends Notifier<PlayerProgress> {
   @override
   PlayerProgress build() {
     final loaded = _repo.load();
-    final normalized = _normalizeForToday(
-      loaded,
-      ref.read(progressClockProvider)(),
-    );
+    final now = ref.read(progressClockProvider)();
+    var normalized = _normalizeForToday(loaded, now);
+
+    // "Üyelik tarihi": ilk açılışta bir kez damgalanır. Buradan damgalıyoruz
+    // çünkü uygulamanın gerçekten ilk çalıştığı an burasıdır; birleştirmede
+    // en ERKEN tarih kazandığı için başka cihazın daha eski damgası korunur.
+    if (normalized.profile.joinedAt == null) {
+      normalized = normalized.copyWith(
+        profile: normalized.profile.copyWith(joinedAt: now),
+      );
+    }
+
     if (!identical(loaded, normalized)) {
       unawaited(_repo.save(normalized));
     }
     return normalized;
+  }
+
+  /// Görünen adı belirler. Boş/boşluk-only değer adı KALDIRIR.
+  ///
+  /// (Avatarla ayrı metotlar: tek bir `updateProfile({displayName, avatarId})`
+  /// olsaydı `null` hem "dokunma" hem "sil" anlamına gelir, yalnızca avatarı
+  /// değiştiren çağrı kullanıcının adını sessizce silerdi.)
+  void setDisplayName(String? name) {
+    final trimmed = name?.trim();
+    state = state.copyWith(
+      profile: PlayerProfile(
+        displayName: (trimmed == null || trimmed.isEmpty) ? null : trimmed,
+        avatarId: state.profile.avatarId,
+        joinedAt: state.profile.joinedAt,
+      ),
+    );
+    _repo.save(state);
+  }
+
+  /// Avatar (Eko renk varyantı) kimliğini belirler.
+  void setAvatar(String avatarId) {
+    state = state.copyWith(
+      profile: state.profile.copyWith(avatarId: avatarId),
+    );
+    _repo.save(state);
   }
 
   /// Bir ders/oturum tamamlandığında çağrılır: XP ekler, günlük streak'i

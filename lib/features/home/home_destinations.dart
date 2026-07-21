@@ -12,6 +12,7 @@ import '../../state/progress_controller.dart';
 import '../calibration/calibration_page.dart';
 import '../explorer/range_playground_page.dart';
 import '../mascot/eko_mascot.dart';
+import '../profile/profile_identity.dart';
 import '../review/review_session_page.dart';
 import '../settings/settings_page.dart';
 import '../../ui/app_theme.dart';
@@ -153,6 +154,9 @@ class ProfileHubPage extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            // Kimlik: avatar + ad + hesap + üyelik tarihi (§19).
+            const ProfileIdentityCard(),
+            const SizedBox(height: 20),
             Container(
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
@@ -269,6 +273,10 @@ class ProfileHubPage extends ConsumerWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+            const SizedBox(height: 16),
+            const Divider(),
+            // Veri taşınabilirliği (Play zorunluluğu) — §19.
+            const ExportDataTile(),
           ],
         ),
       ),

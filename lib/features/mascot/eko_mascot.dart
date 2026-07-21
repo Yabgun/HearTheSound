@@ -10,13 +10,55 @@ import '../../ui/app_theme.dart';
 // asset/bağımlılık gerektirmez. Boyut [size] ile ölçeklenir.
 // -----------------------------------------------------------------------------
 
+/// Eko'nun renk varyantı — profil avatarı olarak seçilebilir.
+///
+/// [id] KALICIDIR: `PlayerProfile.avatarId` bunu saklar, dolayısıyla yayına
+/// çıkmış bir id değiştirilmemelidir (ders id'leriyle aynı disiplin —
+/// bkz. PROJECT.md §17.2). Yeni varyant eklemek serbesttir.
+class EkoPalette {
+  final String id;
+  final Color from;
+  final Color to;
+
+  /// Seçicide okunacak ad — dile duyarlı olsun diye fonksiyon değil, çağıran
+  /// `t()` ile kendi etiketini verir; burada renk kimliğinden fazlası yok.
+  const EkoPalette({required this.id, required this.from, required this.to});
+}
+
+/// Seçilebilir avatarlar. İlk eleman VARSAYILAN'dır (bilinmeyen id buraya düşer).
+const List<EkoPalette> kEkoPalettes = [
+  EkoPalette(id: 'grape', from: Color(0xFF9C7DFF), to: AppColors.coral),
+  EkoPalette(id: 'ocean', from: Color(0xFF56CCF2), to: Color(0xFF2F80ED)),
+  EkoPalette(id: 'forest', from: Color(0xFF7BE495), to: Color(0xFF129A74)),
+  EkoPalette(id: 'sunset', from: Color(0xFFFFC371), to: Color(0xFFFF5F6D)),
+  EkoPalette(id: 'berry', from: Color(0xFFFF9AA0), to: Color(0xFFB24592)),
+  EkoPalette(id: 'mono', from: Color(0xFFB8C0D9), to: Color(0xFF5C6484)),
+];
+
+/// [id]'ye karşılık gelen palet; bilinmeyen/eksikse varsayılan.
+///
+/// Eski bir sürüm, yeni eklenmiş bir varyantı tanımasa da çökmez — sessizce
+/// varsayılanı çizer.
+EkoPalette ekoPaletteFor(String? id) => kEkoPalettes.firstWhere(
+  (p) => p.id == id,
+  orElse: () => kEkoPalettes.first,
+);
+
 class EkoMascot extends StatelessWidget {
-  const EkoMascot({super.key, this.size = 64, this.celebrate = false});
+  const EkoMascot({
+    super.key,
+    this.size = 64,
+    this.celebrate = false,
+    this.palette,
+  });
 
   final double size;
 
   /// Kutlama modu: gözler mutlu yay olur (ders tamamlama vb.).
   final bool celebrate;
+
+  /// Renk varyantı; null = varsayılan (uygulamanın her yerindeki Eko).
+  final EkoPalette? palette;
 
   @override
   Widget build(BuildContext context) {
@@ -25,16 +67,22 @@ class EkoMascot extends StatelessWidget {
       child: SizedBox(
         width: size,
         height: size,
-        child: CustomPaint(painter: _EkoPainter(celebrate: celebrate)),
+        child: CustomPaint(
+          painter: _EkoPainter(
+            celebrate: celebrate,
+            palette: palette ?? kEkoPalettes.first,
+          ),
+        ),
       ),
     );
   }
 }
 
 class _EkoPainter extends CustomPainter {
-  _EkoPainter({required this.celebrate});
+  _EkoPainter({required this.celebrate, required this.palette});
 
   final bool celebrate;
+  final EkoPalette palette;
 
   static const _dark = Color(0xFF2C2652);
   static const _cheek = Color(0xFFFF9AA0);
@@ -52,10 +100,10 @@ class _EkoPainter extends CustomPainter {
 
     // Gövde (gradyan baloncuk)
     final body = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFF9C7DFF), AppColors.coral],
+        colors: [palette.from, palette.to],
       ).createShader(const Rect.fromLTWH(20, 20, 80, 80));
     canvas.drawCircle(const Offset(60, 60), 40, body);
 
@@ -134,5 +182,5 @@ class _EkoPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _EkoPainter oldDelegate) =>
-      oldDelegate.celebrate != celebrate;
+      oldDelegate.celebrate != celebrate || oldDelegate.palette.id != palette.id;
 }

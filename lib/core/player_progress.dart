@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'player_profile.dart';
 import 'schema_migration.dart';
 import 'spaced_repetition.dart';
 import 'vocal_range.dart';
@@ -45,6 +46,10 @@ class PlayerProgress {
   /// Bugün ekranındaki "Günün Meydan Okuması" rozetini besler.
   final String? lastChallengeDay;
 
+  /// Kullanıcının kendi belirlediği kimlik (ad, avatar, üyelik tarihi).
+  /// Şema v2'de eklendi; eski kayıtlarda boş gelir.
+  final PlayerProfile profile;
+
   /// Bu verinin taşıdığı şema sürümü (bkz. `schema_migration.dart`).
   ///
   /// Uygulama içinde üretilen ilerleme her zaman güncel sürümdedir; yalnızca
@@ -66,6 +71,7 @@ class PlayerProgress {
     this.reviews = const {},
     this.confusionCounts = const {},
     this.lastChallengeDay,
+    this.profile = PlayerProfile.empty,
     this.schemaVersion = kProgressSchemaVersion,
   });
 
@@ -118,6 +124,7 @@ class PlayerProgress {
     Map<String, ReviewState>? reviews,
     Map<String, int>? confusionCounts,
     String? lastChallengeDay,
+    PlayerProfile? profile,
     int? schemaVersion,
   }) {
     return PlayerProgress(
@@ -135,6 +142,7 @@ class PlayerProgress {
       reviews: reviews ?? this.reviews,
       confusionCounts: confusionCounts ?? this.confusionCounts,
       lastChallengeDay: lastChallengeDay ?? this.lastChallengeDay,
+      profile: profile ?? this.profile,
       schemaVersion: schemaVersion ?? this.schemaVersion,
     );
   }
@@ -154,6 +162,7 @@ class PlayerProgress {
     'reviews': reviews.map((k, v) => MapEntry(k, v.toMap())),
     'confusionCounts': confusionCounts,
     'lastChallengeDay': lastChallengeDay,
+    'profile': profile.toMap(),
   };
 
   /// Kayıttan ilerleme okur.
@@ -199,6 +208,9 @@ class PlayerProgress {
           ) ??
           const {},
       lastChallengeDay: m['lastChallengeDay'] as String?,
+      profile: PlayerProfile.fromMap(
+        (m['profile'] as Map?)?.cast<String, dynamic>() ?? const {},
+      ),
       schemaVersion: readSchemaVersion(m),
     );
   }

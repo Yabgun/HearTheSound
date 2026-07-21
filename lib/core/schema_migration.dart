@@ -23,7 +23,11 @@
 /// Şema değiştiğinde (alan eklendi / bir alanın anlamı değişti) bunu **bir**
 /// artır ve [kProgressMigrations]'a v(eski) -> v(eski+1) dönüşümünü ekle.
 /// `schema_migration_test.dart` zincirde boşluk kalmadığını doğrular.
-const int kProgressSchemaVersion = 1;
+///
+/// Sürüm geçmişi:
+///   v1 — ilk yayın şekli (damgasız kayıtlar da v1 sayılır)
+///   v2 — `profile` alt-nesnesi eklendi (görünen ad, avatar, üyelik tarihi)
+const int kProgressSchemaVersion = 2;
 
 /// Damgasız kayıtların varsayıldığı sürüm.
 ///
@@ -36,17 +40,22 @@ typedef ProgressMigration =
     Map<String, dynamic> Function(Map<String, dynamic> map);
 
 /// v(anahtar) -> v(anahtar + 1) dönüşüm tablosu.
+const Map<int, ProgressMigration> kProgressMigrations = {1: _v1ToV2};
+
+/// v1 -> v2: `profile` alt-nesnesi eklendi.
 ///
-/// Şu an **boş**: mevcut şekil ilk sürüm. Makine önceden kurulu olduğu için
-/// ilk gerçek göç, yeniden tasarım değil tek girdilik bir ekleme olacak:
-///
-/// ```dart
-/// const Map<int, ProgressMigration> kProgressMigrations = {1: _v1ToV2};
-///
-/// /// v2: profil alt-nesnesi eklendi (görünen ad, avatar, üyelik tarihi).
-/// Map<String, dynamic> _v1ToV2(Map<String, dynamic> m) => {...m, 'profile': {}};
-/// ```
-const Map<int, ProgressMigration> kProgressMigrations = {};
+/// Eski kayıtlarda bu anahtar hiç yoktu. BOŞ bir nesneyle açıyoruz ki okuyucu
+/// "alan yok" ile "alan boş" ayrımını yapmak zorunda kalmasın — ayrıca damga
+/// v2'ye çıktığı için, `profile`'ı tanımayan ESKİ bir sürüm bu veriyi buluta
+/// geri yazamaz (ileri-sürüm koruması) ve kullanıcının adını/avatarını silemez.
+/// Profilin içi ilk düzenlemede dolar; `joinedAt` ilk açılışta damgalanır.
+/// Sıralama önemli: varsayılan ÖNCE, gerçek veri SONRA yazılır. Ters sırada
+/// (`{...m, 'profile': {}}`) beklenmedik şekilde zaten dolu gelen bir profil
+/// silinirdi — göçler asla mevcut veriyi ezmemeli.
+Map<String, dynamic> _v1ToV2(Map<String, dynamic> m) => {
+  'profile': <String, dynamic>{},
+  ...m,
+};
 
 /// [map]'in taşıdığı şema sürümü; damga yoksa ya da bozuksa
 /// [kUnstampedSchemaVersion].

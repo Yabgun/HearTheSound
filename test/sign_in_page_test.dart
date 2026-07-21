@@ -119,9 +119,55 @@ void main() {
     await tester.pumpAndSettle();
     expect(isEnabled(tester, 'Create account'), isFalse);
 
-    await tester.enterText(find.byType(TextField).last, 'yeterince-uzun');
+    // Kayıtta 3 alan var: e-posta, şifre, şifre tekrar.
+    final fields = find.byType(TextField);
+    expect(fields, findsNWidgets(3));
+    await tester.enterText(fields.at(1), 'yeterince-uzun');
+    await tester.enterText(fields.at(2), 'yeterince-uzun');
     await tester.pump();
     expect(isEnabled(tester, 'Create account'), isTrue);
+  });
+
+  testWidgets('kayıtta şifre tekrarı eşleşmezse hesap açılamaz', (
+    tester,
+  ) async {
+    await pumpSignIn(tester);
+    await tester.tap(find.text('Continue with email'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create a new account'));
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), 'kisi@ornek.com');
+    await tester.enterText(fields.at(1), 'dogru-sifre');
+
+    // Tekrar alanı BOŞken: henüz hata gösterme (kullanıcı daha yazmadı) ama
+    // düğme de açılmasın.
+    await tester.pump();
+    expect(find.text('Passwords do not match'), findsNothing);
+    expect(isEnabled(tester, 'Create account'), isFalse);
+
+    // Yazım hatası: uyarı çıkar, düğme kapalı kalır.
+    await tester.enterText(fields.at(2), 'dogru-sifr');
+    await tester.pump();
+    expect(find.text('Passwords do not match'), findsOneWidget);
+    expect(isEnabled(tester, 'Create account'), isFalse);
+
+    // Düzeltilince uyarı kalkar ve düğme açılır.
+    await tester.enterText(fields.at(2), 'dogru-sifre');
+    await tester.pump();
+    expect(find.text('Passwords do not match'), findsNothing);
+    expect(isEnabled(tester, 'Create account'), isTrue);
+  });
+
+  testWidgets('girişte şifre tekrarı SORULMAZ', (tester) async {
+    await pumpSignIn(tester);
+    await tester.tap(find.text('Continue with email'));
+    await tester.pumpAndSettle();
+
+    // Giriş modu: yalnızca e-posta + şifre.
+    expect(find.byType(TextField), findsNWidgets(2));
+    expect(find.text('Re-enter password'), findsNothing);
   });
 
   testWidgets('geri tuşu önce seçim ekranına döner, ekranı kapatmaz', (

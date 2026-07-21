@@ -58,6 +58,10 @@ class _SignInPageState extends ConsumerState<SignInPage> {
   final _code = TextEditingController();
   final _password = TextEditingController();
 
+  /// Şifre BELİRLERKEN (kayıt / sıfırlama) ikinci giriş — yazım hatasıyla
+  /// erişilemez hesap açılmasını önler. Girişte kullanılmaz.
+  final _passwordConfirm = TextEditingController();
+
   _Step _step = _Step.chooser;
   bool _busy = false;
   String? _error;
@@ -72,7 +76,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     super.initState();
     // Düğmelerin aktif/pasifliği alanlara BAĞLI (boş alanla istek gitmesin) —
     // her tuşta yeniden çizmemiz gerekiyor.
-    for (final c in [_email, _code, _password]) {
+    for (final c in [_email, _code, _password, _passwordConfirm]) {
       c.addListener(_onFieldChanged);
     }
   }
@@ -81,7 +85,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
 
   @override
   void dispose() {
-    for (final c in [_email, _code, _password]) {
+    for (final c in [_email, _code, _password, _passwordConfirm]) {
       c.removeListener(_onFieldChanged);
       c.dispose();
     }
@@ -221,6 +225,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     await CloudSync.instance.sendPasswordResetCode(_emailText);
     _code.clear();
     _password.clear();
+    _passwordConfirm.clear();
     _goTo(_Step.forgotConfirm);
   });
 
@@ -417,6 +422,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     _emailField(),
     const SizedBox(height: 12),
     _passwordField(
+      controller: _password,
       label: t(en: 'Password', tr: 'Şifre'),
       helper: _creatingAccount
           ? t(
@@ -425,6 +431,16 @@ class _SignInPageState extends ConsumerState<SignInPage> {
             )
           : null,
     ),
+    // Yalnızca KAYITTA: şifreyi ikinci kez iste. Tek harflik bir yazım hatası,
+    // kullanıcının bir daha giremeyeceği bir hesap yaratabilir.
+    if (_creatingAccount) ...[
+      const SizedBox(height: 12),
+      _passwordField(
+        controller: _passwordConfirm,
+        label: t(en: 'Re-enter password', tr: 'Şifreyi tekrar gir'),
+        errorText: _confirmError,
+      ),
+    ],
     const SizedBox(height: 16),
     _primaryButton(
       label: _creatingAccount
@@ -440,6 +456,9 @@ class _SignInPageState extends ConsumerState<SignInPage> {
             : () => setState(() {
                 _creatingAccount = !_creatingAccount;
                 _error = null;
+                // Mod değişince tekrar alanı sıfırlansın; yoksa girişten
+                // kayda dönerken bayat bir değer eşleşmiyor gibi görünür.
+                _passwordConfirm.clear();
               }),
         child: Text(
           _creatingAccount
@@ -460,14 +479,25 @@ class _SignInPageState extends ConsumerState<SignInPage> {
       ),
   ];
 
-  /// Kayıtta şifre kuralı uygulanır; girişte YALNIZCA boş olmaması yeter
-  /// (daha kısa şifreyle oluşturulmuş eski hesap kilitlenmesin).
+  /// Kayıtta şifre kuralı + tekrar eşleşmesi aranır; girişte YALNIZCA boş
+  /// olmaması yeter (daha kısa şifreyle oluşturulmuş eski hesap kilitlenmesin).
   bool get _passwordFormReady {
     if (!isValidEmail(_emailText)) return false;
     return _creatingAccount
-        ? isAcceptableNewPassword(_password.text)
+        ? isAcceptableNewPassword(_password.text) && _passwordsMatch
         : _password.text.isNotEmpty;
   }
+
+  bool get _passwordsMatch => _passwordConfirm.text == _password.text;
+
+  /// Tekrar alanının hata metni.
+  ///
+  /// Kullanıcı daha ilk harfi yazarken "eşleşmiyor" diye kırmızı göstermeyiz —
+  /// uyarı yalnızca alan doluyken çıkar.
+  String? get _confirmError =>
+      _passwordConfirm.text.isEmpty || _passwordsMatch
+      ? null
+      : t(en: 'Passwords do not match', tr: 'Şifreler eşleşmiyor');
 
   // Kayıt onayı ---------------------------------------------------------------
 
@@ -495,17 +525,28 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     _codeField(),
     const SizedBox(height: 12),
     _passwordField(
+      controller: _password,
       label: t(en: 'New password', tr: 'Yeni şifre'),
       helper: t(
         en: 'At least $kMinPasswordLength characters',
         tr: 'En az $kMinPasswordLength karakter',
       ),
     ),
+    // Sıfırlamada da tekrar iste: burada yazım hatası, kullanıcıyı yeni
+    // belirlediği şifreyle kendi hesabından kilitler.
+    const SizedBox(height: 12),
+    _passwordField(
+      controller: _passwordConfirm,
+      label: t(en: 'Re-enter password', tr: 'Şifreyi tekrar gir'),
+      errorText: _confirmError,
+    ),
     const SizedBox(height: 16),
     _primaryButton(
       label: t(en: 'Save and sign in', tr: 'Kaydet ve giriş yap'),
       onPressed:
-          isValidOtpCode(_code.text) && isAcceptableNewPassword(_password.text)
+          isValidOtpCode(_code.text) &&
+              isAcceptableNewPassword(_password.text) &&
+              _passwordsMatch
           ? _confirmReset
           : null,
     ),
@@ -541,13 +582,19 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     ),
   );
 
-  Widget _passwordField({required String label, String? helper}) => TextField(
-    controller: _password,
+  Widget _passwordField({
+    required TextEditingController controller,
+    required String label,
+    String? helper,
+    String? errorText,
+  }) => TextField(
+    controller: controller,
     enabled: !_busy,
     obscureText: _obscurePassword,
     autocorrect: false,
     decoration: InputDecoration(
       labelText: label,
+      errorText: errorText,
       helperText: helper,
       prefixIcon: const Icon(Icons.lock_outline_rounded),
       suffixIcon: IconButton(
