@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/merge_progress.dart';
 import '../../core/player_progress.dart';
 import '../progress_repository.dart';
+import 'google_auth.dart';
 import 'supabase_config.dart';
 
 // -----------------------------------------------------------------------------
@@ -18,8 +19,10 @@ import 'supabase_config.dart';
 // - SESSİZ hata: ağ/RLS hataları kullanıcı akışını asla bozmaz; bir sonraki
 //   kayıtta yeniden denenir.
 //
-// Kimlik: e-posta + 6 haneli tek kullanımlık kod (OTP). Şifre yok, deep-link
-// gerektirmez — Ayarlar'daki Hesap bölümü yönetir.
+// Kimlik: DÖRT yol — Google · e-posta + 6 haneli kod (OTP) · e-posta + şifre ·
+// misafir (hiç giriş yapmadan). Hepsi aynı yere varır: Supabase oturumu + ardından
+// pullAndMerge. Şifre sıfırlama mobilde LİNK değil KOD ile çalışır (deep-link
+// kurulumu gerekmez). Akışı `features/auth/sign_in_page.dart` yönetir.
 // -----------------------------------------------------------------------------
 
 class CloudSync {
@@ -53,6 +56,8 @@ class CloudSync {
   /// kullanılacak — şu an senkron sessizce durur).
   bool get isBlockedByNewerSchema => _blockedByNewerSchema;
 
+  // --- Yol 1: e-posta + tek kullanımlık kod (şifresiz) ------------------------
+
   /// E-postaya 6 haneli giriş kodu gönderir (hesap yoksa oluşturur).
   Future<void> sendOtp(String email) =>
       _client.auth.signInWithOtp(email: email);
@@ -61,9 +66,75 @@ class CloudSync {
   Future<void> verifyOtp({required String email, required String code}) =>
       _client.auth.verifyOTP(type: OtpType.email, email: email, token: code);
 
+  // --- Yol 2: e-posta + şifre -------------------------------------------------
+
+  /// Yeni hesap oluşturur.
+  ///
+  /// **true** dönerse e-posta onayı gerekiyor demektir (Supabase'te "Confirm
+  /// email" açık): oturum henüz yok, kullanıcıya gelen kodu [confirmSignUp] ile
+  /// doğrulatmak gerekir. **false** dönerse oturum doğrudan açılmıştır.
+  Future<bool> signUpWithPassword({
+    required String email,
+    required String password,
+  }) async {
+    final res = await _client.auth.signUp(email: email, password: password);
+    return res.session == null;
+  }
+
+  /// Kayıt sonrası e-posta onay kodunu doğrular; başarılıysa oturum açılır.
+  Future<void> confirmSignUp({required String email, required String code}) =>
+      _client.auth.verifyOTP(type: OtpType.signup, email: email, token: code);
+
+  /// Mevcut hesaba e-posta + şifre ile giriş.
+  Future<void> signInWithPassword({
+    required String email,
+    required String password,
+  }) => _client.auth.signInWithPassword(email: email, password: password);
+
+  // --- Yol 3: şifremi unuttum (mobilde LİNK değil KOD) ------------------------
+
+  /// Şifre sıfırlama kodu gönderir.
+  ///
+  /// Mobilde link tabanlı sıfırlama deep-link kurulumu ister; bunun yerine
+  /// kod kullanıyoruz. Supabase → Auth → Email Templates → "Reset password"
+  /// şablonunda `{{ .Token }}` bulunmalı (bkz. PROJECT.md §18).
+  Future<void> sendPasswordResetCode(String email) =>
+      _client.auth.resetPasswordForEmail(email);
+
+  /// Sıfırlama kodunu doğrular ve yeni şifreyi yazar (kod doğrulanınca geçici
+  /// oturum açılır; şifre o oturumla güncellenir).
+  Future<void> confirmPasswordReset({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    await _client.auth.verifyOTP(
+      type: OtpType.recovery,
+      email: email,
+      token: code,
+    );
+    await _client.auth.updateUser(UserAttributes(password: newPassword));
+  }
+
+  // --- Yol 4: Google -----------------------------------------------------------
+
+  /// Google hesabıyla giriş.
+  ///
+  /// Google'dan alınan ID token Supabase'e sunulur; Supabase token'ı doğrulayıp
+  /// kendi oturumunu açar. Kullanıcı vazgeçerse [GoogleSignInCancelled] fırlar.
+  Future<void> signInWithGoogle() async {
+    final idToken = await obtainGoogleIdToken();
+    await _client.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+    );
+  }
+
   Future<void> signOut() async {
     // Sonraki hesap için temiz sayfa: kilit o hesabın verisine göre yeniden kurulur.
     _blockedByNewerSchema = false;
+    // Google oturumu da kapansın ki bir sonraki girişte hesap seçici gelsin.
+    await signOutGoogle();
     await _client.auth.signOut();
   }
 

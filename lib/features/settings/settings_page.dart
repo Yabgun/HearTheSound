@@ -7,6 +7,7 @@ import '../../data/cloud/cloud_sync.dart';
 import '../../notifications/notification_service.dart';
 import '../../state/progress_controller.dart';
 import '../../state/settings_controller.dart';
+import '../auth/sign_in_page.dart';
 import '../calibration/calibration_page.dart';
 import '../explorer/range_playground_page.dart';
 
@@ -14,9 +15,12 @@ import '../explorer/range_playground_page.dart';
 // AYARLAR — ses aralığı kalibrasyonu + günlük hatırlatma bildirimi
 // -----------------------------------------------------------------------------
 
-/// Hesap & bulut senkron bölümü — e-posta + 6 haneli kodla giriş (OTP).
-/// Şifre yok; kod e-postaya gelir. Girişte buluttaki ilerleme YERELLE KAYIPSIZ
-/// birleştirilir (mergeProgress) ve arayüz tazelenir.
+/// Hesap & bulut senkron bölümü.
+///
+/// Oturum KAPALIYKEN: adanmış giriş ekranına (`SignInPage`) götüren tek düğme.
+/// Oturum AÇIKKEN: e-posta + şimdi eşitle / çıkış / hesap silme.
+/// Giriş akışının kendisi burada değil — kimlik, Ayarlar'ın bir satırı değil
+/// birinci sınıf bir akıştır (bkz. `features/auth/sign_in_page.dart`).
 class _AccountSection extends ConsumerStatefulWidget {
   const _AccountSection();
 
@@ -25,18 +29,8 @@ class _AccountSection extends ConsumerStatefulWidget {
 }
 
 class _AccountSectionState extends ConsumerState<_AccountSection> {
-  final TextEditingController _email = TextEditingController();
-  final TextEditingController _code = TextEditingController();
-  bool _codeSent = false;
   bool _busy = false;
   String? _error;
-
-  @override
-  void dispose() {
-    _email.dispose();
-    _code.dispose();
-    super.dispose();
-  }
 
   Future<void> _run(Future<void> Function() action) async {
     setState(() {
@@ -57,36 +51,28 @@ class _AccountSectionState extends ConsumerState<_AccountSection> {
     }
   }
 
-  Future<void> _sendCode() => _run(() async {
-    await CloudSync.instance.sendOtp(_email.text.trim());
-    setState(() => _codeSent = true);
-  });
-
-  Future<void> _verify() => _run(() async {
-    await CloudSync.instance.verifyOtp(
-      email: _email.text.trim(),
-      code: _code.text.trim(),
+  /// Adanmış giriş ekranını açar. Ekran `true` ile dönerse oturum açılmış ve
+  /// ilerleme çoktan birleştirilmiştir (bkz. `SignInPage._afterSignIn`) —
+  /// burada yalnızca bölümü yeniden çizip kullanıcıya haber veriyoruz.
+  Future<void> _openSignIn() async {
+    final signedIn = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(builder: (_) => const SignInPage()),
     );
-    // Giriş başarılı → buluttakiyle kayıpsız birleştir, arayüzü tazele.
-    final repo = ref.read(progressRepositoryProvider);
-    await CloudSync.instance.pullAndMerge(repo);
     if (!mounted) return;
-    ref.read(progressProvider.notifier).reload();
-    setState(() {
-      _codeSent = false;
-      _code.clear();
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          t(
-            en: 'Signed in — progress synced. ✓',
-            tr: 'Giriş yapıldı — ilerleme eşitlendi. ✓',
+    setState(() {});
+    if (signedIn == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            t(
+              en: 'Signed in — progress synced. ✓',
+              tr: 'Giriş yapıldı — ilerleme eşitlendi. ✓',
+            ),
           ),
         ),
-      ),
-    );
-  });
+      );
+    }
+  }
 
   Future<void> _syncNow() => _run(() async {
     final repo = ref.read(progressRepositoryProvider);
@@ -202,6 +188,17 @@ class _AccountSectionState extends ConsumerState<_AccountSection> {
               ],
             ),
           ),
+          // Eşitleme/çıkış/silme hataları burada görünür (sessizce yutulmaz).
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Text(
+                _error!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ),
           const SizedBox(height: 4),
           // Hesap silme — Play Store "veri silme" zorunluluğu (çift onaylı).
           Align(
@@ -223,7 +220,8 @@ class _AccountSectionState extends ConsumerState<_AccountSection> {
       );
     }
 
-    // OTURUM KAPALI — e-posta → kod → doğrula.
+    // OTURUM KAPALI — adanmış giriş ekranına yönlendir.
+    // (Form artık burada değil: kimlik, Ayarlar'ın bir satırı değil kendi akışı.)
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
@@ -243,56 +241,23 @@ class _AccountSectionState extends ConsumerState<_AccountSection> {
           Text(
             t(
               en:
-                  'Sign in with your email to back up progress and use it on '
-                  'any device. No password — we send a 6-digit code.',
+                  'Sign in to back up your progress and continue on any '
+                  'device. Google, email code, or password — your choice.',
               tr:
-                  'İlerlemeni yedeklemek ve her cihazda kullanmak için '
-                  'e-postanla giriş yap. Şifre yok — 6 haneli kod göndeririz.',
+                  'İlerlemeni yedeklemek ve her cihazda devam etmek için giriş '
+                  'yap. Google, e-posta kodu ya da şifre — sen seç.',
             ),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 10),
-          TextField(
-            controller: _email,
-            enabled: !_busy,
-            keyboardType: TextInputType.emailAddress,
-            decoration: InputDecoration(
-              labelText: t(en: 'Email', tr: 'E-posta'),
-              border: const OutlineInputBorder(),
-              isDense: true,
-            ),
-          ),
-          if (_codeSent) ...[
-            const SizedBox(height: 10),
-            TextField(
-              controller: _code,
-              enabled: !_busy,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: t(en: '6-digit code', tr: '6 haneli kod'),
-                border: const OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-          ],
-          if (_error != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              _error!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-          FilledButton(
-            onPressed: _busy ? null : (_codeSent ? _verify : _sendCode),
-            child: Text(
-              _codeSent
-                  ? t(en: 'Verify and sign in', tr: 'Doğrula ve giriş yap')
-                  : t(en: 'Send code', tr: 'Kod gönder'),
+          FilledButton.icon(
+            onPressed: _busy ? null : _openSignIn,
+            icon: const Icon(Icons.login_rounded),
+            label: Text(t(en: 'Sign in', tr: 'Giriş yap')),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
             ),
           ),
         ],
