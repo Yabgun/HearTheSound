@@ -40,6 +40,19 @@ class CloudSync {
   Timer? _pushDebounce;
   PlayerProgress? _pendingPush;
 
+  /// Buluttaki veri bu uygulamanın anladığından YENİ bir şemadan geldiğinde
+  /// true olur (kullanıcının başka bir cihazı güncel, bu cihaz değil).
+  ///
+  /// Bu durumda buluta **yazmayı tamamen durdururuz**: eski sürüm yeni alanları
+  /// okurken düşürdüğü için geri yazmak, güncel cihazın ilerlemesini sessizce
+  /// budardı. Yerel kullanım aksamaz; kullanıcı uygulamayı güncelleyince
+  /// kendiliğinden düzelir.
+  bool _blockedByNewerSchema = false;
+
+  /// Arayüz "uygulamayı güncelle" uyarısı gösterebilsin diye açık (ileride
+  /// kullanılacak — şu an senkron sessizce durur).
+  bool get isBlockedByNewerSchema => _blockedByNewerSchema;
+
   /// E-postaya 6 haneli giriş kodu gönderir (hesap yoksa oluşturur).
   Future<void> sendOtp(String email) =>
       _client.auth.signInWithOtp(email: email);
@@ -48,7 +61,11 @@ class CloudSync {
   Future<void> verifyOtp({required String email, required String code}) =>
       _client.auth.verifyOTP(type: OtpType.email, email: email, token: code);
 
-  Future<void> signOut() => _client.auth.signOut();
+  Future<void> signOut() async {
+    // Sonraki hesap için temiz sayfa: kilit o hesabın verisine göre yeniden kurulur.
+    _blockedByNewerSchema = false;
+    await _client.auth.signOut();
+  }
 
   /// Hesabı ve TÜM sunucu verisini kalıcı olarak siler (Play Store "veri silme"
   /// zorunluluğu). Sunucuda `delete_account` RPC'si (SECURITY DEFINER) progress
@@ -63,6 +80,7 @@ class CloudSync {
       await _client.rpc('delete_account');
     } finally {
       // Hesap sunucuda gitti; yerel oturumu ve ilerlemeyi de temizle.
+      _blockedByNewerSchema = false;
       await _client.auth.signOut();
       await local.save(PlayerProgress.empty);
     }
@@ -87,9 +105,13 @@ class CloudSync {
               (row['data'] as Map).cast<String, dynamic>(),
             );
 
+      // Buluttaki veri bizden yeniyse yazma yolunu kapat (bkz. alan yorumu).
+      // Yerel birleştirme yine de yapılır: anladığımız alanlarla çalışırız.
+      _blockedByNewerSchema = remoteProgress.isFromFutureSchema;
+
       final merged = mergeProgress(localProgress, remoteProgress);
       await local.save(merged);
-      await _upsert(merged);
+      await _upsert(merged); // kilitliyse sessizce atlanır
       return merged;
     } catch (_) {
       return null; // sessiz: yerel akış bozulmaz
@@ -112,6 +134,10 @@ class CloudSync {
   Future<void> _upsert(PlayerProgress progress) async {
     final uid = user?.id;
     if (uid == null) return;
+    // İLERİ-SÜRÜM KORUMASI — buluta giden TEK kapı burası, kilit de burada.
+    // (İki koşul ayrı ayrı gerekli: biri buluttan öğrenilen durum, diğeri
+    // yazılacak verinin kendi damgası — ör. yerelde duran yabancı kayıt.)
+    if (_blockedByNewerSchema || progress.isFromFutureSchema) return;
     await _client.from(_table).upsert({
       'user_id': uid,
       'data': progress.toMap(),

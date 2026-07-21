@@ -15,9 +15,15 @@ import 'vocal_range.dart';
 //   streak / dailyXp / lastActiveDay .. daha YENİ gün hangi taraftaysa onunki
 //   vocalRange ........................ daha yeni kalibrasyon
 //   reviews ........................... beceri başına daha yeni tekrar durumu
+//   schemaVersion ..................... max (bkz. aşağıdaki not)
 //
 // Kural: merge(a, b) simetrik olmalı (merge(b, a) aynı sonucu verir) — testler
 // bunu doğrular.
+//
+// ŞEMA SÜRÜMÜ NEDEN max: taraflardan biri bu uygulamadan YENİ bir şemadan
+// geliyorsa, birleşim de "yeni" sayılmalıdır. Aksi halde merge, ileri-sürüm
+// bayrağını yutar ve eski cihaz güncel cihazın verisini buluta geri yazarak
+// bozar (bkz. PlayerProgress.isFromFutureSchema).
 // -----------------------------------------------------------------------------
 
 PlayerProgress mergeProgress(PlayerProgress a, PlayerProgress b) {
@@ -119,5 +125,8 @@ PlayerProgress mergeProgress(PlayerProgress a, PlayerProgress b) {
     lastChallengeDay: compareDay(a.lastChallengeDay, b.lastChallengeDay) >= 0
         ? a.lastChallengeDay
         : b.lastChallengeDay,
+    schemaVersion: a.schemaVersion > b.schemaVersion
+        ? a.schemaVersion
+        : b.schemaVersion,
   );
 }

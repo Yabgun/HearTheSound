@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'schema_migration.dart';
 import 'spaced_repetition.dart';
 import 'vocal_range.dart';
 
@@ -44,6 +45,14 @@ class PlayerProgress {
   /// Bugün ekranındaki "Günün Meydan Okuması" rozetini besler.
   final String? lastChallengeDay;
 
+  /// Bu verinin taşıdığı şema sürümü (bkz. `schema_migration.dart`).
+  ///
+  /// Uygulama içinde üretilen ilerleme her zaman güncel sürümdedir; yalnızca
+  /// DISARIDAN okunan (yerel kayıt / bulut) veri farklı olabilir. Hedeften
+  /// büyük bir değer, verinin bu uygulamadan YENİ olduğunu söyler —
+  /// bkz. [isFromFutureSchema].
+  final int schemaVersion;
+
   const PlayerProgress({
     this.xp = 0,
     this.streak = 0,
@@ -57,9 +66,18 @@ class PlayerProgress {
     this.reviews = const {},
     this.confusionCounts = const {},
     this.lastChallengeDay,
+    this.schemaVersion = kProgressSchemaVersion,
   });
 
   static const empty = PlayerProgress();
+
+  /// Veri bu uygulamanın anladığından YENİ bir şemadan mı geldi?
+  ///
+  /// Tipik senaryo: kullanıcının bir cihazı güncel, diğeri değil. Eski cihaz
+  /// yeni alanları anlamaz ve okurken düşürür — bu yüzden o veriyi buluta
+  /// GERİ YAZMAMALIDIR (bkz. `CloudSync._upsert`), yoksa güncel cihazın
+  /// ilerlemesini sessizce budar.
+  bool get isFromFutureSchema => schemaVersion > kProgressSchemaVersion;
 
   bool isLessonCompleted(String id) => completedLessons.contains(id);
   bool get dailyGoalMet => dailyXp >= kDailyXpGoal;
@@ -100,6 +118,7 @@ class PlayerProgress {
     Map<String, ReviewState>? reviews,
     Map<String, int>? confusionCounts,
     String? lastChallengeDay,
+    int? schemaVersion,
   }) {
     return PlayerProgress(
       xp: xp ?? this.xp,
@@ -116,10 +135,13 @@ class PlayerProgress {
       reviews: reviews ?? this.reviews,
       confusionCounts: confusionCounts ?? this.confusionCounts,
       lastChallengeDay: lastChallengeDay ?? this.lastChallengeDay,
+      schemaVersion: schemaVersion ?? this.schemaVersion,
     );
   }
 
   Map<String, dynamic> toMap() => {
+    // Damga en başta: veritabanı satırına bakınca ilk görülen alan olsun.
+    'schemaVersion': schemaVersion,
     'xp': xp,
     'streak': streak,
     'longestStreak': longestStreak,
@@ -134,35 +156,37 @@ class PlayerProgress {
     'lastChallengeDay': lastChallengeDay,
   };
 
+  /// Kayıttan ilerleme okur.
+  ///
+  /// **TEK BOĞAZ NOKTASI:** hem yerel kayıt (`PrefsProgressRepository.load`)
+  /// hem bulut indirmesi (`CloudSync.pullAndMerge`) buradan geçer — dolayısıyla
+  /// şema göçü her iki yolda da tek yerde, garanti çalışır.
   factory PlayerProgress.fromMap(Map<String, dynamic> map) {
+    final m = migrateProgressMap(map);
     return PlayerProgress(
-      xp: (map['xp'] as num?)?.toInt() ?? 0,
-      streak: (map['streak'] as num?)?.toInt() ?? 0,
-      longestStreak: (map['longestStreak'] as num?)?.toInt() ?? 0,
-      lastActiveDay: map['lastActiveDay'] as String?,
-      dailyXp: (map['dailyXp'] as num?)?.toInt() ?? 0,
+      xp: (m['xp'] as num?)?.toInt() ?? 0,
+      streak: (m['streak'] as num?)?.toInt() ?? 0,
+      longestStreak: (m['longestStreak'] as num?)?.toInt() ?? 0,
+      lastActiveDay: m['lastActiveDay'] as String?,
+      dailyXp: (m['dailyXp'] as num?)?.toInt() ?? 0,
       skillXp:
-          (map['skillXp'] as Map?)?.map(
+          (m['skillXp'] as Map?)?.map(
             (key, value) => MapEntry(key as String, (value as num).toInt()),
           ) ??
           const {},
       skillLevel:
-          (map['skillLevel'] as Map?)?.map(
+          (m['skillLevel'] as Map?)?.map(
             (key, value) => MapEntry(key as String, (value as num).toInt()),
           ) ??
           const {},
       completedLessons:
-          (map['completedLessons'] as List?)
-              ?.map((e) => e as String)
-              .toList() ??
+          (m['completedLessons'] as List?)?.map((e) => e as String).toList() ??
           const [],
-      vocalRange: map['vocalRange'] == null
+      vocalRange: m['vocalRange'] == null
           ? null
-          : VocalRange.fromMap(
-              (map['vocalRange'] as Map).cast<String, dynamic>(),
-            ),
+          : VocalRange.fromMap((m['vocalRange'] as Map).cast<String, dynamic>()),
       reviews:
-          (map['reviews'] as Map?)?.map(
+          (m['reviews'] as Map?)?.map(
             (key, value) => MapEntry(
               key as String,
               ReviewState.fromMap((value as Map).cast<String, dynamic>()),
@@ -170,11 +194,12 @@ class PlayerProgress {
           ) ??
           const {},
       confusionCounts:
-          (map['confusionCounts'] as Map?)?.map(
+          (m['confusionCounts'] as Map?)?.map(
             (key, value) => MapEntry(key as String, (value as num).toInt()),
           ) ??
           const {},
-      lastChallengeDay: map['lastChallengeDay'] as String?,
+      lastChallengeDay: m['lastChallengeDay'] as String?,
+      schemaVersion: readSchemaVersion(m),
     );
   }
 
