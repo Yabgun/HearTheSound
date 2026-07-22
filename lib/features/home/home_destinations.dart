@@ -11,7 +11,7 @@ import '../function/function_lesson.dart';
 import '../../state/progress_controller.dart';
 import '../calibration/calibration_page.dart';
 import '../explorer/range_playground_page.dart';
-import '../mascot/eko_mascot.dart';
+import '../mascot/player_eko.dart';
 import '../profile/profile_identity.dart';
 import '../review/review_session_page.dart';
 import '../settings/settings_page.dart';
@@ -208,7 +208,7 @@ class ProfileHubPage extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const EkoMascot(size: 64, celebrate: true),
+                  const PlayerEko(size: 64, celebrate: true),
                 ],
               ),
             ),

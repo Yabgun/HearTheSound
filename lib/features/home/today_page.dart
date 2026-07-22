@@ -9,10 +9,11 @@ import '../../state/progress_controller.dart';
 import '../../ui/app_icons.dart';
 import '../../ui/app_theme.dart';
 import '../calibration/calibration_page.dart';
-import '../mascot/eko_mascot.dart';
+import '../mascot/player_eko.dart';
 import '../practice/daily_challenge_page.dart';
 import '../practice/endless_drill_page.dart';
 import '../review/review_session_page.dart';
+import '../update/update_gate.dart';
 import 'curriculum.dart';
 
 // -----------------------------------------------------------------------------
@@ -37,10 +38,12 @@ class TodayPage extends ConsumerWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
         children: [
+          // Yumuşak "yeni sürüm var" önerisi (uygun değilse hiçbir şey çizmez).
+          const UpdateSuggestCard(),
           // Selam + Eko + streak
           Row(
             children: [
-              const EkoMascot(size: 46),
+              const PlayerEko(size: 46),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -133,7 +136,7 @@ class TodayPage extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const EkoMascot(size: 50, celebrate: true),
+                          const PlayerEko(size: 50, celebrate: true),
                           const SizedBox(height: 10),
                           Text(
                             t(

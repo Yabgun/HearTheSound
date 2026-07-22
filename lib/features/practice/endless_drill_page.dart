@@ -22,7 +22,7 @@ import '../function/function_recognition_page.dart';
 import '../intervals/interval_lesson.dart';
 import '../intervals/interval_recognition_page.dart';
 import '../lesson/lesson.dart';
-import '../mascot/eko_mascot.dart';
+import '../mascot/player_eko.dart';
 import '../note_recognition/note_recognition_page.dart';
 import '../progression/progression_lesson.dart';
 import '../progression/progression_recognition_page.dart';
@@ -381,7 +381,7 @@ class _EndlessDrillPageState extends ConsumerState<EndlessDrillPage> {
           padding: const EdgeInsets.all(24),
           children: [
             const SizedBox(height: 4),
-            Center(child: EkoMascot(size: 96, celebrate: goalReached)),
+            Center(child: PlayerEko(size: 96, celebrate: goalReached)),
             const SizedBox(height: 16),
             Text(
               goalReached
@@ -570,7 +570,7 @@ class _EndlessDrillPageState extends ConsumerState<EndlessDrillPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const EkoMascot(size: 96),
+                const PlayerEko(size: 96),
                 const SizedBox(height: 20),
                 Text(
                   t(

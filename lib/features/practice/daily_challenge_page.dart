@@ -10,7 +10,7 @@ import '../../state/progress_controller.dart';
 import '../../ui/app_theme.dart';
 import '../concept/concept_sheet.dart';
 import '../lesson/lesson.dart';
-import '../mascot/eko_mascot.dart';
+import '../mascot/player_eko.dart';
 import 'endless_drill_page.dart';
 
 // -----------------------------------------------------------------------------
@@ -172,7 +172,7 @@ class _DailyChallengePageState extends ConsumerState<DailyChallengePage> {
           child: Column(
             children: [
               const Spacer(),
-              EkoMascot(size: 104, celebrate: doneToday),
+              PlayerEko(size: 104, celebrate: doneToday),
               const SizedBox(height: 20),
               Text(
                 doneToday
@@ -254,7 +254,7 @@ class _DailyChallengePageState extends ConsumerState<DailyChallengePage> {
           child: Column(
             children: [
               const Spacer(),
-              const EkoMascot(size: 120, celebrate: true),
+              const PlayerEko(size: 120, celebrate: true),
               const SizedBox(height: 20),
               Text(
                 t(en: 'Challenge complete!', tr: 'Meydan okuma tamam!'),
@@ -333,7 +333,7 @@ class _DailyChallengePageState extends ConsumerState<DailyChallengePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const EkoMascot(size: 96),
+                const PlayerEko(size: 96),
                 const SizedBox(height: 20),
                 Text(
                   t(en: 'Finish a lesson first', tr: 'Önce bir ders tamamla'),

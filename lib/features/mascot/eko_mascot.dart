@@ -44,7 +44,7 @@ EkoPalette ekoPaletteFor(String? id) => kEkoPalettes.firstWhere(
   orElse: () => kEkoPalettes.first,
 );
 
-class EkoMascot extends StatelessWidget {
+class EkoMascot extends StatefulWidget {
   const EkoMascot({
     super.key,
     this.size = 64,
@@ -54,25 +54,87 @@ class EkoMascot extends StatelessWidget {
 
   final double size;
 
-  /// Kutlama modu: gözler mutlu yay olur (ders tamamlama vb.).
+  /// Kutlama modu: gözler mutlu yay olur VE Eko sevinçle zıplayıp sallanır
+  /// ("dans"). Kutlama olmayan yerlerde (ana ekran vb.) sabit durur.
   final bool celebrate;
 
   /// Renk varyantı; null = varsayılan (uygulamanın her yerindeki Eko).
   final EkoPalette? palette;
 
   @override
+  State<EkoMascot> createState() => _EkoMascotState();
+}
+
+class _EkoMascotState extends State<EkoMascot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _dance;
+
+  @override
+  void initState() {
+    super.initState();
+    // Bir zıplama-sallanma döngüsü; reverse ile yumuşak gidip gelir.
+    _dance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 560),
+    );
+    _syncDance();
+  }
+
+  /// Kutlama açıkken döndür, kapalıyken durdur ve dinlenme pozuna al. Böylece
+  /// sabit Eko'lar hiç animasyon zamanlayıcısı çalıştırmaz (performans + test).
+  void _syncDance() {
+    if (widget.celebrate) {
+      _dance.repeat(reverse: true);
+    } else {
+      _dance
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(EkoMascot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.celebrate != widget.celebrate) _syncDance();
+  }
+
+  @override
+  void dispose() {
+    _dance.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final eko = CustomPaint(
+      painter: _EkoPainter(
+        celebrate: widget.celebrate,
+        palette: widget.palette ?? kEkoPalettes.first,
+      ),
+    );
+
     // Dekoratif görsel: ekran okuyucuya gürültü olmasın (metinler zaten anlatıyor).
     return ExcludeSemantics(
       child: SizedBox(
-        width: size,
-        height: size,
-        child: CustomPaint(
-          painter: _EkoPainter(
-            celebrate: celebrate,
-            palette: palette ?? kEkoPalettes.first,
-          ),
-        ),
+        width: widget.size,
+        height: widget.size,
+        child: widget.celebrate
+            ? AnimatedBuilder(
+                animation: _dance,
+                builder: (context, child) {
+                  // 0..1..0 arası: yukarı zıpla + hafifçe sağa-sola sallan.
+                  final t = Curves.easeInOut.transform(_dance.value);
+                  return Transform.translate(
+                    offset: Offset(0, -widget.size * 0.08 * t),
+                    child: Transform.rotate(
+                      angle: (t - 0.5) * 0.12, // ±~3.5° salınım
+                      child: child,
+                    ),
+                  );
+                },
+                child: eko,
+              )
+            : eko,
       ),
     );
   }

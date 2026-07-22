@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/content_locale.dart';
 import '../../ui/app_theme.dart';
-import '../mascot/eko_mascot.dart';
+import '../mascot/player_eko.dart';
 import 'lesson.dart';
 
 // -----------------------------------------------------------------------------
@@ -136,7 +136,7 @@ class _LessonCompletePageState extends State<LessonCompletePage>
                             ),
                           ],
                         ),
-                        child: EkoMascot(size: 96, celebrate: _passed),
+                        child: PlayerEko(size: 96, celebrate: _passed),
                       ),
                     ),
                   ),

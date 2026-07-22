@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
 
@@ -14,9 +15,11 @@ import 'data/cloud/supabase_config.dart';
 import 'data/progress_repository.dart';
 import 'features/home/home_page.dart';
 import 'features/onboarding/onboarding_flow_page.dart';
+import 'features/update/update_gate.dart';
 import 'notifications/notification_service.dart';
 import 'state/progress_controller.dart';
 import 'state/settings_controller.dart';
+import 'state/update_gate_controller.dart';
 import 'ui/app_theme.dart';
 
 Future<void> main() async {
@@ -60,12 +63,20 @@ Future<void> main() async {
       ? SyncedProgressRepository(localRepo)
       : localRepo;
 
+  // Build numarası (pubspec `+N`) — zorunlu güncelleme kapısı bu sayıyı
+  // sunucudaki eşiklerle karşılaştırır. Okunamazsa 0 kalır → kapı fail-open.
+  var currentBuild = 0;
+  try {
+    currentBuild = int.tryParse((await PackageInfo.fromPlatform()).buildNumber) ?? 0;
+  } catch (_) {}
+
   // Container'ı elle kuruyoruz ki açılış SONRASI arka plan bulut birleştirmesi
   // arayüzü tazeleyebilsin (progressProvider.reload).
   final container = ProviderContainer(
     overrides: [
       progressRepositoryProvider.overrideWithValue(repo),
       prefsProvider.overrideWithValue(prefs),
+      currentBuildProvider.overrideWithValue(currentBuild),
     ],
   );
 
@@ -107,7 +118,9 @@ class HearTheSoundApp extends ConsumerWidget {
       locale: Locale(localeCode),
       supportedLocales: const [Locale('en'), Locale('tr')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      home: const _RootGate(),
+      // Güncelleme kapısı EN DIŞTA (§20): sürüm artık desteklenmiyorsa
+      // onboarding/ana ekran hiç kurulmaz, kaçışsız güncelleme ekranı gelir.
+      home: const UpdateGate(child: _RootGate()),
     );
   }
 }

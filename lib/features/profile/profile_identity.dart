@@ -130,6 +130,10 @@ Future<void> showProfileEditSheet(BuildContext context, WidgetRef ref) {
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    // Küçük ekranda tam yüksekliği aşmasın; içerik zaten kaydırılabilir.
+    constraints: BoxConstraints(
+      maxHeight: MediaQuery.of(context).size.height * 0.85,
+    ),
     builder: (_) => const _ProfileEditSheet(),
   );
 }
@@ -172,8 +176,9 @@ class _ProfileEditSheetState extends ConsumerState<_ProfileEditSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      // Klavye açılınca içerik gizlenmesin.
+    // Scrollable + klavye tabanı: içerik hiçbir ekran boyutunda taşmaz, dar/kısa
+    // telefonda avatar ızgarası kaydırılarak görülür (overflow yok).
+    return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
         20,
         4,
