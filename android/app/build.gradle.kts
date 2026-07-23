@@ -5,6 +5,9 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // FCM (§21): google-services.json'u işleyip Firebase yapılandırmasını gömer.
+    // (Firebase SDK'larını FlutterFire paketleri getirir — burada BoM eklemeyiz.)
+    id("com.google.gms.google-services")
 }
 
 // Yayın imzası: android/key.properties varsa oradan okunur (dosya gitignore'da).

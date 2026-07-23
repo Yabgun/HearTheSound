@@ -17,6 +17,7 @@ import 'features/home/home_page.dart';
 import 'features/onboarding/onboarding_flow_page.dart';
 import 'features/update/update_gate.dart';
 import 'notifications/notification_service.dart';
+import 'notifications/push_service.dart';
 import 'state/progress_controller.dart';
 import 'state/settings_controller.dart';
 import 'state/update_gate_controller.dart';
@@ -98,6 +99,10 @@ Future<void> main() async {
       }),
     );
   }
+
+  // Sunucu push (§21): Firebase'i başlat, token'ı al/kaydet. Açılışı BEKLETMEZ;
+  // bulut kapalıysa ya da Firebase yoksa sessizce atlanır.
+  unawaited(PushService.instance.init());
 }
 
 class HearTheSoundApp extends ConsumerWidget {

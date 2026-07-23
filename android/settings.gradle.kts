@@ -20,6 +20,9 @@ plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "8.7.3" apply false
     id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    // FCM (§21): google-services, app-level plugin'in google-services.json'ı
+    // okuması için burada tanımlanır (apply false — asıl uygulama app modülünde).
+    id("com.google.gms.google-services") version "4.5.0" apply false
 }
 
 include(":app")

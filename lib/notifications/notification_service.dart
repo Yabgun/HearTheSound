@@ -75,6 +75,24 @@ class NotificationService {
     );
   }
 
+  /// Sunucu push'u UYGULAMA ÖN PLANDAYKEN geldiğinde onu görünür kılar.
+  /// (Android arka planda/kapalıyken bildirimi kendi gösterir; ön planda ise
+  /// FCM otomatik göstermez → burada elle gösteririz. Her mesaj benzersiz id
+  /// alır ki üst üste gelenler birbirini ezmesin.)
+  Future<void> showRemote({
+    required int id,
+    String? title,
+    String? body,
+  }) async {
+    if (title == null && body == null) return;
+    await _plugin.show(
+      id: 1000 + (id % 1000), // günlük/test id'leriyle çakışmasın
+      title: title ?? 'HearTheSound',
+      body: body ?? '',
+      notificationDetails: _details(),
+    );
+  }
+
   /// Her gün [hour]:[minute] için tekrarlayan hatırlatma kurar.
   /// Metinler kurulum ANINDAKİ dille yazılır; dil değişince Ayarlar yeniden
   /// zamanlar (SettingsController.setLocale).

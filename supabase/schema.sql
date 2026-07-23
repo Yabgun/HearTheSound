@@ -31,6 +31,10 @@ create policy "own row update" on public.progress
 -- (ilerleme yalnızca giriş yapmış kullanıcınındır). DELETE de verilmez —
 -- silme yalnızca delete_account() RPC'si / auth.users cascade ile olur.
 grant select, insert, update on public.progress to authenticated;
+-- Edge Function (streak-reminder, §21) service_role ile TÜM kullanıcıları tarar;
+-- yalnızca OKUR → minimal SELECT yetkisi. (Bu projede grant'ler açıkça verilir,
+-- service_role otomatik geniş yetki almaz.)
+grant select on public.progress to service_role;
 
 -- ---------------------------------------------------------------------------
 -- HESAP SİLME (Play Store "veri silme" zorunluluğu)
@@ -109,9 +113,17 @@ create table if not exists public.device_tokens (
   user_id uuid not null references auth.users (id) on delete cascade,
   token text not null,
   platform text not null default 'android',
+  -- Bu CİHAZIN dil tercihi ('en'|'tr'). Push metni sunucuda buna göre seçilir
+  -- (çok dilli uygulama → kullanıcı hangi dildeyse o dilde bildirim alır).
+  -- Cihaz başına: aynı hesabın farklı cihazları farklı dilde olabilir.
+  locale text not null default 'en',
   updated_at timestamptz not null default now(),
   primary key (user_id, token) -- aynı cihaz iki kez kaydolmaz; çok cihaz serbest
 );
+
+-- Mevcut tabloya (bu blok tekrar çalıştırılırsa) locale sütununu ekle.
+alter table public.device_tokens
+  add column if not exists locale text not null default 'en';
 
 alter table public.device_tokens enable row level security;
 
@@ -132,3 +144,5 @@ create policy "own tokens delete" on public.device_tokens
   for delete using (auth.uid() = user_id);
 
 grant select, insert, update, delete on public.device_tokens to authenticated;
+-- Edge Function push token'larını okur (yalnızca SELECT).
+grant select on public.device_tokens to service_role;

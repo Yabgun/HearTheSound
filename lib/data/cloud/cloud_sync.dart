@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/content_locale.dart';
 import '../../core/merge_progress.dart';
 import '../../core/player_progress.dart';
 import '../progress_repository.dart';
@@ -50,6 +51,14 @@ class CloudSync {
 
   Timer? _pushDebounce;
   PlayerProgress? _pendingPush;
+
+  /// Bu cihazın FCM token'ı (PushService set eder). Oturum açıkken buluta
+  /// kaydedilir; çıkışta silinir. Token'ı CloudSync'te tutmak, giriş/çıkışı tek
+  /// yerden yönetmemizi sağlar — PushService yalnızca token'ı üretir.
+  String? _deviceToken;
+
+  /// PushService, token'ı aldığında/yenilediğinde çağırır.
+  void setDeviceToken(String? token) => _deviceToken = token;
 
   /// Buluttaki veri bu uygulamanın anladığından YENİ bir şemadan geldiğinde
   /// true olur (kullanıcının başka bir cihazı güncel, bu cihaz değil).
@@ -154,9 +163,57 @@ class CloudSync {
   Future<void> signOut() async {
     // Sonraki hesap için temiz sayfa: kilit o hesabın verisine göre yeniden kurulur.
     _blockedByNewerSchema = false;
+    // Bu cihazın push token'ını sil — çıkan hesaba bu cihazdan bildirim gitmesin
+    // (uid gitmeden ÖNCE, RLS'nin kendi satırını bulabilmesi için).
+    await removeDeviceToken();
     // Google oturumu da kapansın ki bir sonraki girişte hesap seçici gelsin.
     await signOutGoogle();
     await _client.auth.signOut();
+  }
+
+  // --- Push token'ları (device_tokens tablosu) --------------------------------
+
+  /// Bu cihazın FCM token'ını buluta kaydeder. Oturum yoksa ya da token
+  /// alınmadıysa sessizce atlanır (misafirin sunucu push'u olmaz — yerel
+  /// bildirim zaten var). Giriş sonrası [pullAndMerge] ve dil değişiminde
+  /// (SettingsController.setLocale) çağrılır.
+  ///
+  /// **Dil:** aktif [ContentLocale.code] de yazılır → sunucu push'u kullanıcının
+  /// o anki dilinde gönderir (çok dilli uygulama). Dil değişince bu yeniden
+  /// çağrıldığı için token'ın locale'i güncel kalır.
+  Future<void> registerDeviceToken() async {
+    if (!isConfigured) return;
+    try {
+      // user erişimi de try içinde: Supabase başlatılmamışsa (testler) patlarsa
+      // sessizce yutulsun — bildirim kaydı, hiçbir akışı bozmaz.
+      final uid = user?.id;
+      final token = _deviceToken;
+      if (uid == null || token == null) return;
+      await _client.from('device_tokens').upsert({
+        'user_id': uid,
+        'token': token,
+        'platform': 'android',
+        'locale': ContentLocale.code,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      });
+    } catch (_) {
+      // Sessiz: bildirim kaydı, kullanıcı akışını asla bozmaz.
+    }
+  }
+
+  /// Bu cihazın token'ını siler (çıkışta).
+  Future<void> removeDeviceToken() async {
+    if (!isConfigured) return;
+    try {
+      final uid = user?.id;
+      final token = _deviceToken;
+      if (uid == null || token == null) return;
+      await _client
+          .from('device_tokens')
+          .delete()
+          .eq('user_id', uid)
+          .eq('token', token);
+    } catch (_) {}
   }
 
   /// Hesabı ve TÜM sunucu verisini kalıcı olarak siler (Play Store "veri silme"
@@ -204,6 +261,9 @@ class CloudSync {
       final merged = mergeProgress(localProgress, remoteProgress);
       await local.save(merged);
       await _upsert(merged); // kilitliyse sessizce atlanır
+      // Oturum kesin açık → bu cihazın push token'ını da kaydet (giriş sonrası
+      // ve açılışta buraya gelinir; token yoksa/erken ise sessizce atlanır).
+      unawaited(registerDeviceToken());
       return merged;
     } catch (_) {
       return null; // sessiz: yerel akış bozulmaz

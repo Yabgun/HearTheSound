@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../audio/note_player.dart';
 import '../audio/soundfont_bank.dart';
 import '../core/content_locale.dart';
+import '../data/cloud/cloud_sync.dart';
 import '../notifications/notification_service.dart';
 
 /// Paylaşılan prefs — main'de gerçek örnekle override edilir.
@@ -116,6 +117,9 @@ class SettingsController extends Notifier<AppSettings> {
         hour: state.reminderHour,
       );
     }
+    // Sunucu push'u da yeni dilde gelsin: token'ın kayıtlı locale'ini güncelle
+    // (oturum yoksa sessizce atlanır). Ateşle-unut — dil değişimini bekletmez.
+    unawaited(CloudSync.instance.registerDeviceToken());
     state = state.copyWith(localeCode: code);
   }
 }

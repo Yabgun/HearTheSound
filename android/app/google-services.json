@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "757029080067",
+    "project_id": "hearthesound",
+    "storage_bucket": "hearthesound.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:757029080067:android:648aeae0b9b04a3daf9236",
+        "android_client_info": {
+          "package_name": "com.hearthesound.hear_the_sound"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "757029080067-lquf41ftpq1gfp320n0bgqlevd1ad98h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbepjWEbeJLZy5hvuTjvzNoBATjS4PaAI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "757029080067-lquf41ftpq1gfp320n0bgqlevd1ad98h.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
