@@ -7,34 +7,28 @@ import '../../data/cloud/cloud_sync.dart';
 import '../../data/cloud/google_auth.dart';
 import '../../data/cloud/google_config.dart';
 import '../../state/progress_controller.dart';
+import '../../state/settings_controller.dart';
+import '../mascot/eko_mascot.dart';
 
 // -----------------------------------------------------------------------------
 // GİRİŞ EKRANI — kimliğin tek adresi
 //
-// Ayarlar'ın içine gömülü küçük bir form yerine kendi ekranı: çok kullanıcılı
-// yayında giriş, uygulamanın birinci sınıf bir akışıdır.
+// FORM-ÖNCELİKLİ: ekran doğrudan giriş formuyla açılır (e-posta + şifre), Google
+// düğmesi hemen altında, "hesabın yok mu → Kaydol" ve "Misafir devam" en altta.
+// İçerik dikey ORTALANMIŞTIR (Center + kaydırılabilir) — cezbedici bir karşılama.
 //
-// ÜÇ yol, tek varış: Google · e-posta+şifre · misafir.
-// Hangi yoldan gelinirse gelinsin oturum açılınca [_afterSignIn] çalışır →
-// buluttaki ilerleme YERELLE KAYIPSIZ birleşir (mergeProgress). "Misafir olarak
-// oynadım, sonra giriş yaptım" senaryosunda hiçbir emek kaybolmaz.
+// Yollar: Google · e-posta+şifre · misafir. Hepsi aynı yere varır: oturum
+// açılınca [_afterSignIn] → buluttaki ilerleme YERELLE KAYIPSIZ birleşir.
 //
-// NEDEN "her girişte e-posta kodu" YOK: iki e-posta yolunu (kod + şifre) yan
-// yana sunmak hem seçim yorgunluğu yaratıyor hem de aynı adreste iki farklı
-// hesap-oluşturma yolu doğurup çakışmaya yol açıyordu. Kod mekanizması duruyor —
-// yalnızca kayıt onayı ve şifre sıfırlamada kullanılıyor.
-//
-// Ekran, akış sayfalarındaki desenle aynı: tek bir [_Step] durumu, iç içe
-// Navigator yok — geri tuşu adım adım geri alır.
+// Kod mekanizması yalnızca kayıt onayı (confirmSignUp) ve şifre sıfırlamada
+// kullanılır. Ekran tek bir [_Step] durumu tutar — iç içe Navigator yok.
 // -----------------------------------------------------------------------------
 
-/// Ekranın hangi adımda olduğu.
+/// Ekranın hangi adımda olduğu. İlk (ve ana) adım [signIn]: giriş/kayıt formu.
 enum _Step {
-  /// Yol seçimi (Google · e-posta+şifre · misafir).
-  chooser,
-
-  /// E-posta + şifre (giriş veya kayıt).
-  password,
+  /// E-posta + şifre formu (giriş veya kayıt — `_creatingAccount` ayırır) +
+  /// Google + misafir. Ekranın açılış adımı.
+  signIn,
 
   /// Kayıt sonrası e-posta onay kodu (Supabase'te "Confirm email" açıksa).
   confirmSignUp,
@@ -47,7 +41,15 @@ enum _Step {
 }
 
 class SignInPage extends ConsumerStatefulWidget {
-  const SignInPage({super.key});
+  const SignInPage({super.key, this.onCompleted});
+
+  /// Onboarding modu: verilirse giriş VEYA misafir sonrası `Navigator.pop`
+  /// yerine bu çağrılır (akış bir sonraki adıma geçer). null = bağımsız ekran
+  /// (Ayarlar'dan açılmış) → eski pop davranışı. Onboarding modunda ayrıca ilk
+  /// adımda geri düğmesi gizlenir ve üstte dil seçici gösterilir.
+  final VoidCallback? onCompleted;
+
+  bool get _embedded => onCompleted != null;
 
   @override
   ConsumerState<SignInPage> createState() => _SignInPageState();
@@ -62,11 +64,11 @@ class _SignInPageState extends ConsumerState<SignInPage> {
   /// erişilemez hesap açılmasını önler. Girişte kullanılmaz.
   final _passwordConfirm = TextEditingController();
 
-  _Step _step = _Step.chooser;
+  _Step _step = _Step.signIn;
   bool _busy = false;
   String? _error;
 
-  /// Şifre yolunda: kayıt mı, giriş mi?
+  /// signIn adımında: kayıt mı (true), giriş mi (false)?
   bool _creatingAccount = false;
 
   bool _obscurePassword = true;
@@ -118,10 +120,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
   String _friendlyError(Object e) {
     final raw = e.toString().toLowerCase();
     if (raw.contains('invalid login credentials')) {
-      return t(
-        en: 'Wrong email or password.',
-        tr: 'E-posta veya şifre hatalı.',
-      );
+      return t(en: 'Wrong email or password.', tr: 'E-posta veya şifre hatalı.');
     }
     if (raw.contains('already registered') || raw.contains('already exists')) {
       return t(
@@ -159,12 +158,49 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     await CloudSync.instance.pullAndMerge(repo); // kayıpsız birleştirme
     if (!mounted) return;
     ref.read(progressProvider.notifier).reload();
-    Navigator.of(context).pop(true);
+    _leave(true);
+  }
+
+  /// Ekrandan ayrıl: onboarding modunda akışı ilerletir, bağımsızsa geri döner.
+  void _leave(bool signedIn) {
+    if (widget.onCompleted != null) {
+      widget.onCompleted!();
+    } else {
+      Navigator.of(context).pop(signedIn);
+    }
+  }
+
+  /// Onboarding modunda üstte gösterilen kompakt dil seçici (EN/TR). İngilizce
+  /// bilmeyen kullanıcı giriş ekranını da Türkçe görebilsin.
+  Widget _langToggle() {
+    final code = ref.watch(settingsProvider).localeCode;
+    return SegmentedButton<String>(
+      segments: const [
+        ButtonSegment(value: 'en', label: Text('EN')),
+        ButtonSegment(value: 'tr', label: Text('TR')),
+      ],
+      selected: {code},
+      showSelectedIcon: false,
+      onSelectionChanged: (s) =>
+          ref.read(settingsProvider.notifier).setLocale(s.first),
+      style: const ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+    );
   }
 
   void _goTo(_Step step) => setState(() {
     _step = step;
     _error = null;
+  });
+
+  /// Alt adımdan (onay/sıfırlama) giriş formuna dön.
+  void _backToSignIn() => setState(() {
+    _step = _Step.signIn;
+    _creatingAccount = false;
+    _error = null;
+    _passwordConfirm.clear();
   });
 
   // --- Eylemler ---------------------------------------------------------------
@@ -242,38 +278,52 @@ class _SignInPageState extends ConsumerState<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Ana adımda (signIn) geri düğmesi: onboarding modunda gizli (misafir zaten
+    // var), bağımsızda ekranı kapatır. Alt adımlarda giriş formuna döner.
+    final onSignIn = _step == _Step.signIn;
+    final hideBack = widget._embedded && onSignIn;
     return Scaffold(
       appBar: AppBar(
-        title: Text(t(en: 'Sign in', tr: 'Giriş yap')),
-        leading: BackButton(
-          onPressed: _busy
-              ? null
-              : () {
-                  // Alt adımdaysak önce seçim ekranına dön, sonra ekrandan çık.
-                  if (_step == _Step.chooser) {
-                    Navigator.of(context).pop(false);
-                  } else {
-                    _goTo(_Step.chooser);
-                  }
-                },
-        ),
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: hideBack
+            ? null
+            : BackButton(
+                onPressed: _busy
+                    ? null
+                    : () => onSignIn ? _leave(false) : _backToSignIn(),
+              ),
+        actions: widget._embedded
+            ? [_langToggle(), const SizedBox(width: 12)]
+            : null,
       ),
+      // ORTALANMIŞ + kaydırılabilir: kısa ekranda/klavye açıkken taşmaz.
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-          children: [
-            _header(context),
-            const SizedBox(height: 20),
-            ..._stepBody(context),
-            if (_error != null) ...[
-              const SizedBox(height: 14),
-              _errorBox(context, _error!),
-            ],
-            if (_busy) ...[
-              const SizedBox(height: 18),
-              const Center(child: CircularProgressIndicator()),
-            ],
-          ],
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _header(context),
+                  const SizedBox(height: 24),
+                  ..._stepBody(context),
+                  if (_error != null) ...[
+                    const SizedBox(height: 14),
+                    _errorBox(context, _error!),
+                  ],
+                  if (_busy) ...[
+                    const SizedBox(height: 18),
+                    const Center(child: CircularProgressIndicator()),
+                  ],
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -282,31 +332,21 @@ class _SignInPageState extends ConsumerState<SignInPage> {
   Widget _header(BuildContext context) {
     final theme = Theme.of(context);
     final (String title, String subtitle) = switch (_step) {
-      _Step.chooser => (
-        t(en: 'Save your progress', tr: 'İlerlemeni kaydet'),
-        t(
-          en:
-              'Sign in to back up your progress and continue on any device. '
-              'Everything you have done so far comes with you.',
-          tr:
-              'İlerlemeni yedeklemek ve her cihazda devam etmek için giriş yap. '
-              'Şimdiye kadar yaptığın her şey seninle gelir.',
-        ),
-      ),
-      _Step.password => (
-        _creatingAccount
-            ? t(en: 'Create account', tr: 'Hesap oluştur')
-            : t(en: 'Sign in with password', tr: 'Şifreyle giriş yap'),
-        _creatingAccount
-            ? t(
+      _Step.signIn => _creatingAccount
+          ? (
+              t(en: 'Create your account', tr: 'Hesabını oluştur'),
+              t(
                 en: 'Pick a password of at least 8 characters.',
                 tr: 'En az 8 karakterli bir şifre seç.',
-              )
-            : t(
-                en: 'Enter the email and password for your account.',
-                tr: 'Hesabının e-postasını ve şifresini gir.',
               ),
-      ),
+            )
+          : (
+              t(en: 'Welcome back', tr: 'Tekrar hoş geldin'),
+              t(
+                en: 'Sign in to sync your progress across devices.',
+                tr: 'İlerlemeni cihazlar arası eşitlemek için giriş yap.',
+              ),
+            ),
       _Step.confirmSignUp => (
         t(en: 'Confirm your email', tr: 'E-postanı doğrula'),
         t(
@@ -331,153 +371,162 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     };
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: theme.textTheme.headlineSmall),
+        const EkoMascot(size: 76),
+        const SizedBox(height: 16),
+        Text(
+          title,
+          style: theme.textTheme.headlineSmall,
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: 8),
         Text(
           subtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
   List<Widget> _stepBody(BuildContext context) => switch (_step) {
-    _Step.chooser => _chooserBody(context),
-    _Step.password => _passwordBody(),
+    _Step.signIn => _signInBody(context),
     _Step.confirmSignUp => _confirmSignUpBody(),
     _Step.forgotRequest => _forgotRequestBody(),
     _Step.forgotConfirm => _forgotConfirmBody(),
   };
 
-  // Yol seçimi ----------------------------------------------------------------
+  // Giriş / kayıt formu (ana adım) --------------------------------------------
 
-  List<Widget> _chooserBody(BuildContext context) {
-    final googleReady = isGoogleSignInConfigured;
+  List<Widget> _signInBody(BuildContext context) {
+    final theme = Theme.of(context);
     return [
-      FilledButton.icon(
-        // Yapılandırma yoksa düğme görünür ama pasif (bkz. google_config.dart).
-        onPressed: (_busy || !googleReady) ? null : _google,
+      _emailField(),
+      const SizedBox(height: 12),
+      _passwordField(
+        controller: _password,
+        label: t(en: 'Password', tr: 'Şifre'),
+        helper: _creatingAccount
+            ? t(
+                en: 'At least $kMinPasswordLength characters',
+                tr: 'En az $kMinPasswordLength karakter',
+              )
+            : null,
+      ),
+      // Yalnızca KAYITTA: şifreyi ikinci kez iste (yazım hatası koruması).
+      if (_creatingAccount) ...[
+        const SizedBox(height: 12),
+        _passwordField(
+          controller: _passwordConfirm,
+          label: t(en: 'Re-enter password', tr: 'Şifreyi tekrar gir'),
+          errorText: _confirmError,
+        ),
+      ],
+      // Şifremi unuttum yalnızca GİRİŞTE, sağa hizalı.
+      if (!_creatingAccount)
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: _busy ? null : () => _goTo(_Step.forgotRequest),
+            child: Text(t(en: 'Forgot password?', tr: 'Şifremi unuttum')),
+          ),
+        )
+      else
+        const SizedBox(height: 16),
+      _primaryButton(
+        label: _creatingAccount
+            ? t(en: 'Create account', tr: 'Hesap oluştur')
+            : t(en: 'Sign in', tr: 'Giriş yap'),
+        onPressed: _passwordFormReady ? _passwordSubmit : null,
+      ),
+      const SizedBox(height: 18),
+      _orDivider(theme),
+      const SizedBox(height: 18),
+      // Google — yapılandırma yoksa görünür ama pasif (bkz. google_config.dart).
+      OutlinedButton.icon(
+        onPressed: (_busy || !isGoogleSignInConfigured) ? null : _google,
         icon: const Icon(Icons.account_circle_rounded),
         label: Text(t(en: 'Continue with Google', tr: 'Google ile devam et')),
-        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
       ),
-      if (!googleReady) ...[
+      if (!isGoogleSignInConfigured) ...[
         const SizedBox(height: 6),
         Text(
           t(
             en: 'Google sign-in is not set up in this build yet.',
             tr: 'Google ile giriş bu derlemede henüz ayarlanmadı.',
           ),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
-      const SizedBox(height: 12),
-      OutlinedButton.icon(
-        onPressed: _busy
-            ? null
-            : () {
-                _creatingAccount = false;
-                _goTo(_Step.password);
-              },
-        icon: const Icon(Icons.mail_outline_rounded),
-        label: Text(
-          t(en: 'Continue with email', tr: 'E-posta ile devam et'),
-        ),
-        style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-      ),
       const SizedBox(height: 20),
+      // Giriş ↔ kayıt geçişi.
       Center(
         child: TextButton(
-          onPressed: _busy ? null : () => Navigator.of(context).pop(false),
-          child: Text(
-            t(en: 'Continue as guest', tr: 'Misafir olarak devam et'),
+          key: const Key('auth_mode_toggle'),
+          onPressed: _busy
+              ? null
+              : () => setState(() {
+                  _creatingAccount = !_creatingAccount;
+                  _error = null;
+                  _passwordConfirm.clear();
+                }),
+          child: Text.rich(
+            TextSpan(
+              text: _creatingAccount
+                  ? t(en: 'Already have an account? ', tr: 'Zaten hesabın var mı? ')
+                  : t(en: "Don't have an account? ", tr: 'Hesabın yok mu? '),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              children: [
+                TextSpan(
+                  text: _creatingAccount
+                      ? t(en: 'Sign in', tr: 'Giriş yap')
+                      : t(en: 'Sign up', tr: 'Kaydol'),
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      const SizedBox(height: 4),
+      // Misafir — en altta, düşük vurgulu.
       Center(
-        child: Text(
-          t(
-            en: 'You can sign in later — your progress stays on this device.',
-            tr: 'Sonra da giriş yapabilirsin — ilerlemen bu cihazda kalır.',
-          ),
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        child: TextButton(
+          onPressed: _busy ? null : () => _leave(false),
+          child: Text(
+            t(en: 'Continue as guest', tr: 'Misafir olarak devam et'),
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
         ),
       ),
     ];
   }
 
-  // E-posta + şifre yolu -------------------------------------------------------
-
-  List<Widget> _passwordBody() => [
-    _emailField(),
-    const SizedBox(height: 12),
-    _passwordField(
-      controller: _password,
-      label: t(en: 'Password', tr: 'Şifre'),
-      helper: _creatingAccount
-          ? t(
-              en: 'At least $kMinPasswordLength characters',
-              tr: 'En az $kMinPasswordLength karakter',
-            )
-          : null,
-    ),
-    // Yalnızca KAYITTA: şifreyi ikinci kez iste. Tek harflik bir yazım hatası,
-    // kullanıcının bir daha giremeyeceği bir hesap yaratabilir.
-    if (_creatingAccount) ...[
-      const SizedBox(height: 12),
-      _passwordField(
-        controller: _passwordConfirm,
-        label: t(en: 'Re-enter password', tr: 'Şifreyi tekrar gir'),
-        errorText: _confirmError,
-      ),
-    ],
-    const SizedBox(height: 16),
-    _primaryButton(
-      label: _creatingAccount
-          ? t(en: 'Create account', tr: 'Hesap oluştur')
-          : t(en: 'Sign in', tr: 'Giriş yap'),
-      onPressed: _passwordFormReady ? _passwordSubmit : null,
-    ),
-    const SizedBox(height: 10),
-    Center(
-      child: TextButton(
-        onPressed: _busy
-            ? null
-            : () => setState(() {
-                _creatingAccount = !_creatingAccount;
-                _error = null;
-                // Mod değişince tekrar alanı sıfırlansın; yoksa girişten
-                // kayda dönerken bayat bir değer eşleşmiyor gibi görünür.
-                _passwordConfirm.clear();
-              }),
+  Widget _orDivider(ThemeData theme) => Row(
+    children: [
+      const Expanded(child: Divider()),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Text(
-          _creatingAccount
-              ? t(
-                  en: 'I already have an account',
-                  tr: 'Zaten hesabım var',
-                )
-              : t(en: 'Create a new account', tr: 'Yeni hesap oluştur'),
+          t(en: 'or', tr: 'veya'),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
-    ),
-    if (!_creatingAccount)
-      Center(
-        child: TextButton(
-          onPressed: _busy ? null : () => _goTo(_Step.forgotRequest),
-          child: Text(t(en: 'Forgot password?', tr: 'Şifremi unuttum')),
-        ),
-      ),
-  ];
+      const Expanded(child: Divider()),
+    ],
+  );
 
   /// Kayıtta şifre kuralı + tekrar eşleşmesi aranır; girişte YALNIZCA boş
   /// olmaması yeter (daha kısa şifreyle oluşturulmuş eski hesap kilitlenmesin).
@@ -490,10 +539,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
 
   bool get _passwordsMatch => _passwordConfirm.text == _password.text;
 
-  /// Tekrar alanının hata metni.
-  ///
-  /// Kullanıcı daha ilk harfi yazarken "eşleşmiyor" diye kırmızı göstermeyiz —
-  /// uyarı yalnızca alan doluyken çıkar.
+  /// Tekrar alanının hata metni. İlk harfte değil, alan doluyken gösterilir.
   String? get _confirmError =>
       _passwordConfirm.text.isEmpty || _passwordsMatch
       ? null
@@ -532,8 +578,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
         tr: 'En az $kMinPasswordLength karakter',
       ),
     ),
-    // Sıfırlamada da tekrar iste: burada yazım hatası, kullanıcıyı yeni
-    // belirlediği şifreyle kendi hesabından kilitler.
+    // Sıfırlamada da tekrar iste: yazım hatası kullanıcıyı yeni şifreyle kilitler.
     const SizedBox(height: 12),
     _passwordField(
       controller: _passwordConfirm,
@@ -598,8 +643,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
       helperText: helper,
       prefixIcon: const Icon(Icons.lock_outline_rounded),
       suffixIcon: IconButton(
-        onPressed: () =>
-            setState(() => _obscurePassword = !_obscurePassword),
+        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
         icon: Icon(
           _obscurePassword
               ? Icons.visibility_rounded

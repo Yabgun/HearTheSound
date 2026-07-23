@@ -22,6 +22,10 @@ class _MemoryProgressRepository implements ProgressRepository {
 }
 
 Future<ProviderContainer> _pumpOnboarding(WidgetTester tester) async {
+  // Uzun form/karşılama ekranları default 800×600'e sığmaz; yüksek bir yüzey
+  // ver ki alttaki düğmeler (misafir/atla) tıklanabilir olsun.
+  await tester.binding.setSurfaceSize(const Size(500, 1400));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final container = ProviderContainer(
@@ -39,11 +43,22 @@ Future<ProviderContainer> _pumpOnboarding(WidgetTester tester) async {
     ),
   );
   await tester.pumpAndSettle();
+
+  // Akış artık karşılama → giriş → ad → avatar ile BAŞLIYOR. Bu testler
+  // karşılama sonrası adımları (kalibrasyon/seviye/placement) sınadığından, ilk
+  // dört adımı atlayıp welcome'a ilerliyoruz.
+  await tester.tap(find.text("Let's begin")); // intro → signIn
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Continue as guest')); // signIn → nameSetup
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(TextButton, 'Skip for now')); // ad atla
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(TextButton, 'Skip for now')); // avatar atla
+  await tester.pumpAndSettle();
   return container;
 }
 
 Future<void> _openPlacementFromOffer(WidgetTester tester) async {
-  // Welcome ekranındaki dil seçici (EN/TR) de TextButton içerir → spesifik ol.
   await tester.tap(find.widgetWithText(TextButton, "I'll calibrate later"));
   await tester.pumpAndSettle();
 

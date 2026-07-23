@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../audio/note_player.dart';
 import '../../core/content_locale.dart';
 import '../../data/cloud/cloud_sync.dart';
 import '../../notifications/notification_service.dart';
 import '../../state/progress_controller.dart';
 import '../../state/settings_controller.dart';
 import '../auth/sign_in_page.dart';
-import '../calibration/calibration_page.dart';
-import '../explorer/range_playground_page.dart';
 
 // -----------------------------------------------------------------------------
 // AYARLAR — ses aralığı kalibrasyonu + günlük hatırlatma bildirimi
@@ -275,7 +272,6 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final ctrl = ref.read(settingsProvider.notifier);
-    final range = ref.watch(progressProvider).vocalRange;
 
     return Scaffold(
       appBar: AppBar(
@@ -284,15 +280,30 @@ class SettingsPage extends ConsumerWidget {
       body: ListView(
         children: [
           // Dil — varsayılan İngilizce; içerik ve arayüz birlikte değişir.
-          ListTile(
-            leading: const Icon(Icons.language_rounded),
-            title: Text(t(en: 'Language', tr: 'Dil')),
-            trailing: SegmentedButton<String>(
+          // Seçici KENDİ satırında (ListTile trailing DEĞİL): "Language"/"Dil"
+          // başlığı dar segmentli düğmenin yanına sığmayıp alt satıra kayıyordu.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Row(
+              children: [
+                const Icon(Icons.language_rounded),
+                const SizedBox(width: 16),
+                Text(
+                  t(en: 'Language', tr: 'Dil'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: SegmentedButton<String>(
               segments: const [
                 ButtonSegment(value: 'en', label: Text('English')),
                 ButtonSegment(value: 'tr', label: Text('Türkçe')),
               ],
               selected: {settings.localeCode},
+              showSelectedIcon: false,
               onSelectionChanged: (selection) =>
                   ctrl.setLocale(selection.first),
             ),
@@ -304,58 +315,9 @@ class SettingsPage extends ConsumerWidget {
             const _AccountSection(),
             const Divider(),
           ],
-          ListTile(
-            leading: const Icon(Icons.graphic_eq_rounded),
-            title: Text(t(en: 'Vocal range', tr: 'Ses aralığı')),
-            subtitle: Text(
-              range == null
-                  ? t(
-                      en: 'Not calibrated yet — tap to measure',
-                      tr: 'Henüz kalibre edilmedi — dokun ve ölç',
-                    )
-                  : '${t(en: 'Comfortable', tr: 'Rahat')}: '
-                        '${range.comfortLowNote.label} – ${range.comfortHighNote.label}',
-            ),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const CalibrationPage()),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.explore_rounded),
-            title: Text(
-              t(en: 'Vocal range playground', tr: 'Ses aralığı oyun alanı'),
-            ),
-            subtitle: Text(
-              t(
-                en: 'Explore and stretch your voice (no scoring)',
-                tr: 'Keşfet ve sesini genişlet (puansız)',
-              ),
-            ),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const RangePlaygroundPage(),
-              ),
-            ),
-          ),
-          const Divider(),
-          SwitchListTile(
-            secondary: const Icon(Icons.piano_rounded),
-            title: Text(t(en: 'Piano sound', tr: 'Piyano tınısı')),
-            subtitle: Text(
-              settings.instrument == Instrument.piano
-                  ? t(
-                      en: 'Real piano samples (GeneralUser GS)',
-                      tr: 'Gerçek piyano örnekleri (GeneralUser GS)',
-                    )
-                  : t(en: 'Simple synth tone', tr: 'Basit sentez ton'),
-            ),
-            value: settings.instrument == Instrument.piano,
-            onChanged: (value) =>
-                ctrl.setInstrument(value ? Instrument.piano : Instrument.synth),
-          ),
-          const Divider(),
+          // Not: "Ses aralığı" ve "Oyun alanı" Pratik sekmesinde yaşıyor (Ayarlar'da
+          // kopyaları kaldırıldı). "Piyano tınısı" anahtarı da kaldırıldı — v1
+          // her zaman gerçek piyano; başka enstrümanlar ileride gelir.
           SwitchListTile(
             secondary: const Icon(Icons.notifications_active_rounded),
             title: Text(t(en: 'Daily reminder', tr: 'Günlük hatırlatma')),
@@ -419,37 +381,6 @@ class SettingsPage extends ConsumerWidget {
                     }
                   }
                 : null,
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.send_rounded),
-            title: Text(
-              t(en: 'Send test notification', tr: 'Test bildirimi gönder'),
-            ),
-            subtitle: Text(
-              t(
-                en: 'Fire one right now (to verify)',
-                tr: 'Hemen bir bildirim at (doğrulama için)',
-              ),
-            ),
-            onTap: () async {
-              final granted = await NotificationService.instance
-                  .requestPermission();
-              if (granted) {
-                await NotificationService.instance.showTestNow();
-              } else if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      t(
-                        en: 'Notification permission was not granted.',
-                        tr: 'Bildirim izni verilmedi.',
-                      ),
-                    ),
-                  ),
-                );
-              }
-            },
           ),
         ],
       ),

@@ -46,7 +46,18 @@ class CloudSync {
   SupabaseClient get _client => Supabase.instance.client;
 
   /// Oturumdaki kullanıcı (yoksa null).
-  User? get user => isConfigured ? _client.auth.currentUser : null;
+  /// Oturumdaki kullanıcı; yoksa (ya da Supabase henüz başlatılmadıysa — testler)
+  /// null. try-catch, `isConfigured` true olsa bile başlatılmamış istemciye
+  /// erişimde çökmeyi önler.
+  User? get user {
+    if (!isConfigured) return null;
+    try {
+      return _client.auth.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }
+
   bool get isSignedIn => user != null;
 
   Timer? _pushDebounce;

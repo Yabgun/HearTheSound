@@ -6,12 +6,11 @@ import 'package:hear_the_sound/data/cloud/google_config.dart';
 import 'package:hear_the_sound/features/auth/sign_in_page.dart';
 
 // -----------------------------------------------------------------------------
-// GİRİŞ EKRANI — akış ve "eksik istek gönderme" koruması
+// GİRİŞ EKRANI — form-öncelikli akış + "eksik istek gönderme" koruması
 //
 // DİKKAT: Bu testler bilerek hiçbir SUNUCU eylemini tetiklemez (Supabase testte
 // başlatılmamıştır). Yalnızca gezinme ve düğmelerin AKTİF/PASİF mantığı sınanır —
-// zaten kapatmak istediğimiz hata sınıfı bu: boş alanla giden istekler
-// (loglarda görülen `400: Verify requires either a token`).
+// zaten kapatmak istediğimiz hata sınıfı bu: boş alanla giden istekler.
 // -----------------------------------------------------------------------------
 
 void main() {
@@ -25,11 +24,6 @@ void main() {
   }
 
   /// Etiketine göre düğmeyi bulur ve etkin olup olmadığını söyler.
-  ///
-  /// `find.byType` TAM tip eşleştirir (FilledButton/OutlinedButton ≠ soyut
-  /// ButtonStyleButton) → alt sınıfları yakalamak için predicate şart.
-  /// `.first`: aynı metin başlıkta da geçebilir (ör. "Sign in" hem AppBar
-  /// başlığı hem düğme); düğme olmayan eşleşmeler zaten elenir.
   bool isEnabled(WidgetTester tester, String label) {
     final button = tester.widget<ButtonStyleButton>(
       find
@@ -42,30 +36,34 @@ void main() {
     return button.onPressed != null;
   }
 
+  /// Giriş ↔ kayıt geçişi (Text.rich olduğundan key ile).
+  Future<void> toggleToSignUp(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('auth_mode_toggle')));
+    await tester.pumpAndSettle();
+  }
+
   tearDown(() => ContentLocale.code = 'en');
 
-  testWidgets('seçim ekranı ÜÇ yolu sunar — fazlası değil', (tester) async {
+  testWidgets('açılışta giriş formu görünür (form-öncelikli, chooser yok)', (
+    tester,
+  ) async {
     await pumpSignIn(tester);
 
+    // E-posta + şifre alanı hemen görünür (2 alan: giriş modu).
+    expect(find.byType(TextField), findsNWidgets(2));
     expect(find.text('Continue with Google'), findsOneWidget);
-    expect(find.text('Continue with email'), findsOneWidget);
     expect(find.text('Continue as guest'), findsOneWidget);
+    expect(isEnabled(tester, 'Sign in'), isFalse); // boş form → pasif
 
-    // "Her girişte kod" yolu bilerek kaldırıldı (seçim yorgunluğu + aynı
-    // adreste iki hesap-oluşturma yolu çakışması). Geri sızmasın.
+    // Eski "chooser" ve OTP kalıntıları geri sızmasın.
+    expect(find.text('Continue with email'), findsNothing);
     expect(find.text('Continue with email code'), findsNothing);
-    expect(find.text('Send code'), findsNothing);
   });
 
   testWidgets('Google düğmesi yapılandırma durumunu doğru yansıtır', (
     tester,
   ) async {
     await pumpSignIn(tester);
-
-    // Sözleşme iki yönlü: client ID varsa basılabilir; YOKSA görünür ama pasif
-    // ve gerekçesi yazılı kalır (sessizce çalışmayan düğme bırakmayız).
-    // Duruma göre iddia ediyoruz ki `google_config.dart` doldurulunca da
-    // boşaltılınca da test anlamını korusun.
     final explanation = find.text(
       'Google sign-in is not set up in this build yet.',
     );
@@ -80,9 +78,6 @@ void main() {
 
   testWidgets('geçersiz e-postayla giriş denenemez', (tester) async {
     await pumpSignIn(tester);
-    await tester.tap(find.text('Continue with email'));
-    await tester.pumpAndSettle();
-
     final email = find.byType(TextField).first;
     final password = find.byType(TextField).last;
     await tester.enterText(password, 'birsifre');
@@ -98,30 +93,26 @@ void main() {
     expect(isEnabled(tester, 'Sign in'), isTrue);
   });
 
-  testWidgets('şifre yolu: kayıtta 8 karakter şartı, girişte değil', (
+  testWidgets('kayıtta 8 karakter + şifre tekrarı şartı, girişte yok', (
     tester,
   ) async {
     await pumpSignIn(tester);
-    await tester.tap(find.text('Continue with email'));
-    await tester.pumpAndSettle();
-
     final email = find.byType(TextField).first;
-    final password = find.byType(TextField).last;
 
-    // GİRİŞ: kısa şifre kabul edilir (eski hesaplar kilitlenmesin).
+    // GİRİŞ: kısa şifre kabul (eski hesaplar kilitlenmesin).
     await tester.enterText(email, 'kisi@ornek.com');
-    await tester.enterText(password, 'kisa');
+    await tester.enterText(find.byType(TextField).last, 'kisa');
     await tester.pump();
     expect(isEnabled(tester, 'Sign in'), isTrue);
+    expect(find.byType(TextField), findsNWidgets(2)); // tekrar alanı yok
 
-    // KAYIT: aynı kısa şifre reddedilir.
-    await tester.tap(find.text('Create a new account'));
-    await tester.pumpAndSettle();
+    // KAYIT moduna geç: 3 alan + kısa şifre reddedilir.
+    await toggleToSignUp(tester);
+    expect(find.byType(TextField), findsNWidgets(3));
     expect(isEnabled(tester, 'Create account'), isFalse);
 
-    // Kayıtta 3 alan var: e-posta, şifre, şifre tekrar.
     final fields = find.byType(TextField);
-    expect(fields, findsNWidgets(3));
+    await tester.enterText(fields.at(0), 'kisi@ornek.com');
     await tester.enterText(fields.at(1), 'yeterince-uzun');
     await tester.enterText(fields.at(2), 'yeterince-uzun');
     await tester.pump();
@@ -132,56 +123,42 @@ void main() {
     tester,
   ) async {
     await pumpSignIn(tester);
-    await tester.tap(find.text('Continue with email'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Create a new account'));
-    await tester.pumpAndSettle();
+    await toggleToSignUp(tester);
 
     final fields = find.byType(TextField);
     await tester.enterText(fields.at(0), 'kisi@ornek.com');
     await tester.enterText(fields.at(1), 'dogru-sifre');
-
-    // Tekrar alanı BOŞken: henüz hata gösterme (kullanıcı daha yazmadı) ama
-    // düğme de açılmasın.
     await tester.pump();
     expect(find.text('Passwords do not match'), findsNothing);
     expect(isEnabled(tester, 'Create account'), isFalse);
 
-    // Yazım hatası: uyarı çıkar, düğme kapalı kalır.
+    // Yazım hatası: uyarı + düğme kapalı.
     await tester.enterText(fields.at(2), 'dogru-sifr');
     await tester.pump();
     expect(find.text('Passwords do not match'), findsOneWidget);
     expect(isEnabled(tester, 'Create account'), isFalse);
 
-    // Düzeltilince uyarı kalkar ve düğme açılır.
+    // Düzeltilince açılır.
     await tester.enterText(fields.at(2), 'dogru-sifre');
     await tester.pump();
     expect(find.text('Passwords do not match'), findsNothing);
     expect(isEnabled(tester, 'Create account'), isTrue);
   });
 
-  testWidgets('girişte şifre tekrarı SORULMAZ', (tester) async {
-    await pumpSignIn(tester);
-    await tester.tap(find.text('Continue with email'));
-    await tester.pumpAndSettle();
-
-    // Giriş modu: yalnızca e-posta + şifre.
-    expect(find.byType(TextField), findsNWidgets(2));
-    expect(find.text('Re-enter password'), findsNothing);
-  });
-
-  testWidgets('geri tuşu önce seçim ekranına döner, ekranı kapatmaz', (
+  testWidgets('şifremi unuttum → alt adım → geri giriş formuna döner', (
     tester,
   ) async {
     await pumpSignIn(tester);
-    await tester.tap(find.text('Continue with email'));
+    await tester.tap(find.text('Forgot password?'));
     await tester.pumpAndSettle();
-    expect(find.text('Continue as guest'), findsNothing);
 
+    // Sıfırlama adımı: giriş formu öğeleri kayboldu.
+    expect(find.text('Continue as guest'), findsNothing);
+    expect(find.text('Send reset code'), findsOneWidget);
+
+    // Geri tuşu giriş formuna döndürür (ekranı kapatmaz).
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
-
-    // Seçim ekranına döndük — ekran hâlâ açık.
     expect(find.text('Continue as guest'), findsOneWidget);
     expect(find.byType(SignInPage), findsOneWidget);
   });
@@ -191,7 +168,7 @@ void main() {
     await pumpSignIn(tester);
 
     expect(find.text('Google ile devam et'), findsOneWidget);
-    expect(find.text('E-posta ile devam et'), findsOneWidget);
     expect(find.text('Misafir olarak devam et'), findsOneWidget);
+    expect(find.text('Giriş yap'), findsOneWidget); // birincil düğme
   });
 }
