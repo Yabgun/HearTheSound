@@ -7,6 +7,7 @@ import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_complete_page.dart';
+import '../lesson/lesson_intro_page.dart';
 import 'chord_arpeggio_page.dart';
 import 'chord_inversion_recognition_page.dart';
 import 'chord_lesson.dart';
@@ -21,7 +22,7 @@ import 'learn_chords_page.dart';
 // (XP, streak, ustalık, ders tamamlama → kilit açar).
 // -----------------------------------------------------------------------------
 
-enum _Phase { learning, singing, recognizing, done }
+enum _Phase { intro, learning, singing, recognizing, done }
 
 class ChordLessonFlowPage extends ConsumerStatefulWidget {
   const ChordLessonFlowPage({super.key, required this.lesson});
@@ -38,7 +39,10 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
   static const int _xpPerCorrect = 10;
 
   final NotePlayer _player = createNotePlayer();
-  _Phase _phase = _Phase.learning;
+  // Vaat ekranı yalnızca dersin bir kazanım cümlesi varsa gösterilir.
+  late _Phase _phase = widget.lesson.promise == null
+      ? _Phase.learning
+      : _Phase.intro;
   LessonResult? _result;
   int _xpEarned = 0;
 
@@ -94,6 +98,12 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
   @override
   Widget build(BuildContext context) {
     switch (_phase) {
+      case _Phase.intro:
+        return LessonIntroPage(
+          title: widget.lesson.title,
+          promise: widget.lesson.promise!,
+          onStart: () => setState(() => _phase = _Phase.learning),
+        );
       case _Phase.learning:
         return LearnChordsPage(
           lesson: _lesson,

@@ -9,6 +9,7 @@ import '../note_recognition/note_recognition_page.dart';
 import 'learn_notes_page.dart';
 import 'lesson.dart';
 import 'lesson_complete_page.dart';
+import 'lesson_intro_page.dart';
 import 'sing_notes_page.dart';
 
 // -----------------------------------------------------------------------------
@@ -19,7 +20,7 @@ import 'sing_notes_page.dart';
 // durumuna (ProgressController) işlenir: XP, günlük streak, ustalık.
 // -----------------------------------------------------------------------------
 
-enum _Phase { learning, singing, testing, done }
+enum _Phase { intro, learning, singing, testing, done }
 
 class LessonFlowPage extends ConsumerStatefulWidget {
   const LessonFlowPage({super.key, required this.lesson});
@@ -35,7 +36,10 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
   static const int _xpPerCorrect = 10;
 
   final NotePlayer _player = createNotePlayer();
-  _Phase _phase = _Phase.learning;
+  // Vaat ekranı yalnızca dersin bir kazanım cümlesi varsa gösterilir.
+  late _Phase _phase = widget.lesson.promise == null
+      ? _Phase.learning
+      : _Phase.intro;
   LessonResult? _result;
   int _xpEarned = 0;
 
@@ -92,6 +96,12 @@ class _LessonFlowPageState extends ConsumerState<LessonFlowPage> {
   @override
   Widget build(BuildContext context) {
     switch (_phase) {
+      case _Phase.intro:
+        return LessonIntroPage(
+          title: widget.lesson.title,
+          promise: widget.lesson.promise!,
+          onStart: () => setState(() => _phase = _Phase.learning),
+        );
       case _Phase.learning:
         return LearnNotesPage(
           lesson: _lesson,

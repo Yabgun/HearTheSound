@@ -5,6 +5,7 @@ import '../../audio/note_player.dart';
 import '../../state/progress_controller.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_complete_page.dart';
+import '../lesson/lesson_intro_page.dart';
 import 'interval_build_page.dart';
 import 'interval_direction_page.dart';
 import 'interval_learn_page.dart';
@@ -27,6 +28,7 @@ import 'interval_sing_page.dart';
 // -----------------------------------------------------------------------------
 
 enum _Phase {
+  intro,
   learning,
   building,
   direction,
@@ -52,7 +54,10 @@ class _IntervalLessonFlowPageState
   static const int _xpPerCorrect = 10;
 
   final NotePlayer _player = createNotePlayer();
-  _Phase _phase = _Phase.learning;
+  // Vaat ekranı yalnızca dersin bir kazanım cümlesi varsa gösterilir.
+  late _Phase _phase = widget.lesson.promise == null
+      ? _Phase.learning
+      : _Phase.intro;
   LessonResult? _result;
   int _xpEarned = 0;
 
@@ -97,6 +102,12 @@ class _IntervalLessonFlowPageState
   Widget build(BuildContext context) {
     final harmonic = widget.lesson.harmonic;
     switch (_phase) {
+      case _Phase.intro:
+        return LessonIntroPage(
+          title: widget.lesson.title,
+          promise: widget.lesson.promise!,
+          onStart: () => setState(() => _phase = _Phase.learning),
+        );
       case _Phase.learning:
         return IntervalLearnPage(
           lesson: widget.lesson,

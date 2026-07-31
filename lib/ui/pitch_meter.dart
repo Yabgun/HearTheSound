@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/content_locale.dart';
 import '../core/note.dart';
 import 'app_theme.dart';
 
@@ -53,7 +54,9 @@ class PitchMeter extends StatelessWidget {
     // Yön ipucu: pencere dışına taşan sapmada ok göster (▲ tiz / ▼ pes söyle).
     String? hint;
     if (active && offset != null && offset.abs() > _windowCents) {
-      hint = offset < 0 ? '▲ daha tiz' : '▼ daha pes';
+      hint = offset < 0
+          ? t(en: '▲ higher', tr: '▲ daha tiz')
+          : t(en: '▼ lower', tr: '▼ daha pes');
     }
 
     final needleColor = !active
@@ -145,7 +148,7 @@ class PitchMeter extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '♭ pes',
+              t(en: '♭ low', tr: '♭ pes'),
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),
@@ -163,7 +166,7 @@ class PitchMeter extends StatelessWidget {
               ),
             ),
             Text(
-              'tiz ♯',
+              t(en: 'high ♯', tr: 'tiz ♯'),
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.outline,
               ),

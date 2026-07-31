@@ -12,10 +12,10 @@ void main() {
     expect(firstIds[0], 'first_notes'); // Notalar
     expect(firstIds[1], 'iv1'); // Aralıklar
     expect(firstIds[2], 'ch1'); // Akorlar
-    expect(firstIds[3], 'tn1'); // Tonalite
-    expect(firstIds[4], 'fn1'); // İşlev
-    expect(firstIds[5], 'pr1'); // İlerlemeler
-    expect(firstIds[6], startsWith('fn_j_')); // Tonalite Yolculuğu
+    // Akorlardan sonra YETENEK track'i gelir: Melodi Kulağı (Eko oyunu).
+    // Eski teori track'leri (tonalite/işlev/ilerleme/yolculuk) kaldırılma
+    // sürecinde olduğu için burada sabit id ile kilitlenmiyorlar.
+    expect(firstIds[3], 'mel1'); // Melodi Kulağı
   });
 
   test('sıfırdan hesap: yalnızca Notalar açık; next = first_notes', () {
@@ -24,7 +24,7 @@ void main() {
     expect(itemUnlocked(tracks[0], 0, p), isTrue); // Notalar
     expect(itemUnlocked(tracks[1], 0, p), isFalse); // Aralıklar kilitli
     expect(itemUnlocked(tracks[2], 0, p), isFalse); // Akorlar kilitli
-    expect(itemUnlocked(tracks[4], 0, p), isFalse); // İşlev kilitli
+    expect(itemUnlocked(tracks[3], 0, p), isFalse); // Melodi Kulağı kilitli
     expect(nextLesson(p)?.item.id, 'first_notes');
   });
 
@@ -51,11 +51,13 @@ void main() {
     // 0 track → sıfırdan (boş).
     expect(lessonIdsInFirstTracks(0), isEmpty);
 
-    // 4 track (Nota+Aralık+Akor+Tonalite) tamam → İşlev açılır → next fn1.
-    final theoryKnown = PlayerProgress(
-      completedLessons: lessonIdsInFirstTracks(4),
+    // İlk 3 track tamam → 4. track (Melodi Kulağı) açılır. Sabit id yerine
+    // sıraya bağlanır ki müfredat yeniden düzenlenince test kırılmasın
+    // (kilit MANTIĞI test edilir, içerik değil).
+    final earTrained = PlayerProgress(
+      completedLessons: lessonIdsInFirstTracks(3),
     );
-    expect(itemUnlocked(curriculum[4], 0, theoryKnown), isTrue);
-    expect(nextLesson(theoryKnown)?.item.id, 'fn1');
+    expect(itemUnlocked(curriculum[3], 0, earTrained), isTrue);
+    expect(nextLesson(earTrained)?.item.id, curriculum[3].items.first.id);
   });
 }

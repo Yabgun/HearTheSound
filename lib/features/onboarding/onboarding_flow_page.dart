@@ -157,61 +157,83 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
 
   // --- Profil kurulumu (login sonrası, tane tane, atlanabilir) ----------------
 
+  /// İçeriği ekran yüksekliğinde tutar ama klavye açılınca kaydırılabilir yapar.
+  /// Böylece Spacer'lı dikey denge klavye kapalıyken korunur, klavye açılınca
+  /// alan kaydırılır ve alttaki buton/"atla" satırı taşmaz (aksi halde Spacer'lar
+  /// sıkışamayıp overflow veriyordu).
+  Widget _fullHeightScroll({required Widget child}) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(child: child),
+          ),
+        );
+      },
+    );
+  }
+
   /// "Adın ne?" adımı. Boş bırakılıp atlanabilir (anonim kalır).
   Widget _buildNameSetup(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
-              const Center(child: EkoMascot(size: 96)),
-              const SizedBox(height: 24),
-              Text(
-                t(en: "Let's set up your profile", tr: 'Hadi profilini kuralım'),
-                style: theme.textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                t(
-                  en: 'What should I call you?',
-                  tr: 'Sana nasıl hitap edeyim?',
+        child: _fullHeightScroll(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Spacer(),
+                const Center(child: EkoMascot(size: 96)),
+                const SizedBox(height: 24),
+                Text(
+                  t(
+                    en: "Let's set up your profile",
+                    tr: 'Hadi profilini kuralım',
+                  ),
+                  style: theme.textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
                 ),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                const SizedBox(height: 10),
+                Text(
+                  t(
+                    en: 'What should I call you?',
+                    tr: 'Sana nasıl hitap edeyim?',
+                  ),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              TextField(
-                controller: _name,
-                textCapitalization: TextCapitalization.words,
-                maxLength: 24,
-                textAlign: TextAlign.center,
-                decoration: InputDecoration(
-                  hintText: t(en: 'Your name', tr: 'Adın'),
-                  border: const OutlineInputBorder(),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _name,
+                  textCapitalization: TextCapitalization.words,
+                  maxLength: 24,
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    hintText: t(en: 'Your name', tr: 'Adın'),
+                    border: const OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _saveNameAndNext(),
                 ),
-                onSubmitted: (_) => _saveNameAndNext(),
-              ),
-              const Spacer(),
-              FilledButton(
-                onPressed: _saveNameAndNext,
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52),
+                const Spacer(),
+                FilledButton(
+                  onPressed: _saveNameAndNext,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(52),
+                  ),
+                  child: Text(t(en: 'Continue', tr: 'Devam')),
                 ),
-                child: Text(t(en: 'Continue', tr: 'Devam')),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => setState(() => _step = _Step.avatarSetup),
-                child: Text(t(en: 'Skip for now', tr: 'Şimdilik atla')),
-              ),
-            ],
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => setState(() => _step = _Step.avatarSetup),
+                  child: Text(t(en: 'Skip for now', tr: 'Şimdilik atla')),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -479,7 +501,9 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
             ),
             const SizedBox(height: 20),
             // Seviye → kaç track "tamam" sayılır (bkz. lessonIdsInFirstTracks):
-            // 0 Notalar · 1 Aralıklar · 3 Tonalite · 4 Akor İşlevi.
+            // 0 → Notalar'dan · 1 → Aralıklar'dan · 2 → Akorlar'dan ·
+            // 3 → Melodi Kulağı'ndan. En üst seviye BÜTÜN müfredatı tamam
+            // saymamalı; yoksa kullanıcı hiç ders açık olmadan başlar.
             _levelCard(
               theme,
               icon: AppIcons.levelBeginner,
@@ -499,30 +523,24 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
             _levelCard(
               theme,
               icon: AppIcons.levelChords,
-              title: t(
-                en: 'I know intervals & chords',
-                tr: 'Aralık ve akorları biliyorum',
-              ),
-              subtitle: t(
-                en: 'Start at Scales & Tonality',
-                tr: 'Diziler & Tonalite\'den başla',
-              ),
+              title: t(en: 'I know intervals', tr: 'Aralıkları biliyorum'),
+              subtitle: t(en: 'Start at Chords', tr: 'Akorlardan başla'),
               color: AppColors.catChords,
-              onTap: () => _chooseLevel(3),
+              onTap: () => _chooseLevel(2),
             ),
             _levelCard(
               theme,
               icon: AppIcons.levelTheory,
               title: t(
-                en: "I'm comfortable with theory",
-                tr: 'Teoriye hâkimim',
+                en: 'I know notes, intervals & chords',
+                tr: 'Nota, aralık ve akorları biliyorum',
               ),
               subtitle: t(
-                en: 'Start at Chord Function',
-                tr: 'Akor İşlevi\'nden başla',
+                en: 'Start at Melody Ear',
+                tr: 'Melodi Kulağı\'ndan başla',
               ),
-              color: AppColors.catFunction,
-              onTap: () => _chooseLevel(4),
+              color: AppColors.catMelody,
+              onTap: () => _chooseLevel(3),
             ),
             const SizedBox(height: 8),
             TextButton(

@@ -7,6 +7,7 @@ import '../../notifications/notification_service.dart';
 import '../../state/progress_controller.dart';
 import '../../state/settings_controller.dart';
 import '../auth/sign_in_page.dart';
+import '../profile/profile_identity.dart';
 
 // -----------------------------------------------------------------------------
 // AYARLAR — ses aralığı kalibrasyonu + günlük hatırlatma bildirimi
@@ -324,8 +325,10 @@ class SettingsPage extends ConsumerWidget {
             subtitle: Text(
               settings.reminderEnabled
                   ? t(
-                      en: 'Every day around ${_fmt(settings.reminderHour)}',
-                      tr: 'Her gün ${_fmt(settings.reminderHour)} civarı',
+                      en:
+                          'Every day around ${_fmt(NotificationService.dailyReminderHour)}',
+                      tr:
+                          'Her gün ${_fmt(NotificationService.dailyReminderHour)} civarı',
                     )
                   : t(en: 'Off', tr: 'Kapalı'),
             ),
@@ -349,9 +352,7 @@ class SettingsPage extends ConsumerWidget {
                   }
                   return;
                 }
-                await NotificationService.instance.scheduleDaily(
-                  hour: settings.reminderHour,
-                );
+                await NotificationService.instance.scheduleDaily();
                 await ctrl.setEnabled(true);
               } else {
                 await NotificationService.instance.cancelDaily();
@@ -359,29 +360,10 @@ class SettingsPage extends ConsumerWidget {
               }
             },
           ),
-          ListTile(
-            enabled: settings.reminderEnabled,
-            leading: const Icon(Icons.schedule_rounded),
-            title: Text(t(en: 'Reminder time', tr: 'Hatırlatma saati')),
-            subtitle: Text(_fmt(settings.reminderHour)),
-            onTap: settings.reminderEnabled
-                ? () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay(
-                        hour: settings.reminderHour,
-                        minute: 0,
-                      ),
-                    );
-                    if (picked != null) {
-                      await ctrl.setHour(picked.hour);
-                      await NotificationService.instance.scheduleDaily(
-                        hour: picked.hour,
-                      );
-                    }
-                  }
-                : null,
-          ),
+          const Divider(),
+          // Veri taşınabilirliği (Play zorunluluğu) — §19. Profil'den buraya
+          // taşındı: veri/gizlilik işlemleri Ayarlar altında toplanıyor.
+          const ExportDataTile(),
         ],
       ),
     );

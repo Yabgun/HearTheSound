@@ -53,9 +53,7 @@ Future<void> main() async {
   // (yeniden başlatma sonrası da yaşasın diye).
   await NotificationService.instance.init();
   if (prefs.getBool('reminder_enabled') ?? false) {
-    await NotificationService.instance.scheduleDaily(
-      hour: prefs.getInt('reminder_hour') ?? 19,
-    );
+    await NotificationService.instance.scheduleDaily();
   }
 
   // İlerleme deposu: yerel prefs + (yapılandırıldıysa) bulut itme dekoratörü.

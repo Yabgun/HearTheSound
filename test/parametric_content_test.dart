@@ -3,11 +3,12 @@ import 'package:hear_the_sound/core/chord.dart';
 import 'package:hear_the_sound/core/major_key.dart';
 import 'package:hear_the_sound/core/note.dart';
 import 'package:hear_the_sound/features/chords/chord_lesson.dart';
-import 'package:hear_the_sound/features/function/function_lesson.dart';
-import 'package:hear_the_sound/features/progression/progression_lesson.dart';
 
-// §1C Parametrik içerik — beşler çemberi genişlemesi + üretilen "Tonalite
-// Yolculuğu" işlev/ilerleme dersleri + akor nitelik capstone.
+// Parametrik içerik — beşler çemberi (MajorKey) + akor nitelik capstone.
+//
+// NOT: "Tonalite Yolculuğu" (üretilen işlev/ilerleme dersleri) testleri
+// kaldırıldı; o track müfredattan çıkarıldı. MajorKey çekirdekte kalıyor çünkü
+// ezgi/akor içeriğini başka tonlara taşımak hâlâ kullanılıyor.
 
 void main() {
   group('MajorKey — beşler çemberi genişlemesi', () {
@@ -20,44 +21,6 @@ void main() {
     test('tonicAtOctave doğru perdeyi verir', () {
       expect(MajorKey.a.tonicAtOctave(4).midi, Note.fromName('A', 4).midi);
       expect(MajorKey.f.tonicAtOctave(3).midi, Note.fromName('F', 3).midi);
-    });
-  });
-
-  group('İşlev Yolculuğu üretimi', () {
-    test('her yeni merkez için bir ders; benzersiz id, 7 derece, kavramlı', () {
-      final j = functionJourneyLessons;
-      expect(j.length, journeyKeys.length);
-      expect(j.map((l) => l.id).toSet().length, j.length); // benzersiz
-      for (final l in j) {
-        expect(l.id, startsWith('fn_j_'));
-        expect(l.pool.length, 7);
-        expect(l.concept, isNotNull);
-        expect(journeyKeys, contains(l.key));
-      }
-      // El yazımı id'lerle çakışmaz (ilerleme/kilit paylaşmaz).
-      expect(j.map((l) => l.id), isNot(contains('fn1')));
-    });
-
-    test('inKey transferi havuzu korur ve hedef tonaliteyi işaretler', () {
-      final aFunc = functionJourneyLessons.firstWhere(
-        (l) => l.key == MajorKey.a,
-      );
-      final keyed = aFunc.inKey(aFunc.key);
-      expect(keyed.key, MajorKey.a);
-      expect(keyed.pool.length, aFunc.pool.length);
-    });
-  });
-
-  group('İlerleme Yolculuğu üretimi', () {
-    test('benzersiz id, dolu havuz, kavramlı', () {
-      final j = progressionJourneyLessons;
-      expect(j.length, journeyKeys.length);
-      expect(j.map((l) => l.id).toSet().length, j.length);
-      for (final l in j) {
-        expect(l.id, startsWith('pr_j_'));
-        expect(l.pool, isNotEmpty);
-        expect(l.concept, isNotNull);
-      }
     });
   });
 

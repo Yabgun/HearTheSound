@@ -46,6 +46,10 @@ abstract final class AppColors {
   static const catIntervals = teal;
   static const catTonality = amber;
   static const catFunction = sky;
+
+  /// Yeni yetenek track'leri: Melodi Kulağı ve Armoni Kulağı.
+  static const catMelody = sky;
+  static const catHarmony = pink;
   static const catProgression = pink;
 }
 

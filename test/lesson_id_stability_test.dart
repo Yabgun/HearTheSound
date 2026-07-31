@@ -19,9 +19,16 @@ import 'package:hear_the_sound/features/home/curriculum.dart';
 // bilinçli olarak bir göç yaz ve aşağıdaki listeyi güncelle.
 // -----------------------------------------------------------------------------
 
-/// Yayınlanmış ders id'leri (2026-07-21 itibarıyla, 38 ders).
-/// Bu listeden SİLME. Yeni ders eklerken buraya da eklemek zorunlu değil —
-/// test yalnızca kaybolan/yeniden adlandırılan id'yi yakalar.
+/// Dondurulan ders id'leri. Bu listeden SİLME. Yeni ders eklerken buraya da
+/// eklemek zorunlu değil — test yalnızca kaybolan/yeniden adlandırılan id'yi
+/// yakalar.
+///
+/// 2026-07-27 GÜNCELLEMESİ: "Diziler & Tonalite", "Akor İşlevi", "İlerlemeler"
+/// ve "Tonalite Yolculuğu" track'leri müfredattan KALDIRILDI (tn*/fn*/pr* ve
+/// fn_j_*/pr_j_* id'leri bu yüzden listeden çıkarıldı). Bu, kuralın ihlali
+/// değil bilinçli bir istisnadır: uygulama HENÜZ YAYINLANMADI (Play Store
+/// adımı bekliyor) ve üretimdeki ilerleme tablosu boş. Yayından SONRA aynı
+/// hamle ilerleme kaybı demek olurdu — o yüzden bu pencere kapanmadan yapıldı.
 const Set<String> kShippedLessonIds = {
   // Notalar
   'first_notes', 'l2_cde', 'l3_penta', 'l4_diatonic', 'l5_chromatic',
@@ -31,15 +38,8 @@ const Set<String> kShippedLessonIds = {
   'ch1', 'ch2', 'ch3', 'ch4', 'ch5', 'ch6',
   'ch7', 'ch8', 'ch9', 'ch10', 'ch11', 'ch12',
   'ch_quality_master',
-  // Tonalite
-  'tn1', 'tn2',
-  // İşlev
-  'fn1', 'fn2', 'fn3',
-  // İlerlemeler
-  'pr1', 'pr2', 'pr3',
-  // Tonalite Yolculuğu (parametrik)
-  'fn_j_a', 'fn_j_e', 'fn_j_f',
-  'pr_j_a', 'pr_j_e', 'pr_j_f',
+  // Melodi Kulağı (Eko oyunu)
+  'mel1', 'mel2', 'mel3', 'mel4', 'mel5', 'mel6', 'mel7', 'mel8',
 };
 
 List<String> curriculumLessonIds() => [

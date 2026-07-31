@@ -9,11 +9,18 @@ class Lesson {
   final String title;
   final List<Note> pool;
   final Concept? concept; // öğretici kart — test'ten önce öğret
+
+  /// "Bu dersten sonra şunu yapabileceksin" — derse girmeden gösterilir
+  /// (bkz. lesson_intro_page.dart). Kullanıcının "neyi neden yapıyorum"
+  /// sorusuna daha ilk ekranda cevap verir.
+  final String? promise;
+
   const Lesson({
     required this.id,
     required this.title,
     required this.pool,
     this.concept,
+    this.promise,
   });
 }
 
@@ -56,6 +63,12 @@ List<Lesson> _buildLessons() => [
     id: 'first_notes',
     title: t(en: '1 · First Notes', tr: '1 · İlk Notalar'),
     pool: _oct(['C', 'E', 'G'], 4),
+    promise: t(
+      en: 'You will tell three clearly different notes apart by ear — and sing '
+          'them back.',
+      tr: 'Birbirinden net ayrılan üç sesi kulağınla ayırt edecek ve sesinle '
+          'söyleyebileceksin.',
+    ),
     concept: Concept(
       title: t(en: 'Notes and Pitch', tr: 'Notalar ve Perde'),
       sections: [
@@ -97,6 +110,12 @@ List<Lesson> _buildLessons() => [
     id: 'l2_cde',
     title: t(en: '2 · Neighbors', tr: '2 · Komşular'),
     pool: _oct(['C', 'D', 'E'], 4),
+    promise: t(
+      en: 'You will separate notes that sit close together — small steps stop '
+          'blurring into each other.',
+      tr: 'Birbirine yakın sesleri ayırabileceksin — küçük adımlar artık '
+          'birbirine karışmayacak.',
+    ),
     concept: Concept(
       title: t(en: 'Neighbor Notes', tr: 'Komşu Notalar'),
       sections: [
@@ -128,6 +147,12 @@ List<Lesson> _buildLessons() => [
     id: 'l3_penta',
     title: t(en: '3 · Five Notes', tr: '3 · Beşli'),
     pool: _oct(['C', 'D', 'E', 'F', 'G'], 4),
+    promise: t(
+      en: 'You will pick the right note among five — the range most simple '
+          'melodies live in.',
+      tr: 'Beş ses arasından doğrusunu seçebileceksin — basit melodilerin çoğu '
+          'bu aralıkta yaşar.',
+    ),
     concept: Concept(
       title: t(en: 'Five Notes', tr: 'Beş Nota'),
       sections: [
@@ -155,6 +180,12 @@ List<Lesson> _buildLessons() => [
     id: 'l4_diatonic',
     title: t(en: '4 · C Major', tr: '4 · Do Majör'),
     pool: _oct(['C', 'D', 'E', 'F', 'G', 'A', 'B'], 4),
+    promise: t(
+      en: 'You will recognize all seven notes of a major scale — the alphabet '
+          'nearly every song is written in.',
+      tr: 'Bir majör dizinin yedi sesini de tanıyabileceksin — neredeyse her '
+          'şarkının yazıldığı alfabe.',
+    ),
     concept: Concept(
       title: t(en: 'The C Major Scale', tr: 'Do Majör Dizisi'),
       sections: [
@@ -186,6 +217,12 @@ List<Lesson> _buildLessons() => [
     id: 'l5_chromatic',
     title: t(en: '5 · Chromatic', tr: '5 · Kromatik'),
     pool: noteRange(Note.fromName('C', 4), Note.fromName('B', 4)),
+    promise: t(
+      en: 'You will hear all 12 notes — including the black keys. Nothing in '
+          'music will be outside your ear after this.',
+      tr: '12 sesin hepsini duyabileceksin — siyah tuşlar dahil. Bundan sonra '
+          'müzikte kulağının dışında kalan ses olmayacak.',
+    ),
     concept: Concept(
       title: t(en: 'Chromatic — 12 Notes', tr: 'Kromatik — 12 Nota'),
       sections: [

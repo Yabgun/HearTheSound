@@ -176,65 +176,70 @@ class _ProfileEditSheetState extends ConsumerState<_ProfileEditSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Scrollable + klavye tabanı: içerik hiçbir ekran boyutunda taşmaz, dar/kısa
-    // telefonda avatar ızgarası kaydırılarak görülür (overflow yok).
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        4,
-        20,
-        20 + MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            t(en: 'Edit profile', tr: 'Profili düzenle'),
-            style: theme.textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _name,
-            maxLength: _maxNameLength,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(
-              labelText: t(en: 'Display name', tr: 'Görünen ad'),
-              helperText: t(
-                en: 'Leave empty to stay anonymous',
-                tr: 'Anonim kalmak için boş bırak',
-              ),
-              prefixIcon: const Icon(Icons.badge_outlined),
-              border: const OutlineInputBorder(),
+    // Scrollable + klavye tabanı + alt sistem çubuğu (gesture bar) payı: içerik
+    // hiçbir ekran boyutunda taşmaz ve "Kaydet" butonu cihazın alt navigasyon
+    // çubuğunun ALTINDA kalmaz — SafeArea(bottom) o payı ekler, viewInsets ise
+    // klavyeyi yukarı iter.
+    return SafeArea(
+      top: false,
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          4,
+          20,
+          20 + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t(en: 'Edit profile', tr: 'Profili düzenle'),
+              style: theme.textTheme.titleLarge,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            t(en: 'Your Eko', tr: 'Senin Eko\'n'),
-            style: theme.textTheme.titleMedium,
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              for (final palette in kEkoPalettes)
-                _AvatarChoice(
-                  palette: palette,
-                  selected: ekoPaletteFor(_avatarId).id == palette.id,
-                  onTap: () => setState(() => _avatarId = palette.id),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _name,
+              maxLength: _maxNameLength,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: t(en: 'Display name', tr: 'Görünen ad'),
+                helperText: t(
+                  en: 'Leave empty to stay anonymous',
+                  tr: 'Anonim kalmak için boş bırak',
                 ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          FilledButton(
-            onPressed: _save,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
+                prefixIcon: const Icon(Icons.badge_outlined),
+                border: const OutlineInputBorder(),
+              ),
             ),
-            child: Text(t(en: 'Save', tr: 'Kaydet')),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              t(en: 'Your Eko', tr: 'Senin Eko\'n'),
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final palette in kEkoPalettes)
+                  _AvatarChoice(
+                    palette: palette,
+                    selected: ekoPaletteFor(_avatarId).id == palette.id,
+                    onTap: () => setState(() => _avatarId = palette.id),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: _save,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+              ),
+              child: Text(t(en: 'Save', tr: 'Kaydet')),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -336,7 +341,6 @@ class _ExportDataTileState extends ConsumerState<ExportDataTile> {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.download_rounded),
       title: Text(t(en: 'Download my data', tr: 'Verimi indir')),
       subtitle: Text(

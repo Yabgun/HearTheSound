@@ -26,6 +26,18 @@ abstract final class AppIcons {
   /// Kutlama (🎉).
   static const celebrate = Icons.celebration_rounded;
 
+  /// Müzikal cümle evine döndü — "bitti, tamamlandı".
+  /// Ev ikonu bilinçli: metafor ("ev") ile simge birebir örtüşsün, kullanıcı
+  /// cevabı okumadan da anlasın.
+  static const phraseHome = Icons.home_rounded;
+
+  /// Müzikal cümle askıda kaldı — "devamı bekleniyor".
+  /// Üç nokta evrensel olarak "sürüyor" demektir.
+  static const phraseHanging = Icons.more_horiz_rounded;
+
+  /// Dersin kazanımı ("bu dersten sonra şunu yapabileceksin").
+  static const promise = Icons.emoji_events_rounded;
+
   // Onboarding seviye kartları (🌱 🎵 🎹 🎼).
   static const levelBeginner = Icons.eco_rounded;
   static const levelNotes = Icons.music_note_rounded;

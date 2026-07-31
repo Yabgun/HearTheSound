@@ -6,16 +6,12 @@ import '../../core/player_progress.dart';
 import '../../ui/app_theme.dart';
 import '../chords/chord_lesson.dart';
 import '../chords/chord_lesson_flow_page.dart';
-import '../function/function_lesson.dart';
-import '../function/function_lesson_flow_page.dart';
 import '../intervals/interval_lesson.dart';
 import '../intervals/interval_lesson_flow_page.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_flow_page.dart';
-import '../progression/progression_lesson.dart';
-import '../progression/progression_lesson_flow_page.dart';
-import '../tonality/tonality_lesson.dart';
-import '../tonality/tonality_lesson_flow_page.dart';
+import '../melody/melody_lesson.dart';
+import '../melody/melody_lesson_flow_page.dart';
 
 // -----------------------------------------------------------------------------
 // MÜFREDAT — tüm track'ler ve dersleri TEK, birleşik bir modelde.
@@ -116,76 +112,28 @@ List<Track> _buildCurriculum() => [
         ),
     ],
   ),
+  // MELODİ KULAĞI — "duyduğun ezgiyi çıkarabilmek".
+  // Eski teori track'lerinin yerini alan YETENEK track'i: kullanıcı burada
+  // hiçbir şey etiketlemez, Eko'nun çaldığı ezgiyi tekrarlar.
   Track(
-    name: t(en: 'Scales & Tonality', tr: 'Diziler ve Tonalite'),
-    color: AppColors.catTonality,
-    icon: Icons.hub_rounded,
+    name: t(en: 'Melody Ear', tr: 'Melodi Kulağı'),
+    color: AppColors.catMelody,
+    icon: Icons.hearing_rounded,
     unlockAfter: chordLessons.last.id,
     items: [
-      for (final l in tonalityLessons)
+      for (final l in melodyLessons)
         TrackItem(
           id: l.id,
           title: l.title,
-          concept: l.concept,
-          open: () => TonalityLessonFlowPage(lesson: l),
+          open: () => MelodyLessonFlowPage(lesson: l),
         ),
     ],
   ),
-  Track(
-    name: t(en: 'Chord Function', tr: 'Akor İşlevi'),
-    color: AppColors.catFunction,
-    icon: Icons.account_tree_rounded,
-    unlockAfter: tonalityLessons.last.id,
-    items: [
-      for (final l in functionLessons)
-        TrackItem(
-          id: l.id,
-          title: l.title,
-          concept: l.concept,
-          open: () => FunctionLessonFlowPage(lesson: l),
-        ),
-    ],
-  ),
-  Track(
-    name: t(en: 'Progressions', tr: 'İlerlemeler'),
-    color: AppColors.catProgression,
-    icon: Icons.timeline_rounded,
-    unlockAfter: functionLessons.last.id,
-    items: [
-      for (final l in progressionLessons)
-        TrackItem(
-          id: l.id,
-          title: l.title,
-          concept: l.concept,
-          open: () => ProgressionLessonFlowPage(lesson: l),
-        ),
-    ],
-  ),
-  // §1C — Tonalite Yolculuğu: üretilen işlev + ilerleme dersleri, beşler
-  // çemberindeki yeni merkezlerde (A/E/F). Önce işlev transferleri, sonra
-  // ilerleme transferleri (for-in: closure her dersi doğru yakalar).
-  Track(
-    name: t(en: 'Key Journey', tr: 'Tonalite Yolculuğu'),
-    color: AppColors.grape,
-    icon: Icons.travel_explore_rounded,
-    unlockAfter: progressionLessons.last.id,
-    items: [
-      for (final l in functionJourneyLessons)
-        TrackItem(
-          id: l.id,
-          title: l.title,
-          concept: l.concept,
-          open: () => FunctionLessonFlowPage(lesson: l),
-        ),
-      for (final l in progressionJourneyLessons)
-        TrackItem(
-          id: l.id,
-          title: l.title,
-          concept: l.concept,
-          open: () => ProgressionLessonFlowPage(lesson: l),
-        ),
-    ],
-  ),
+  // NOT: "Diziler & Tonalite", "Akor İşlevi", "İlerlemeler" ve "Tonalite
+  // Yolculuğu" track'leri KALDIRILDI. Dördü de aynı beceriyi (ev neresi) dört
+  // ayrı sözlükle tekrar ediyor ve müziği ETİKETLETİYORDU — kullanıcı "neyi
+  // neden yaptığını" anlamıyordu. Yerlerine yetenek track'leri geliyor:
+  // Melodi Kulağı (yukarıda) ve Armoni Kulağı (sırada).
 ];
 
 /// Onboarding seviye seçimi için: müfredatın ilk [trackCount] track'indeki TÜM

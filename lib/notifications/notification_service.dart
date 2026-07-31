@@ -21,6 +21,11 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
   static const int _dailyId = 1;
   static const int _testId = 2;
+
+  /// Günlük hatırlatmanın sabit saati (yerel, :00). Kullanıcıya saat seçtirmiyoruz
+  /// — akşam pratiği için tek uygun saat. Sabitin tek doğru kaynağı burası.
+  static const int dailyReminderHour = 19;
+
   bool _ready = false;
 
   Future<void> init() async {
@@ -93,10 +98,14 @@ class NotificationService {
     );
   }
 
-  /// Her gün [hour]:[minute] için tekrarlayan hatırlatma kurar.
+  /// Her gün [hour]:[minute] için tekrarlayan hatırlatma kurar. Varsayılan saat
+  /// sabittir ([dailyReminderHour]) — kullanıcı saat seçmez.
   /// Metinler kurulum ANINDAKİ dille yazılır; dil değişince Ayarlar yeniden
   /// zamanlar (SettingsController.setLocale).
-  Future<void> scheduleDaily({required int hour, int minute = 0}) async {
+  Future<void> scheduleDaily({
+    int hour = dailyReminderHour,
+    int minute = 0,
+  }) async {
     await _plugin.cancel(id: _dailyId);
     await _plugin.zonedSchedule(
       id: _dailyId,

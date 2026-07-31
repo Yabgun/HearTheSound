@@ -169,10 +169,11 @@ class _ChordRecognitionPageState extends State<ChordRecognitionPage> {
                 children: _options.map((c) => _optionButton(theme, c)).toList(),
               ),
               const SizedBox(height: 20),
-              SizedBox(
-                height: 84,
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 84),
                 child: _answered
                     ? Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             correct

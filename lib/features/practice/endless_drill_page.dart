@@ -11,23 +11,20 @@ import '../../core/octave_mapping.dart';
 import '../../core/player_progress.dart';
 import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
+import '../../state/settings_controller.dart';
 import '../../ui/app_theme.dart';
 import '../chords/chord_inversion_recognition_page.dart';
 import '../chords/chord_lesson.dart';
 import '../chords/chord_quality_recognition_page.dart';
 import '../chords/chord_recognition_page.dart';
 import '../concept/concept_sheet.dart';
-import '../function/function_lesson.dart';
-import '../function/function_recognition_page.dart';
 import '../intervals/interval_lesson.dart';
 import '../intervals/interval_recognition_page.dart';
 import '../lesson/lesson.dart';
 import '../mascot/player_eko.dart';
+import '../melody/echo_game_page.dart';
+import '../melody/melody_lesson.dart';
 import '../note_recognition/note_recognition_page.dart';
-import '../progression/progression_lesson.dart';
-import '../progression/progression_recognition_page.dart';
-import '../tonality/tonality_lesson.dart';
-import '../tonality/tonality_recognition_page.dart';
 
 // -----------------------------------------------------------------------------
 // SONSUZ PRATİK — bitmeyen, ağırlıklı, karışık tanıma oturumu
@@ -148,63 +145,27 @@ List<DrillSkill> buildDrillSkills(PlayerProgress p, VocalRange? range) {
     );
   }
 
-  // Diziler & Tonalite (derece) — akış gibi transpoze edilmez.
-  for (final l in tonalityLessons) {
+  // Melodi Kulağı — Eko oyunu. Diğerlerinden farklı olarak TANIMA değil ÜRETME
+  // becerisi; cevap modu (tuş/söyle) kullanıcının Ayarlar'daki tercihinden
+  // okunur, o yüzden widget bir Consumer içinde kurulur.
+  for (final l in melodyLessons) {
     if (!p.isLessonCompleted(l.id)) continue;
     skills.add(
       DrillSkill(
         id: l.id,
-        type: 'degree',
+        type: 'melody',
         title: l.title,
-        build: (player, qc, onDone) => TonalityRecognitionPage(
-          pool: l.pool,
-          player: player,
-          questionCount: qc,
-          onComplete: onDone,
-        ),
-      ),
-    );
-  }
-
-  // Akor işlevi — akış gibi: tonaliteye çöz + dereceleri sese transpoze et.
-  // El yazımı + üretilen "Tonalite Yolculuğu" (§1C) dersleri birlikte.
-  for (final l in [...functionLessons, ...functionJourneyLessons]) {
-    if (!p.isLessonCompleted(l.id)) continue;
-    final keyed = l.inKey(l.key);
-    final pool = transposeDegreesForVoice(keyed.pool, range);
-    skills.add(
-      DrillSkill(
-        id: l.id,
-        type: 'function',
-        title: l.title,
-        build: (player, qc, onDone) => FunctionRecognitionPage(
-          pool: pool,
-          player: player,
-          questionCount: qc,
-          majorKey: keyed.key,
-          onComplete: onDone,
-        ),
-      ),
-    );
-  }
-
-  // İlerlemeler — akış gibi: tonaliteye çöz + akor zincirini sese transpoze et.
-  // El yazımı + üretilen "Tonalite Yolculuğu" (§1C) dersleri birlikte.
-  for (final l in [...progressionLessons, ...progressionJourneyLessons]) {
-    if (!p.isLessonCompleted(l.id)) continue;
-    final keyed = l.inKey(l.key);
-    final pool = transposeProgressionsForVoice(keyed.pool, range);
-    skills.add(
-      DrillSkill(
-        id: l.id,
-        type: 'prog',
-        title: l.title,
-        build: (player, qc, onDone) => ProgressionRecognitionPage(
-          pool: pool,
-          player: player,
-          questionCount: qc,
-          majorKey: keyed.key,
-          onComplete: onDone,
+        build: (player, qc, onDone) => Consumer(
+          builder: (context, ref, _) => EchoGamePage(
+            lesson: l,
+            player: player,
+            range: range,
+            questionCount: qc,
+            mode: ref.watch(settingsProvider).echoInputMode,
+            onModeChanged: (mode) =>
+                ref.read(settingsProvider.notifier).setEchoInputMode(mode),
+            onComplete: onDone,
+          ),
         ),
       ),
     );
@@ -220,9 +181,7 @@ String _typeLabel(String type) => switch (type) {
   'quality' => t(en: 'chord colors', tr: 'akor renkleri'),
   'inv' => t(en: 'inversions', tr: 'çevrimler'),
   'interval' => t(en: 'intervals', tr: 'aralıklar'),
-  'degree' => t(en: 'scale degrees', tr: 'dizi dereceleri'),
-  'function' => t(en: 'chord function', tr: 'akor işlevi'),
-  'prog' => t(en: 'progressions', tr: 'ilerlemeler'),
+  'melody' => t(en: 'melodies', tr: 'ezgiler'),
   _ => type,
 };
 

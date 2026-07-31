@@ -1,31 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hear_the_sound/audio/note_player.dart';
+import 'package:hear_the_sound/core/echo.dart';
 import 'package:hear_the_sound/core/note.dart';
-import 'package:hear_the_sound/features/chords/chord_inversion_recognition_page.dart';
 import 'package:hear_the_sound/features/chords/chord_arpeggio_page.dart';
+import 'package:hear_the_sound/features/chords/chord_inversion_recognition_page.dart';
 import 'package:hear_the_sound/features/chords/chord_lesson.dart';
 import 'package:hear_the_sound/features/chords/chord_quality_recognition_page.dart';
 import 'package:hear_the_sound/features/chords/chord_recognition_page.dart';
-import 'package:hear_the_sound/features/function/function_build_page.dart';
-import 'package:hear_the_sound/features/function/function_learn_page.dart';
-import 'package:hear_the_sound/features/function/function_lesson.dart';
-import 'package:hear_the_sound/features/function/function_recognition_page.dart';
-import 'package:hear_the_sound/features/function/function_root_sing_page.dart';
 import 'package:hear_the_sound/features/intervals/interval_build_page.dart';
 import 'package:hear_the_sound/features/intervals/interval_direction_page.dart';
 import 'package:hear_the_sound/features/intervals/interval_learn_page.dart';
 import 'package:hear_the_sound/features/intervals/interval_lesson.dart';
 import 'package:hear_the_sound/features/intervals/interval_melody_page.dart';
 import 'package:hear_the_sound/features/intervals/interval_recognition_page.dart';
-import 'package:hear_the_sound/features/progression/progression_build_page.dart';
-import 'package:hear_the_sound/features/progression/progression_learn_page.dart';
-import 'package:hear_the_sound/features/progression/progression_lesson.dart';
-import 'package:hear_the_sound/features/progression/progression_recognition_page.dart';
-import 'package:hear_the_sound/features/tonality/tonality_learn_page.dart';
-import 'package:hear_the_sound/features/tonality/tonality_lesson.dart';
-import 'package:hear_the_sound/features/tonality/tonality_recognition_page.dart';
-import 'package:hear_the_sound/features/tonality/tonality_sing_page.dart';
+import 'package:hear_the_sound/features/melody/echo_game_page.dart';
+import 'package:hear_the_sound/features/melody/melody_lesson.dart';
 
 // Ses eklentisi çağırmayan sahte oynatıcı — testte plugin hatası olmasın.
 class _FakePlayer implements NotePlayer {
@@ -60,8 +50,9 @@ void main() {
     expect(tester.takeException(), isNull);
   }
 
-  // Cihazdaki sistem çubuklarıyla kısalan ekranda, cevap geri bildirimi açıldıktan
-  // sonra da işlev ekranlarının taşmamasını korur.
+  // Cihazdaki sistem çubuklarıyla kısalan ekranda, cevap geri bildirimi
+  // açıldıktan sonra da tanıma ekranlarının taşmamasını korur. (Cihazda
+  // görülen 3px "Sonraki" taşmalarının nöbetçisi.)
   Future<void> compactAnsweredSmoke(WidgetTester tester, Widget page) async {
     await tester.binding.setSurfaceSize(const Size(420, 700));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -77,6 +68,13 @@ void main() {
       isNull,
       reason: 'cevap sonrası taşma olmamalı',
     );
+    // Ses-gecikmesi zamanlayıcılarını boşalt: müzikal CÜMLE çalan sayfalarda
+    // (tek nota değil) çalma birkaç saniye sürer → 1 sn yetmez, teardown
+    // "pending timer" hatası verir.
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 800));
+    }
+    expect(tester.takeException(), isNull);
   }
 
   testWidgets('A1/A4 nitelik tanıma çizilir', (t) async {
@@ -193,126 +191,112 @@ void main() {
     );
   });
 
-  testWidgets('A5 işlev öğren + kur + kök söyle + tanıma çizilir', (t) async {
-    await smoke(
-      t,
-      FunctionLearnPage(
-        lesson: functionLessons.first,
-        player: fake,
-        onReady: () {},
-      ),
-    );
-    await smoke(
-      t,
-      FunctionBuildPage(
-        pool: functionLessons.first.pool,
-        player: fake,
-        onComplete: () {},
-      ),
-    );
-    await smoke(
-      t,
-      FunctionRootSingPage(
-        pool: functionLessons.first.pool,
-        player: fake,
-        onComplete: () {},
-      ),
-    );
-    await smoke(
-      t,
-      FunctionRecognitionPage(
-        pool: functionLessons.first.pool,
-        player: fake,
-        questionCount: 4,
-        onComplete: (_) {},
-      ),
-    );
-  });
-
-  testWidgets('işlev ekranları kısa yükseklikte cevap sonrası taşmaz', (
-    t,
-  ) async {
-    await compactAnsweredSmoke(
-      t,
-      FunctionBuildPage(
-        pool: functionLessons.last.pool,
-        player: fake,
-        onComplete: () {},
-      ),
-    );
-    await compactAnsweredSmoke(
-      t,
-      FunctionRecognitionPage(
-        pool: functionLessons.last.pool,
-        player: fake,
-        questionCount: 4,
-        onComplete: (_) {},
-      ),
-    );
-  });
-
-  testWidgets('Tonalite öğren + söyle + tanıma çizilir', (t) async {
-    await smoke(
-      t,
-      TonalityLearnPage(
-        lesson: tonalityLessons.first,
-        player: fake,
-        onReady: () {},
-      ),
-    );
-    await smoke(
-      t,
-      TonalitySingPage(
-        pool: tonalityLessons.first.pool,
-        player: fake,
-        onComplete: () {},
-      ),
-    );
-    await smoke(
-      t,
-      TonalityRecognitionPage(
-        pool: tonalityLessons.first.pool,
-        player: fake,
-        questionCount: 4,
-        onComplete: (_) {},
-      ),
-    );
-  });
-
-  testWidgets('A6 ilerleme öğren + kur + arpej + tanıma çizilir', (t) async {
-    await smoke(
-      t,
-      ProgressionLearnPage(
-        lesson: progressionLessons.first,
-        player: fake,
-        onReady: () {},
-      ),
-    );
-    await smoke(
-      t,
-      ProgressionBuildPage(
-        pool: progressionLessons.first.pool,
-        player: fake,
-        onComplete: () {},
-      ),
-    );
+  testWidgets('akor arpej çizilir', (t) async {
     await smoke(
       t,
       ChordArpeggioPage(
-        chords: progressionLessons.first.pool.first.chords.take(2).toList(),
+        chords: _chordLesson('ch5').pool.take(2).toList(),
         player: fake,
         onComplete: () {},
-        title: 'İlerlemeyi Arpejle',
+        title: 'Arpej',
       ),
     );
-    await smoke(
+  });
+
+  // Akor tanıma ekranları kısa yükseklikte cevap sonrası taşmamalı — cihazda
+  // görülen 3px taşmaların ve uzun nitelik etiketlerinin nöbetçisi.
+  testWidgets('akor tanıma ekranları kısa ekranda taşmaz', (t) async {
+    await compactAnsweredSmoke(
       t,
-      ProgressionRecognitionPage(
-        pool: progressionLessons.first.pool,
+      ChordRecognitionPage(
+        pool: _chordLesson('ch11').pool,
         player: fake,
         questionCount: 4,
         onComplete: (_) {},
       ),
+    );
+    await compactAnsweredSmoke(
+      t,
+      ChordQualityRecognitionPage(
+        pool: _chordLesson('ch_quality_master').pool,
+        player: fake,
+        questionCount: 4,
+        onComplete: (_) {},
+      ),
+    );
+    await compactAnsweredSmoke(
+      t,
+      ChordInversionRecognitionPage(
+        pool: _chordLesson('ch9').pool,
+        player: fake,
+        questionCount: 4,
+        onComplete: (_) {},
+      ),
+    );
+  });
+
+  // EKO OYUNU — yeni yetenek track'inin çekirdek ekranı (etiketleme değil,
+  // duyduğunu TEKRARLAMA). İki cevap modu da ilk çizimde güvenli olmalı.
+  testWidgets('Eko oyunu tuş modunda çizilir (ilk ve son ders)', (t) async {
+    for (final lesson in [melodyLessons.first, melodyLessons.last]) {
+      await smoke(
+        t,
+        EchoGamePage(
+          lesson: lesson,
+          player: fake,
+          mode: EchoInputMode.tap,
+          onModeChanged: (_) {},
+          onComplete: (_) {},
+        ),
+      );
+    }
+  });
+
+  testWidgets('Eko oyunu söyleme modunda çizilir', (t) async {
+    await smoke(
+      t,
+      EchoGamePage(
+        lesson: melodyLessons.first,
+        player: fake,
+        mode: EchoInputMode.sing,
+        onModeChanged: (_) {},
+        onComplete: (_) {},
+      ),
+    );
+  });
+
+  testWidgets('Eko oyunu kısa ekranda cevap sonrası taşmaz', (t) async {
+    await t.binding.setSurfaceSize(const Size(420, 700));
+    addTearDown(() => t.binding.setSurfaceSize(null));
+    await t.pumpWidget(
+      MaterialApp(
+        home: EchoGamePage(
+          lesson: melodyLessons.first, // 2 notalık ezgi
+          player: fake,
+          mode: EchoInputMode.tap,
+          onModeChanged: (_) {},
+          onComplete: (_) {},
+        ),
+      ),
+    );
+    // Ev sesi + ezgi çalınsın, cevap aşamasına geçilsin.
+    for (var i = 0; i < 8; i++) {
+      await t.pump(const Duration(milliseconds: 800));
+    }
+    // İki notayı da gir → sonuç alanı (en taşma riskli hâl) açılır.
+    for (var i = 0; i < 2; i++) {
+      final pad = find.byType(InkWell).first;
+      await t.ensureVisible(pad);
+      await t.tap(pad);
+      await t.pump(const Duration(milliseconds: 400));
+    }
+    for (var i = 0; i < 6; i++) {
+      await t.pump(const Duration(milliseconds: 800));
+    }
+    expect(
+      t.takeException(),
+      isNull,
+      reason: 'cevap sonrası taşma olmamalı',
     );
   });
 }

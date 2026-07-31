@@ -24,12 +24,17 @@ class ChordLesson {
   final List<Chord> pool;
   final ChordRecognizeBy recognizeBy;
   final Concept? concept; // öğretici kart — test'ten önce öğret
+
+  /// "Bu dersten sonra şunu yapabileceksin" (bkz. lesson_intro_page.dart).
+  final String? promise;
+
   const ChordLesson({
     required this.id,
     required this.title,
     required this.pool,
     this.recognizeBy = ChordRecognizeBy.chord,
     this.concept,
+    this.promise,
   });
 }
 
@@ -50,6 +55,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch1',
     title: t(en: '1 · C Major & A Minor', tr: '1 · C Majör & A Minör'),
+    promise: t(
+      en: 'You will hear the difference between a happy and a sad chord — the '
+          'most useful ear skill in all of music.',
+      tr: 'Neşeli akorla hüzünlü akoru ayırabileceksin — müzikteki en işe '
+          'yarar kulak becerisi.',
+    ),
     pool: [_c('C', ChordQuality.major), _c('A', ChordQuality.minor)],
     concept: Concept(
       title: t(
@@ -98,6 +109,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch2',
     title: t(en: '2 · F & G Major', tr: '2 · F & G Majör'),
+    promise: t(
+      en: 'You will recognize chords built on different roots — the same color '
+          'can start from anywhere.',
+      tr: 'Farklı köklerden kurulan akorları tanıyabileceksin — aynı renk her '
+          'yerden başlayabilir.',
+    ),
     pool: [_c('F', ChordQuality.major), _c('G', ChordQuality.major)],
     concept: Concept(
       title: t(en: 'More Major', tr: 'Daha Fazla Majör'),
@@ -125,6 +142,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch3',
     title: t(en: '3 · D & E Minor', tr: '3 · D & E Minör'),
+    promise: t(
+      en: 'You will pick out minor chords on new roots — the darker half of '
+          'almost every song.',
+      tr: 'Yeni köklerdeki minör akorları seçebileceksin — neredeyse her '
+          'şarkının koyu tarafı.',
+    ),
     pool: [_c('D', ChordQuality.minor), _c('E', ChordQuality.minor)],
     concept: Concept(
       title: t(en: 'Minor Chords', tr: 'Minör Akorlar'),
@@ -155,6 +178,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch4',
     title: t(en: '4 · Mixed Chords', tr: '4 · Karışık Akorlar'),
+    promise: t(
+      en: 'You will name any of the six most common chords the moment you hear '
+          'it.',
+      tr: 'En yaygın altı akordan hangisi çalarsa çalsın anında '
+          'tanıyabileceksin.',
+    ),
     pool: [
       _c('C', ChordQuality.major),
       _c('A', ChordQuality.minor),
@@ -188,6 +217,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch5',
     title: t(en: '5 · Diminished & Augmented', tr: '5 · Eksik & Artık'),
+    promise: t(
+      en: 'You will spot the two unsettling chords — the ones film music uses '
+          'to build tension.',
+      tr: 'İki tedirgin edici akoru fark edebileceksin — film müziğinin '
+          'gerilim kurmak için kullandığı akorlar.',
+    ),
     recognizeBy: ChordRecognizeBy.quality,
     // Aynı kök (C) üstünde dört renk yan yana → kontrastı net duy.
     pool: [
@@ -251,6 +286,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch6',
     title: t(en: '6 · Tell the Colors Apart', tr: '6 · Renkleri Ayırt Et'),
+    promise: t(
+      en: 'You will judge a chord by its COLOR alone, whatever note it starts '
+          'from.',
+      tr: 'Bir akoru yalnızca RENGİNDEN tanıyabileceksin — hangi notadan '
+          'başlarsa başlasın.',
+    ),
     recognizeBy: ChordRecognizeBy.quality,
     // Karışık kök × nitelik → rengi kökten bağımsız tanı.
     pool: [
@@ -303,6 +344,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch7',
     title: t(en: '7 · Seventh Chords', tr: '7 · Yedili Akorlar'),
+    promise: t(
+      en: 'You will hear the richer four-note chords — the sound of jazz, soul '
+          'and film scores.',
+      tr: 'Daha zengin dört sesli akorları duyabileceksin — caz, soul ve film '
+          'müziğinin sesi.',
+    ),
     recognizeBy: ChordRecognizeBy.quality,
     pool: [
       _c('C', ChordQuality.dominant7),
@@ -351,6 +398,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch8',
     title: t(en: '8 · Seventh Colors', tr: '8 · Yedili Renkler'),
+    promise: t(
+      en: 'You will separate the seventh chords from each other — subtle '
+          'shades most listeners never notice.',
+      tr: 'Yedili akorları birbirinden ayırabileceksin — çoğu dinleyicinin '
+          'hiç fark etmediği ince tonlar.',
+    ),
     recognizeBy: ChordRecognizeBy.quality,
     pool: [
       _c('C', ChordQuality.dominant7),
@@ -395,6 +448,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch9',
     title: t(en: '9 · Chord Inversions', tr: '9 · Akor Çevrimleri'),
+    promise: t(
+      en: 'You will hear which note is at the BOTTOM of a chord — that bass '
+          'note is what makes a progression flow.',
+      tr: 'Bir akorun EN ALTINDA hangi sesin olduğunu duyabileceksin — bir '
+          'akor dizisini akıcı yapan şey o bas sestir.',
+    ),
     recognizeBy: ChordRecognizeBy.inversion,
     // Tek akor (C majör) üç çevrimde → değişkeni yalnızca çevrim yap.
     pool: [
@@ -451,6 +510,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch10',
     title: t(en: '10 · Mixed Inversions', tr: '10 · Karışık Çevrimler'),
+    promise: t(
+      en: 'You will still recognize a chord even when its notes are stacked in '
+          'a different order.',
+      tr: 'Bir akorun notaları başka sırayla dizilse de onu yine '
+          'tanıyabileceksin.',
+    ),
     recognizeBy: ChordRecognizeBy.inversion,
     pool: [
       _ci('C', ChordQuality.major, 0),
@@ -492,6 +557,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch11',
     title: t(en: '11 · New Roots: A & E', tr: '11 · Yeni Kökler: A & E'),
+    promise: t(
+      en: 'You will handle chords from roots you have not trained yet — the '
+          'skill stops depending on familiar notes.',
+      tr: 'Henüz çalışmadığın köklerden gelen akorların altından '
+          'kalkabileceksin — beceri tanıdık notalara bağlı olmaktan çıkar.',
+    ),
     pool: [
       _c('A', ChordQuality.major),
       _c('A', ChordQuality.minor),
@@ -528,6 +599,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch12',
     title: t(en: '12 · Root Mix-Up', tr: '12 · Kök Karmaşası'),
+    promise: t(
+      en: 'You will identify chords from many different roots in one sitting — '
+          'no more guessing from habit.',
+      tr: 'Tek oturumda birçok farklı kökten akoru tanıyabileceksin — artık '
+          'alışkanlıkla tahmin yok.',
+    ),
     pool: [
       _c('A', ChordQuality.major),
       _c('E', ChordQuality.major),
@@ -568,6 +645,12 @@ List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
     id: 'ch_quality_master',
     title: t(en: '★ Quality Master', tr: '★ Nitelik Ustası'),
+    promise: t(
+      en: 'You will tell all nine chord colors apart — after this, no chord in '
+          'popular music is a stranger to your ear.',
+      tr: 'Dokuz akor renginin hepsini ayırabileceksin — bundan sonra popüler '
+          'müzikteki hiçbir akor kulağına yabancı gelmeyecek.',
+    ),
     recognizeBy: ChordRecognizeBy.quality,
     pool: [
       _c('C', ChordQuality.major),

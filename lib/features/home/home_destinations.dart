@@ -7,7 +7,6 @@ import '../../core/content_locale.dart';
 import '../../core/interval.dart';
 import '../../core/rank.dart';
 import '../../core/spaced_repetition.dart';
-import '../function/function_lesson.dart';
 import '../../state/progress_controller.dart';
 import '../calibration/calibration_page.dart';
 import '../explorer/range_playground_page.dart';
@@ -273,10 +272,6 @@ class ProfileHubPage extends ConsumerWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 16),
-            const Divider(),
-            // Veri taşınabilirliği (Play zorunluluğu) — §19.
-            const ExportDataTile(),
           ],
         ),
       ),
@@ -364,20 +359,13 @@ class _ConfusionRow extends StatelessWidget {
       case 'interval':
         final semis = int.tryParse(token);
         return semis == null ? token : (kIntervals[semis]?.name ?? token);
-      case 'degree':
-        return t(en: 'Degree $token', tr: '$token. derece');
       case 'inv':
         return token == '0'
             ? t(en: 'Root position', tr: 'Kapalı')
             : t(en: 'inversion $token', tr: '$token. çevrim');
-      case 'function':
-        try {
-          return HarmonicFunction.values.byName(token).label;
-        } catch (_) {
-          return token;
-        }
       default:
-        return token; // note (C, F#...) ve prog (I – IV – V – I) zaten okunur
+        // note (C, F#...) ve melody (nota adı) zaten okunur.
+        return token;
     }
   }
 
@@ -387,9 +375,7 @@ class _ConfusionRow extends StatelessWidget {
     'quality' => t(en: 'chord color', tr: 'akor rengi'),
     'inv' => t(en: 'inversion', tr: 'çevrim'),
     'interval' => t(en: 'interval', tr: 'aralık'),
-    'degree' => t(en: 'degree', tr: 'derece'),
-    'function' => t(en: 'function', tr: 'işlev'),
-    'prog' => t(en: 'progression', tr: 'ilerleme'),
+    'melody' => t(en: 'melody note', tr: 'ezgi notası'),
     _ => type,
   };
 

@@ -10,16 +10,13 @@ import '../chords/chord_inversion_recognition_page.dart';
 import '../chords/chord_lesson.dart';
 import '../chords/chord_quality_recognition_page.dart';
 import '../chords/chord_recognition_page.dart';
-import '../function/function_lesson.dart';
-import '../function/function_recognition_page.dart';
+import '../../state/settings_controller.dart';
 import '../intervals/interval_lesson.dart';
 import '../intervals/interval_recognition_page.dart';
 import '../lesson/lesson.dart';
+import '../melody/echo_game_page.dart';
+import '../melody/melody_lesson.dart';
 import '../note_recognition/note_recognition_page.dart';
-import '../progression/progression_lesson.dart';
-import '../progression/progression_recognition_page.dart';
-import '../tonality/tonality_lesson.dart';
-import '../tonality/tonality_recognition_page.dart';
 
 // -----------------------------------------------------------------------------
 // TEKRAR OTURUMU — aralıklı tekrar (SM-2)
@@ -59,9 +56,7 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
       _noteLessonById(id) != null ||
       _chordLessonById(id) != null ||
       _intervalLessonById(id) != null ||
-      _functionLessonById(id) != null ||
-      _progressionLessonById(id) != null ||
-      _tonalityLessonById(id) != null;
+      _melodyLessonById(id) != null;
 
   Lesson? _noteLessonById(String id) {
     for (final l in lessons) {
@@ -84,22 +79,8 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
     return null;
   }
 
-  FunctionLesson? _functionLessonById(String id) {
-    for (final l in functionLessons) {
-      if (l.id == id) return l;
-    }
-    return null;
-  }
-
-  ProgressionLesson? _progressionLessonById(String id) {
-    for (final l in progressionLessons) {
-      if (l.id == id) return l;
-    }
-    return null;
-  }
-
-  TonalityLesson? _tonalityLessonById(String id) {
-    for (final l in tonalityLessons) {
+  MelodyLesson? _melodyLessonById(String id) {
+    for (final l in melodyLessons) {
       if (l.id == id) return l;
     }
     return null;
@@ -183,35 +164,19 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
         ),
       };
     }
-    final func = _functionLessonById(id);
-    if (func != null) {
-      return FunctionRecognitionPage(
+    // Melodi dersi — Eko oyunu (tanıma değil ÜRETME). Cevap modu kullanıcının
+    // Ayarlar'daki tercihinden okunur.
+    final melody = _melodyLessonById(id);
+    if (melody != null) {
+      return EchoGamePage(
         key: key,
-        pool: func.pool,
+        lesson: melody,
         player: _player,
+        range: _range,
         questionCount: _questionsPerSkill,
-        onComplete: (r) => _grade(id, r),
-      );
-    }
-    final prog = _progressionLessonById(id);
-    if (prog != null) {
-      return ProgressionRecognitionPage(
-        key: key,
-        pool: prog.pool,
-        player: _player,
-        questionCount: _questionsPerSkill,
-        onComplete: (r) => _grade(id, r),
-      );
-    }
-    // Tonalite dersi — derece pool'u, akor işlevi gibi transpoze gerektirmez
-    // (tanıma sabit Do majör tonik referansıyla çalışır).
-    final tonality = _tonalityLessonById(id);
-    if (tonality != null) {
-      return TonalityRecognitionPage(
-        key: key,
-        pool: tonality.pool,
-        player: _player,
-        questionCount: _questionsPerSkill,
+        mode: ref.watch(settingsProvider).echoInputMode,
+        onModeChanged: (mode) =>
+            ref.read(settingsProvider.notifier).setEchoInputMode(mode),
         onComplete: (r) => _grade(id, r),
       );
     }

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../audio/note_player.dart';
 import '../audio/soundfont_bank.dart';
 import '../core/content_locale.dart';
+import '../core/echo.dart';
 import '../data/cloud/cloud_sync.dart';
 import '../notifications/notification_service.dart';
 
@@ -15,38 +16,44 @@ final prefsProvider = Provider<SharedPreferences>((ref) {
 });
 
 /// Uygulama ayarları (hatırlatma + onboarding + tını + dil).
+///
+/// Not: Günlük hatırlatmanın SAATİ ayar değil sabit ([NotificationService.
+/// dailyReminderHour]) — kullanıcı yalnızca açık/kapalı seçer.
 class AppSettings {
   final bool reminderEnabled;
-  final int reminderHour; // 0-23, dakika :00
   final bool onboarded; // ilk açılış akışı tamamlandı mı
   final bool tutorialSeen; // ana ekran ilk-açılış coach-mark turu görüldü mü
   final Instrument instrument; // egzersiz tınısı (piyano/sentez)
   final String localeCode; // 'en' (varsayılan) | 'tr'
 
+  /// Eko oyununda tekrarın nasıl verileceği. Varsayılan TUŞ: her ortamda
+  /// çalışır ve ilk temasta mikrofon izni istemez (sürtünmesiz başlangıç).
+  final EchoInputMode echoInputMode;
+
   const AppSettings({
     this.reminderEnabled = false,
-    this.reminderHour = 19,
     this.onboarded = false,
     this.tutorialSeen = false,
     this.instrument = Instrument.piano,
     this.localeCode = 'en',
+    this.echoInputMode = EchoInputMode.tap,
   });
 
   AppSettings copyWith({
     bool? reminderEnabled,
-    int? reminderHour,
     bool? onboarded,
     bool? tutorialSeen,
     Instrument? instrument,
     String? localeCode,
+    EchoInputMode? echoInputMode,
   }) {
     return AppSettings(
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
-      reminderHour: reminderHour ?? this.reminderHour,
       onboarded: onboarded ?? this.onboarded,
       tutorialSeen: tutorialSeen ?? this.tutorialSeen,
       instrument: instrument ?? this.instrument,
       localeCode: localeCode ?? this.localeCode,
+      echoInputMode: echoInputMode ?? this.echoInputMode,
     );
   }
 }
@@ -67,21 +74,24 @@ class SettingsController extends Notifier<AppSettings> {
   @override
   AppSettings build() => AppSettings(
     reminderEnabled: _prefs.getBool('reminder_enabled') ?? false,
-    reminderHour: _prefs.getInt('reminder_hour') ?? 19,
     onboarded: _prefs.getBool('onboarded') ?? false,
     tutorialSeen: _prefs.getBool('tutorial_seen') ?? false,
     instrument: instrumentFromPrefs(_prefs),
     localeCode: localeFromPrefs(_prefs),
+    echoInputMode: _prefs.getString('echo_input_mode') == 'sing'
+        ? EchoInputMode.sing
+        : EchoInputMode.tap,
   );
+
+  /// Eko oyunu cevap modunu değiştirir (oyun içindeki seçiciden çağrılır).
+  Future<void> setEchoInputMode(EchoInputMode mode) async {
+    await _prefs.setString('echo_input_mode', mode.name);
+    state = state.copyWith(echoInputMode: mode);
+  }
 
   Future<void> setEnabled(bool value) async {
     await _prefs.setBool('reminder_enabled', value);
     state = state.copyWith(reminderEnabled: value);
-  }
-
-  Future<void> setHour(int hour) async {
-    await _prefs.setInt('reminder_hour', hour);
-    state = state.copyWith(reminderHour: hour);
   }
 
   Future<void> setOnboarded(bool value) async {
@@ -113,9 +123,7 @@ class SettingsController extends Notifier<AppSettings> {
     await _prefs.setString('locale', code);
     ContentLocale.code = code;
     if (state.reminderEnabled) {
-      await NotificationService.instance.scheduleDaily(
-        hour: state.reminderHour,
-      );
+      await NotificationService.instance.scheduleDaily();
     }
     // Sunucu push'u da yeni dilde gelsin: token'ın kayıtlı locale'ini güncelle
     // (oturum yoksa sessizce atlanır). Ateşle-unut — dil değişimini bekletmez.

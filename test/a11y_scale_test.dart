@@ -9,8 +9,9 @@ import 'package:hear_the_sound/features/intervals/interval_recognition_page.dart
 import 'package:hear_the_sound/features/lesson/lesson.dart';
 import 'package:hear_the_sound/features/lesson/sing_notes_page.dart';
 import 'package:hear_the_sound/features/note_recognition/note_recognition_page.dart';
-import 'package:hear_the_sound/features/tonality/tonality_lesson.dart';
-import 'package:hear_the_sound/features/tonality/tonality_recognition_page.dart';
+import 'package:hear_the_sound/core/echo.dart';
+import 'package:hear_the_sound/features/melody/echo_game_page.dart';
+import 'package:hear_the_sound/features/melody/melody_lesson.dart';
 
 // -----------------------------------------------------------------------------
 // ERİŞİLEBİLİRLİK — BÜYÜK METİN ÖLÇEĞİ (1.3x)
@@ -98,13 +99,14 @@ void main() {
     );
   });
 
-  testWidgets('tonalite tanıma 1.3x ölçekte taşmaz', (t) async {
+  testWidgets('Eko oyunu 1.3x ölçekte taşmaz', (t) async {
     await scaledSmoke(
       t,
-      TonalityRecognitionPage(
-        pool: tonalityLessons.first.pool,
+      EchoGamePage(
+        lesson: melodyLessons.last, // en çok nota + en geniş tuş sırası
         player: fake,
-        questionCount: 4,
+        mode: EchoInputMode.tap,
+        onModeChanged: (_) {},
         onComplete: (_) {},
       ),
     );

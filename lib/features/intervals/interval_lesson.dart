@@ -14,12 +14,17 @@ class IntervalLesson {
   final List<MusicInterval> pool;
   final Concept? concept;
   final bool harmonic;
+
+  /// "Bu dersten sonra şunu yapabileceksin" (bkz. lesson_intro_page.dart).
+  final String? promise;
+
   const IntervalLesson({
     required this.id,
     required this.title,
     required this.pool,
     this.concept,
     this.harmonic = false,
+    this.promise,
   });
 }
 
@@ -34,6 +39,12 @@ List<IntervalLesson> _buildIntervalLessons() => [
   IntervalLesson(
     id: 'iv1',
     title: t(en: '1 · First Intervals', tr: '1 · İlk Aralıklar'),
+    promise: t(
+      en: 'You will hear how far two notes are apart — the skill that lets you '
+          'work out a melody by ear.',
+      tr: 'İki sesin birbirine ne kadar uzak olduğunu duyabileceksin — bir '
+          'ezgiyi kulakla çıkarmanı sağlayan beceri.',
+    ),
     pool: [iv(4), iv(7), iv(12)], // Büyük 3'lü, Tam 5'li, Oktav
     concept: Concept(
       title: t(en: 'What Is an Interval?', tr: 'Aralık Nedir?'),
@@ -76,6 +87,12 @@ List<IntervalLesson> _buildIntervalLessons() => [
   IntervalLesson(
     id: 'iv2',
     title: t(en: '2 · Thirds', tr: '2 · Üçlüler'),
+    promise: t(
+      en: 'You will tell a bright third from a dark one — this is what makes a '
+          'chord sound happy or sad.',
+      tr: 'Aydınlık üçlüyle karanlık üçlüyü ayırabileceksin — bir akoru neşeli '
+          'ya da hüzünlü yapan şey budur.',
+    ),
     pool: [iv(2), iv(3), iv(4)], // Büyük 2'li, Küçük 3'lü, Büyük 3'lü
     concept: Concept(
       title: t(
@@ -122,6 +139,12 @@ List<IntervalLesson> _buildIntervalLessons() => [
   ),
   IntervalLesson(
     id: 'iv3',
+    promise: t(
+      en: 'You will separate the open, stable jumps from the tense one that '
+          'always wants to move.',
+      tr: 'Açık ve kararlı sıçramalarla, hep hareket etmek isteyen gergin '
+          'sıçramayı ayırabileceksin.',
+    ),
     title: t(
       en: '3 · Fourth · Tritone · Fifth',
       tr: '3 · Dörtlü · Triton · Beşli',
@@ -158,6 +181,12 @@ List<IntervalLesson> _buildIntervalLessons() => [
   IntervalLesson(
     id: 'iv4',
     title: t(en: '4 · Mixed Intervals', tr: '4 · Karışık Aralıklar'),
+    promise: t(
+      en: 'You will name any jump you hear, with no warning — real melodies '
+          'never announce which one is coming.',
+      tr: 'Duyduğun her sıçramayı, önceden uyarılmadan tanıyabileceksin — '
+          'gerçek melodiler hangisinin geleceğini söylemez.',
+    ),
     pool: [iv(2), iv(3), iv(4), iv(5), iv(7), iv(9), iv(12)],
     concept: Concept(
       title: t(en: 'Mixed Intervals', tr: 'Karışık Aralıklar'),
@@ -192,6 +221,12 @@ List<IntervalLesson> _buildIntervalLessons() => [
   IntervalLesson(
     id: 'iv5',
     title: t(en: '5 · Harmonic Intervals', tr: '5 · Harmonik Aralıklar'),
+    promise: t(
+      en: 'You will hear two notes played TOGETHER and still tell them apart — '
+          'the first step into hearing chords from the inside.',
+      tr: 'AYNI ANDA çalan iki sesi yine de ayırabileceksin — akorları '
+          'içeriden duymanın ilk adımı.',
+    ),
     harmonic: true,
     pool: [iv(3), iv(4), iv(7), iv(12)], // K3, B3, T5, Oktav
     concept: Concept(
@@ -238,6 +273,12 @@ List<IntervalLesson> _buildIntervalLessons() => [
   IntervalLesson(
     id: 'iv6',
     title: t(en: '6 · Harmonic Mix', tr: '6 · Harmonik Karışık'),
+    promise: t(
+      en: 'You will unpick any two notes sounding at once — your ear starts '
+          'hearing layers, not just one line.',
+      tr: 'Aynı anda duyulan herhangi iki sesi çözebileceksin — kulağın tek '
+          'çizgiyi değil katmanları duymaya başlar.',
+    ),
     harmonic: true,
     pool: [iv(2), iv(3), iv(4), iv(5), iv(6), iv(7), iv(9), iv(12)],
     concept: Concept(

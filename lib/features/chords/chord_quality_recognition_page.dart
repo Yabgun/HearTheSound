@@ -107,6 +107,10 @@ class _ChordQualityRecognitionPageState
     final isLast = _index >= widget.questionCount - 1;
     final progress = (_index + (_answered ? 1 : 0)) / widget.questionCount;
     final cols = _options.length <= 2 ? _options.length : 2;
+    // Çok şıklı derslerde (ör. 9 nitelikli "Nitelik Ustası") ızgara 5 satıra
+    // çıkıyor ve kısa ekranda taşıyordu. Hücreleri BASIKLAŞTIRARAK sığdırıyoruz
+    // (sütun sayısını değil): etiketler geniş kalır, yükseklik düşer.
+    final aspect = _options.length > 6 ? 4.2 : 2.6;
 
     return Scaffold(
       appBar: AppBar(
@@ -167,14 +171,15 @@ class _ChordQualityRecognitionPageState
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 2.6,
+                childAspectRatio: aspect,
                 children: _options.map((q) => _optionButton(theme, q)).toList(),
               ),
               const SizedBox(height: 20),
-              SizedBox(
-                height: 84,
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 84),
                 child: _answered
                     ? Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             correct
@@ -243,12 +248,20 @@ class _ChordQualityRecognitionPageState
       child: InkWell(
         onTap: _answered ? null : () => _answer(q),
         child: Center(
-          child: Text(
-            q.label,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: fg,
-              fontWeight: FontWeight.w700,
+          // Uzun nitelik etiketleri (ör. "Dominant 7", "Half-diminished 7")
+          // dar hücrede taşmasın diye küçülerek sığar.
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                q.label,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
         ),
