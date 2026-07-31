@@ -2,40 +2,38 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hear_the_sound/core/player_progress.dart';
 import 'package:hear_the_sound/features/home/curriculum.dart';
 
-// Müfredat artık tek SIRALI zincir: Notalar → Aralıklar → Akorlar → Tonalite →
-// İşlev → İlerlemeler → Yolculuk. Her track bir öncekinin son dersi bitince açılır.
-// Onboarding seviye seçimi bu zinciri `lessonIdsInFirstTracks` ile besler.
+// Müfredat tek SIRALI zincir: Notalar → Melodi Kulağı → Akorlar (→ Armoni
+// Kulağı, sırada). Her track bir öncekinin son dersi bitince açılır.
+//
+// SIRA GEREKÇESİ: doğal öğrenme yolu tek ses → zamanda çok ses (ezgi) → aynı
+// anda çok ses (akor). İnsan önce şarkı söyler, sonra akor duyar — bu yüzden
+// Melodi Kulağı, Akorlar'dan ÖNCE gelir.
 
 void main() {
-  test('track sırası doğru (Aralıklar, Akorlar\'dan ÖNCE)', () {
+  test('track sırası doğru (Melodi Kulağı, Akorlar\'dan ÖNCE)', () {
     final firstIds = [for (final tr in curriculum) tr.items.first.id];
     expect(firstIds[0], 'first_notes'); // Notalar
-    expect(firstIds[1], 'iv1'); // Aralıklar
+    expect(firstIds[1], 'mel1'); // Melodi Kulağı
     expect(firstIds[2], 'ch1'); // Akorlar
-    // Akorlardan sonra YETENEK track'i gelir: Melodi Kulağı (Eko oyunu).
-    // Eski teori track'leri (tonalite/işlev/ilerleme/yolculuk) kaldırılma
-    // sürecinde olduğu için burada sabit id ile kilitlenmiyorlar.
-    expect(firstIds[3], 'mel1'); // Melodi Kulağı
   });
 
   test('sıfırdan hesap: yalnızca Notalar açık; next = first_notes', () {
     const p = PlayerProgress();
     final tracks = curriculum;
     expect(itemUnlocked(tracks[0], 0, p), isTrue); // Notalar
-    expect(itemUnlocked(tracks[1], 0, p), isFalse); // Aralıklar kilitli
+    expect(itemUnlocked(tracks[1], 0, p), isFalse); // Melodi Kulağı kilitli
     expect(itemUnlocked(tracks[2], 0, p), isFalse); // Akorlar kilitli
-    expect(itemUnlocked(tracks[3], 0, p), isFalse); // Melodi Kulağı kilitli
     expect(nextLesson(p)?.item.id, 'first_notes');
   });
 
-  test('Notalar bitince Aralıklar açılır; Akorlar hâlâ kilitli; next = iv1', () {
+  test('Notalar bitince Melodi açılır; Akorlar hâlâ kilitli; next = mel1', () {
     final tracks = curriculum;
     final notesDone = PlayerProgress(
       completedLessons: [for (final it in tracks[0].items) it.id],
     );
-    expect(itemUnlocked(tracks[1], 0, notesDone), isTrue); // Aralıklar açık
+    expect(itemUnlocked(tracks[1], 0, notesDone), isTrue); // Melodi açık
     expect(itemUnlocked(tracks[2], 0, notesDone), isFalse); // Akorlar kilitli
-    expect(nextLesson(notesDone)?.item.id, 'iv1');
+    expect(nextLesson(notesDone)?.item.id, 'mel1');
   });
 
   test('lessonIdsInFirstTracks seviye seçimini doğru besler', () {
@@ -43,21 +41,20 @@ void main() {
     final notesIds = lessonIdsInFirstTracks(1);
     expect(notesIds, [for (final it in curriculum[0].items) it.id]);
 
-    // Bu id'ler tamam sayılınca zincir Aralıklar'ı açar → next iv1.
+    // Bu id'ler tamam sayılınca zincir Melodi Kulağı'nı açar → next mel1.
     final notesKnown = PlayerProgress(completedLessons: notesIds);
     expect(itemUnlocked(curriculum[1], 0, notesKnown), isTrue);
-    expect(nextLesson(notesKnown)?.item.id, 'iv1');
+    expect(nextLesson(notesKnown)?.item.id, 'mel1');
 
     // 0 track → sıfırdan (boş).
     expect(lessonIdsInFirstTracks(0), isEmpty);
 
-    // İlk 3 track tamam → 4. track (Melodi Kulağı) açılır. Sabit id yerine
-    // sıraya bağlanır ki müfredat yeniden düzenlenince test kırılmasın
-    // (kilit MANTIĞI test edilir, içerik değil).
-    final earTrained = PlayerProgress(
-      completedLessons: lessonIdsInFirstTracks(3),
+    // İlk 2 track tamam → 3. track (Akorlar) açılır. Sabit id yerine sıraya
+    // bağlanır ki müfredat yeniden düzenlenince kilit MANTIĞI test edilsin.
+    final melodyKnown = PlayerProgress(
+      completedLessons: lessonIdsInFirstTracks(2),
     );
-    expect(itemUnlocked(curriculum[3], 0, earTrained), isTrue);
-    expect(nextLesson(earTrained)?.item.id, curriculum[3].items.first.id);
+    expect(itemUnlocked(curriculum[2], 0, melodyKnown), isTrue);
+    expect(nextLesson(melodyKnown)?.item.id, curriculum[2].items.first.id);
   });
 }

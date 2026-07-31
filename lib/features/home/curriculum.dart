@@ -6,8 +6,6 @@ import '../../core/player_progress.dart';
 import '../../ui/app_theme.dart';
 import '../chords/chord_lesson.dart';
 import '../chords/chord_lesson_flow_page.dart';
-import '../intervals/interval_lesson.dart';
-import '../intervals/interval_lesson_flow_page.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_flow_page.dart';
 import '../melody/melody_lesson.dart';
@@ -82,18 +80,23 @@ List<Track> _buildCurriculum() => [
         ),
     ],
   ),
+  // MELODİ KULAĞI — "duyduğun ezgiyi çıkarabilmek".
+  // Eski teori track'lerinin yerini alan YETENEK track'i: kullanıcı burada
+  // hiçbir şey etiketlemez, Eko'nun çaldığı ezgiyi tekrarlar.
+  //
+  // AKORLARDAN ÖNCE gelir: doğal öğrenme sırası tek ses → zamanda çok ses
+  // (ezgi) → aynı anda çok ses (akor). İnsan önce şarkı söyler, sonra akor duyar.
   Track(
-    name: t(en: 'Intervals', tr: 'Aralıklar'),
-    color: AppColors.catIntervals,
-    icon: Icons.straighten_rounded,
+    name: t(en: 'Melody Ear', tr: 'Melodi Kulağı'),
+    color: AppColors.catMelody,
+    icon: Icons.hearing_rounded,
     unlockAfter: lessons.last.id,
     items: [
-      for (final l in intervalLessons)
+      for (final l in melodyLessons)
         TrackItem(
           id: l.id,
           title: l.title,
-          concept: l.concept,
-          open: () => IntervalLessonFlowPage(lesson: l),
+          open: () => MelodyLessonFlowPage(lesson: l),
         ),
     ],
   ),
@@ -101,7 +104,7 @@ List<Track> _buildCurriculum() => [
     name: t(en: 'Chords', tr: 'Akorlar'),
     color: AppColors.catChords,
     icon: Icons.piano_rounded,
-    unlockAfter: intervalLessons.last.id,
+    unlockAfter: melodyLessons.last.id,
     items: [
       for (final l in chordLessons)
         TrackItem(
@@ -112,23 +115,12 @@ List<Track> _buildCurriculum() => [
         ),
     ],
   ),
-  // MELODİ KULAĞI — "duyduğun ezgiyi çıkarabilmek".
-  // Eski teori track'lerinin yerini alan YETENEK track'i: kullanıcı burada
-  // hiçbir şey etiketlemez, Eko'nun çaldığı ezgiyi tekrarlar.
-  Track(
-    name: t(en: 'Melody Ear', tr: 'Melodi Kulağı'),
-    color: AppColors.catMelody,
-    icon: Icons.hearing_rounded,
-    unlockAfter: chordLessons.last.id,
-    items: [
-      for (final l in melodyLessons)
-        TrackItem(
-          id: l.id,
-          title: l.title,
-          open: () => MelodyLessonFlowPage(lesson: l),
-        ),
-    ],
-  ),
+  // NOT: "Aralıklar" track'i de KALDIRILDI ve dağıtıldı: melodik aralıklar
+  // zaten Melodi Kulağı'nda çalışılıyor (isimler orada rozet olarak veriliyor),
+  // harmonik aralıklar ise Armoni Kulağı'nın giriş dersleri olacak. Ayrı bir
+  // track olarak "Majör 3'lü / Tam 5'li" ezberletmek kulak eğitimi değil
+  // terminoloji sınavıydı.
+  //
   // NOT: "Diziler & Tonalite", "Akor İşlevi", "İlerlemeler" ve "Tonalite
   // Yolculuğu" track'leri KALDIRILDI. Dördü de aynı beceriyi (ev neresi) dört
   // ayrı sözlükle tekrar ediyor ve müziği ETİKETLETİYORDU — kullanıcı "neyi

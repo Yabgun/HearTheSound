@@ -501,9 +501,10 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
             ),
             const SizedBox(height: 20),
             // Seviye → kaç track "tamam" sayılır (bkz. lessonIdsInFirstTracks):
-            // 0 → Notalar'dan · 1 → Aralıklar'dan · 2 → Akorlar'dan ·
-            // 3 → Melodi Kulağı'ndan. En üst seviye BÜTÜN müfredatı tamam
-            // saymamalı; yoksa kullanıcı hiç ders açık olmadan başlar.
+            // 0 → Notalar'dan · 1 → Melodi Kulağı'ndan · 2 → Akorlar'dan.
+            // DİKKAT: en üst seviye BÜTÜN müfredatı tamam saymamalı; yoksa
+            // kullanıcı açık hiçbir ders olmadan başlar. Armoni Kulağı
+            // eklenince buraya bir kart daha gelecek.
             _levelCard(
               theme,
               icon: AppIcons.levelBeginner,
@@ -516,31 +517,23 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
               theme,
               icon: AppIcons.levelNotes,
               title: t(en: 'I can name notes', tr: 'Notaları tanıyorum'),
-              subtitle: t(en: 'Start at Intervals', tr: 'Aralıklardan başla'),
-              color: AppColors.catIntervals,
-              onTap: () => _chooseLevel(1),
-            ),
-            _levelCard(
-              theme,
-              icon: AppIcons.levelChords,
-              title: t(en: 'I know intervals', tr: 'Aralıkları biliyorum'),
-              subtitle: t(en: 'Start at Chords', tr: 'Akorlardan başla'),
-              color: AppColors.catChords,
-              onTap: () => _chooseLevel(2),
-            ),
-            _levelCard(
-              theme,
-              icon: AppIcons.levelTheory,
-              title: t(
-                en: 'I know notes, intervals & chords',
-                tr: 'Nota, aralık ve akorları biliyorum',
-              ),
               subtitle: t(
                 en: 'Start at Melody Ear',
                 tr: 'Melodi Kulağı\'ndan başla',
               ),
               color: AppColors.catMelody,
-              onTap: () => _chooseLevel(3),
+              onTap: () => _chooseLevel(1),
+            ),
+            _levelCard(
+              theme,
+              icon: AppIcons.levelChords,
+              title: t(
+                en: 'I can follow melodies by ear',
+                tr: 'Ezgileri kulakla takip edebiliyorum',
+              ),
+              subtitle: t(en: 'Start at Chords', tr: 'Akorlardan başla'),
+              color: AppColors.catChords,
+              onTap: () => _chooseLevel(2),
             ),
             const SizedBox(height: 8),
             TextButton(

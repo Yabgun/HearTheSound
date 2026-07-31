@@ -4,8 +4,6 @@ import 'package:hear_the_sound/audio/note_player.dart';
 import 'package:hear_the_sound/core/chord.dart';
 import 'package:hear_the_sound/core/note.dart';
 import 'package:hear_the_sound/features/chords/chord_arpeggio_page.dart';
-import 'package:hear_the_sound/features/intervals/interval_lesson.dart';
-import 'package:hear_the_sound/features/intervals/interval_recognition_page.dart';
 import 'package:hear_the_sound/features/lesson/lesson.dart';
 import 'package:hear_the_sound/features/lesson/sing_notes_page.dart';
 import 'package:hear_the_sound/features/note_recognition/note_recognition_page.dart';
@@ -87,17 +85,7 @@ void main() {
     );
   });
 
-  testWidgets('aralık tanıma 1.3x ölçekte taşmaz', (t) async {
-    await scaledSmoke(
-      t,
-      IntervalRecognitionPage(
-        pool: intervalLessons.first.pool,
-        player: fake,
-        questionCount: 4,
-        onComplete: (_) {},
-      ),
-    );
-  });
+  // NOT: aralık tanıma testi kaldırıldı — "Aralıklar" track'i dağıtıldı.
 
   testWidgets('Eko oyunu 1.3x ölçekte taşmaz', (t) async {
     await scaledSmoke(

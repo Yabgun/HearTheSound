@@ -153,13 +153,21 @@ List<MelodyLesson> _build() => [
       maxLeap: 6, // havuzun tamamı erişilebilir → gerçek sıçramalar
       endOnTonic: true,
     ),
+    // Aralık isimleri ARTIK YALNIZCA BURADA yaşıyor: ayrı bir "Aralıklar"
+    // track'i vardı ama orada "Majör 3'lü / Tam 5'li" ezberletmek kulak
+    // eğitimi değil terminoloji sınavıydı. İsim, sıçrama DUYULDUKTAN sonra
+    // rozet olarak veriliyor.
     badge: TheoryBadge(
-      term: t(en: 'Leap', tr: 'Sıçrama'),
+      term: t(en: 'Interval', tr: 'Aralık'),
       insight: t(
-        en: 'Those jumps are INTERVALS — the same distances you trained '
-            'earlier, now doing real work inside a melody.',
-        tr: 'O zıplayışlar ARALIKlardır — daha önce çalıştığın mesafeler, '
-            'şimdi bir melodinin içinde gerçek iş yapıyor.',
+        en: 'The distance between two notes is called an INTERVAL. Those wide '
+            'jumps you just caught are the big ones — musicians name them by '
+            'size ("a fifth", "an octave"). You could already hear them; now '
+            'they have a name too.',
+        tr: 'İki ses arasındaki mesafeye ARALIK denir. Az önce yakaladığın '
+            'geniş zıplayışlar bunların büyük olanları — müzisyenler onları '
+            'büyüklüğüne göre adlandırır ("beşli", "oktav"). Zaten '
+            'duyabiliyordun; artık bir adı da var.',
       ),
     ),
   ),

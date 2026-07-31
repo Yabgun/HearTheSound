@@ -80,7 +80,6 @@ class _EchoGamePageState extends State<EchoGamePage> {
 
   _Phase _phase = _Phase.playing;
   int? _eventIndex;
-  bool _playingCue = false;
   int _index = 0;
   int _correct = 0;
   final List<String> _mistakes = [];
@@ -150,17 +149,11 @@ class _EchoGamePageState extends State<EchoGamePage> {
     setState(() {
       _phase = _Phase.playing;
       _eventIndex = null;
-      _playingCue = true;
     });
 
-    // ÖNCE "EV" SESİ: ezgi artık herhangi bir dereceden başlayabildiği için
-    // (çeşitlilik) kulağın merkezi bilmesi gerekir. Kulak eğitiminde standart
-    // yöntem budur: önce tonaliteyi kur, sonra soruyu çal. Bu ses tekrarlanmaz.
-    await widget.player.play(_tonic);
-    await Future<void>.delayed(const Duration(milliseconds: 700));
-    if (!mounted) return;
-    setState(() => _playingCue = false);
-
+    // Ezginin ÖNÜNE hiçbir şey çalınmaz. (Bir ara "ev sesi" ipucu eklenmişti;
+    // cihazda kafa karıştırıcı bulundu ve kaldırıldı. Oyunun görevi tonaliteyi
+    // hissetmek değil, DUYDUĞUNU TEKRARLAMAK — fazladan her ses gürültüdür.)
     await _phrasePlayer.play(
       _melody,
       onEvent: (i) {
@@ -392,9 +385,7 @@ class _EchoGamePageState extends State<EchoGamePage> {
   }
 
   String _prompt() => switch (_phase) {
-    _Phase.playing => _playingCue
-        ? t(en: 'Home note…', tr: 'Ev sesi…')
-        : t(en: 'Listen…', tr: 'Dinle…'),
+    _Phase.playing => t(en: 'Listen…', tr: 'Dinle…'),
     _Phase.answering => _mode == EchoInputMode.tap
         ? t(en: 'Now play it back', tr: 'Şimdi sen çal')
         : t(en: 'Now sing it back', tr: 'Şimdi sen söyle'),

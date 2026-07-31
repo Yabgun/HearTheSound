@@ -23,17 +23,15 @@ import 'package:hear_the_sound/features/home/curriculum.dart';
 /// eklemek zorunlu değil — test yalnızca kaybolan/yeniden adlandırılan id'yi
 /// yakalar.
 ///
-/// 2026-07-27 GÜNCELLEMESİ: "Diziler & Tonalite", "Akor İşlevi", "İlerlemeler"
-/// ve "Tonalite Yolculuğu" track'leri müfredattan KALDIRILDI (tn*/fn*/pr* ve
-/// fn_j_*/pr_j_* id'leri bu yüzden listeden çıkarıldı). Bu, kuralın ihlali
+/// 2026-07-27 GÜNCELLEMESİ: "Diziler & Tonalite", "Akor İşlevi", "İlerlemeler",
+/// "Tonalite Yolculuğu" ve "Aralıklar" track'leri müfredattan KALDIRILDI
+/// (tn*/fn*/pr*/fn_j_*/pr_j_* ve iv* id'leri bu yüzden listeden çıkarıldı). Bu, kuralın ihlali
 /// değil bilinçli bir istisnadır: uygulama HENÜZ YAYINLANMADI (Play Store
 /// adımı bekliyor) ve üretimdeki ilerleme tablosu boş. Yayından SONRA aynı
 /// hamle ilerleme kaybı demek olurdu — o yüzden bu pencere kapanmadan yapıldı.
 const Set<String> kShippedLessonIds = {
   // Notalar
   'first_notes', 'l2_cde', 'l3_penta', 'l4_diatonic', 'l5_chromatic',
-  // Aralıklar
-  'iv1', 'iv2', 'iv3', 'iv4', 'iv5', 'iv6',
   // Akorlar
   'ch1', 'ch2', 'ch3', 'ch4', 'ch5', 'ch6',
   'ch7', 'ch8', 'ch9', 'ch10', 'ch11', 'ch12',

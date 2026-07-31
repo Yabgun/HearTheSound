@@ -11,8 +11,6 @@ import '../chords/chord_lesson.dart';
 import '../chords/chord_quality_recognition_page.dart';
 import '../chords/chord_recognition_page.dart';
 import '../../state/settings_controller.dart';
-import '../intervals/interval_lesson.dart';
-import '../intervals/interval_recognition_page.dart';
 import '../lesson/lesson.dart';
 import '../melody/echo_game_page.dart';
 import '../melody/melody_lesson.dart';
@@ -55,7 +53,6 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
   bool _isKnown(String id) =>
       _noteLessonById(id) != null ||
       _chordLessonById(id) != null ||
-      _intervalLessonById(id) != null ||
       _melodyLessonById(id) != null;
 
   Lesson? _noteLessonById(String id) {
@@ -67,13 +64,6 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
 
   ChordLesson? _chordLessonById(String id) {
     for (final l in chordLessons) {
-      if (l.id == id) return l;
-    }
-    return null;
-  }
-
-  IntervalLesson? _intervalLessonById(String id) {
-    for (final l in intervalLessons) {
       if (l.id == id) return l;
     }
     return null;
@@ -165,28 +155,18 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
       };
     }
     // Melodi dersi — Eko oyunu (tanıma değil ÜRETME). Cevap modu kullanıcının
-    // Ayarlar'daki tercihinden okunur.
-    final melody = _melodyLessonById(id);
-    if (melody != null) {
-      return EchoGamePage(
-        key: key,
-        lesson: melody,
-        player: _player,
-        range: _range,
-        questionCount: _questionsPerSkill,
-        mode: ref.watch(settingsProvider).echoInputMode,
-        onModeChanged: (mode) =>
-            ref.read(settingsProvider.notifier).setEchoInputMode(mode),
-        onComplete: (r) => _grade(id, r),
-      );
-    }
-    // Aralık dersi — tanımada kök rastgele, transpoze gerekmez.
-    final interval = _intervalLessonById(id)!;
-    return IntervalRecognitionPage(
+    // Ayarlar'daki tercihinden okunur. (_isKnown süzgecinden geçtiği için
+    // buraya gelen id mutlaka bir melodi dersidir.)
+    final melody = _melodyLessonById(id)!;
+    return EchoGamePage(
       key: key,
-      pool: interval.pool,
+      lesson: melody,
       player: _player,
+      range: _range,
       questionCount: _questionsPerSkill,
+      mode: ref.watch(settingsProvider).echoInputMode,
+      onModeChanged: (mode) =>
+          ref.read(settingsProvider.notifier).setEchoInputMode(mode),
       onComplete: (r) => _grade(id, r),
     );
   }

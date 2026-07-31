@@ -8,12 +8,6 @@ import 'package:hear_the_sound/features/chords/chord_inversion_recognition_page.
 import 'package:hear_the_sound/features/chords/chord_lesson.dart';
 import 'package:hear_the_sound/features/chords/chord_quality_recognition_page.dart';
 import 'package:hear_the_sound/features/chords/chord_recognition_page.dart';
-import 'package:hear_the_sound/features/intervals/interval_build_page.dart';
-import 'package:hear_the_sound/features/intervals/interval_direction_page.dart';
-import 'package:hear_the_sound/features/intervals/interval_learn_page.dart';
-import 'package:hear_the_sound/features/intervals/interval_lesson.dart';
-import 'package:hear_the_sound/features/intervals/interval_melody_page.dart';
-import 'package:hear_the_sound/features/intervals/interval_recognition_page.dart';
 import 'package:hear_the_sound/features/melody/echo_game_page.dart';
 import 'package:hear_the_sound/features/melody/melody_lesson.dart';
 
@@ -101,83 +95,9 @@ void main() {
     );
   });
 
-  testWidgets('A2 aralık öğren + kur + yön + uygula + tanıma çizilir', (
-    t,
-  ) async {
-    await smoke(
-      t,
-      IntervalLearnPage(
-        lesson: intervalLessons.first,
-        player: fake,
-        onReady: () {},
-      ),
-    );
-    await smoke(
-      t,
-      IntervalBuildPage(
-        pool: intervalLessons.first.pool,
-        player: fake,
-        onComplete: () {},
-      ),
-    );
-    await smoke(
-      t,
-      IntervalDirectionPage(
-        pool: intervalLessons.first.pool,
-        player: fake,
-        onComplete: () {},
-      ),
-    );
-    await smoke(
-      t,
-      IntervalMelodyPage(
-        pool: intervalLessons.first.pool,
-        player: fake,
-        onComplete: () {},
-      ),
-    );
-    await smoke(
-      t,
-      IntervalRecognitionPage(
-        pool: intervalLessons.first.pool,
-        player: fake,
-        questionCount: 4,
-        onComplete: (_) {},
-      ),
-    );
-  });
-
-  testWidgets('A7 harmonik aralık öğren + kur + tanıma çizilir', (t) async {
-    final harmonicLesson = intervalLessons.firstWhere((l) => l.harmonic);
-    await smoke(
-      t,
-      IntervalLearnPage(
-        lesson: harmonicLesson,
-        player: fake,
-        harmonic: true,
-        onReady: () {},
-      ),
-    );
-    await smoke(
-      t,
-      IntervalBuildPage(
-        pool: harmonicLesson.pool,
-        player: fake,
-        harmonic: true,
-        onComplete: () {},
-      ),
-    );
-    await smoke(
-      t,
-      IntervalRecognitionPage(
-        pool: harmonicLesson.pool,
-        player: fake,
-        harmonic: true,
-        questionCount: 4,
-        onComplete: (_) {},
-      ),
-    );
-  });
+  // NOT: Aralık ekranlarının smoke testleri kaldırıldı — "Aralıklar" track'i
+  // dağıtıldı (melodik kısım Melodi Kulağı'nda, harmonik kısım Armoni
+  // Kulağı'na taşınacak).
 
   testWidgets('A8 yeni kök akor tanıma çizilir', (t) async {
     await smoke(

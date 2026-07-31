@@ -9,7 +9,7 @@ import 'package:hear_the_sound/features/practice/endless_drill_page.dart';
 void main() {
   test('yalnızca tamamlanmış dersler, doğru karıştırma tipiyle gelir', () {
     final p = PlayerProgress(
-      completedLessons: const ['first_notes', 'ch5', 'iv1'],
+      completedLessons: const ['first_notes', 'ch5', 'mel3'],
     );
     final skills = buildDrillSkills(p, null);
     final byId = {for (final s in skills) s.id: s.type};
@@ -17,7 +17,7 @@ void main() {
     // Tamamlananlar doğru tiple:
     expect(byId['first_notes'], 'note');
     expect(byId['ch5'], 'quality'); // ch5 = nitelik (renk) tanıma
-    expect(byId['iv1'], 'interval');
+    expect(byId['mel3'], 'melody'); // Eko oyunu (üretme)
 
     // Tamamlanmayanlar listede yok:
     expect(byId.containsKey('l2_cde'), isFalse);

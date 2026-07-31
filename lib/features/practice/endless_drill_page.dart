@@ -18,8 +18,6 @@ import '../chords/chord_lesson.dart';
 import '../chords/chord_quality_recognition_page.dart';
 import '../chords/chord_recognition_page.dart';
 import '../concept/concept_sheet.dart';
-import '../intervals/interval_lesson.dart';
-import '../intervals/interval_recognition_page.dart';
 import '../lesson/lesson.dart';
 import '../mascot/player_eko.dart';
 import '../melody/echo_game_page.dart';
@@ -122,25 +120,6 @@ List<DrillSkill> buildDrillSkills(PlayerProgress p, VocalRange? range) {
             onComplete: onDone,
           ),
         },
-      ),
-    );
-  }
-
-  // Aralıklar — göreceli olduğundan transpoze edilmez (kök alt ekranda seçilir).
-  for (final l in intervalLessons) {
-    if (!p.isLessonCompleted(l.id)) continue;
-    skills.add(
-      DrillSkill(
-        id: l.id,
-        type: 'interval',
-        title: l.title,
-        build: (player, qc, onDone) => IntervalRecognitionPage(
-          pool: l.pool,
-          player: player,
-          harmonic: l.harmonic,
-          questionCount: qc,
-          onComplete: onDone,
-        ),
       ),
     );
   }
