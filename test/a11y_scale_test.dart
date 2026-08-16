@@ -8,6 +8,10 @@ import 'package:hear_the_sound/features/lesson/lesson.dart';
 import 'package:hear_the_sound/features/lesson/sing_notes_page.dart';
 import 'package:hear_the_sound/features/note_recognition/note_recognition_page.dart';
 import 'package:hear_the_sound/core/echo.dart';
+import 'package:hear_the_sound/features/harmony/harmony_choice_page.dart';
+import 'package:hear_the_sound/features/harmony/harmony_find_page.dart';
+import 'package:hear_the_sound/features/harmony/harmony_lesson.dart';
+import 'package:hear_the_sound/features/harmony/harmony_pattern_page.dart';
 import 'package:hear_the_sound/features/melody/echo_game_page.dart';
 import 'package:hear_the_sound/features/melody/melody_lesson.dart';
 
@@ -95,6 +99,43 @@ void main() {
         player: fake,
         mode: EchoInputMode.tap,
         onModeChanged: (_) {},
+        onComplete: (_) {},
+      ),
+    );
+  });
+
+  // Armoni ekranlarında taşma riski en yüksek örnekler seçildi: en uzun şık
+  // metni, en geniş tuş sırası + çok yuvalı bas hattı, en kalabalık palet.
+  testWidgets('armoni algı ekranı 1.3x ölçekte taşmaz', (t) async {
+    await scaledSmoke(
+      t,
+      HarmonyChoicePage(
+        lesson: harmonyLessons.firstWhere((l) => l.id == 'har2'),
+        player: fake,
+        onComplete: (_) {},
+      ),
+    );
+  });
+
+  testWidgets('armoni bas hattı ekranı 1.3x ölçekte taşmaz', (t) async {
+    await scaledSmoke(
+      t,
+      HarmonyFindPage(
+        lesson: harmonyLessons.firstWhere((l) => l.id == 'har_bassline'),
+        player: fake,
+        mode: EchoInputMode.tap,
+        onModeChanged: (_) {},
+        onComplete: (_) {},
+      ),
+    );
+  });
+
+  testWidgets('armoni tuzaklı kalıp ekranı 1.3x ölçekte taşmaz', (t) async {
+    await scaledSmoke(
+      t,
+      HarmonyPatternPage(
+        lesson: harmonyLessons.firstWhere((l) => l.id == 'har_decoys'),
+        player: fake,
         onComplete: (_) {},
       ),
     );

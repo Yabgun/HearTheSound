@@ -501,10 +501,11 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
             ),
             const SizedBox(height: 20),
             // Seviye → kaç track "tamam" sayılır (bkz. lessonIdsInFirstTracks):
-            // 0 → Notalar'dan · 1 → Melodi Kulağı'ndan · 2 → Akorlar'dan.
+            // 0 → Notalar'dan · 1 → Melodi Kulağı'ndan · 2 → Akorlar'dan ·
+            // 3 → Armoni Kulağı'ndan.
             // DİKKAT: en üst seviye BÜTÜN müfredatı tamam saymamalı; yoksa
-            // kullanıcı açık hiçbir ders olmadan başlar. Armoni Kulağı
-            // eklenince buraya bir kart daha gelecek.
+            // kullanıcı açık hiçbir ders olmadan başlar — bu yüzden son kart
+            // müfredatın SON track'ini açık bırakır.
             _levelCard(
               theme,
               icon: AppIcons.levelBeginner,
@@ -534,6 +535,20 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
               subtitle: t(en: 'Start at Chords', tr: 'Akorlardan başla'),
               color: AppColors.catChords,
               onTap: () => _chooseLevel(2),
+            ),
+            _levelCard(
+              theme,
+              icon: AppIcons.levelTheory,
+              title: t(
+                en: 'I know my chords by ear',
+                tr: 'Akorları kulaktan tanıyorum',
+              ),
+              subtitle: t(
+                en: 'Start at Harmony Ear',
+                tr: 'Armoni Kulağı\'ndan başla',
+              ),
+              color: AppColors.catHarmony,
+              onTap: () => _chooseLevel(3),
             ),
             const SizedBox(height: 8),
             TextButton(

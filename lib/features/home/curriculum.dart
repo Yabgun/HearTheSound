@@ -6,6 +6,8 @@ import '../../core/player_progress.dart';
 import '../../ui/app_theme.dart';
 import '../chords/chord_lesson.dart';
 import '../chords/chord_lesson_flow_page.dart';
+import '../harmony/harmony_lesson.dart';
+import '../harmony/harmony_lesson_flow_page.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_flow_page.dart';
 import '../melody/melody_lesson.dart';
@@ -115,17 +117,36 @@ List<Track> _buildCurriculum() => [
         ),
     ],
   ),
-  // NOT: "Aralıklar" track'i de KALDIRILDI ve dağıtıldı: melodik aralıklar
-  // zaten Melodi Kulağı'nda çalışılıyor (isimler orada rozet olarak veriliyor),
-  // harmonik aralıklar ise Armoni Kulağı'nın giriş dersleri olacak. Ayrı bir
-  // track olarak "Majör 3'lü / Tam 5'li" ezberletmek kulak eğitimi değil
-  // terminoloji sınavıydı.
+  // ARMONİ KULAĞI — "şarkının akorlarını çıkarabilmek".
+  // Kuzey yıldızına en yakın track; omurgası BAS DUYMAKtır. Akorlar'dan SONRA
+  // gelir: kullanıcı önce tek bir akorun rengini tanımalı, ancak ondan sonra
+  // akorların birbirine göre hareketini (ilerlemeyi) duyabilir.
+  Track(
+    name: t(en: 'Harmony Ear', tr: 'Armoni Kulağı'),
+    color: AppColors.catHarmony,
+    icon: Icons.graphic_eq_rounded,
+    unlockAfter: chordLessons.last.id,
+    items: [
+      for (final l in harmonyLessons)
+        TrackItem(
+          id: l.id,
+          title: l.title,
+          open: () => HarmonyLessonFlowPage(lesson: l),
+        ),
+    ],
+  ),
+  // NOT: "Aralıklar" track'i KALDIRILDI ve dağıtıldı: melodik aralıklar Melodi
+  // Kulağı'nda çalışılıyor (isimler orada rozet), harmonik aralıklar ise Armoni
+  // Kulağı'nın ilk dersinde ("Kaç Ses?") yaşanıyor. Ayrı bir track olarak
+  // "Majör 3'lü / Tam 5'li" ezberletmek kulak eğitimi değil terminoloji
+  // sınavıydı.
   //
   // NOT: "Diziler & Tonalite", "Akor İşlevi", "İlerlemeler" ve "Tonalite
   // Yolculuğu" track'leri KALDIRILDI. Dördü de aynı beceriyi (ev neresi) dört
   // ayrı sözlükle tekrar ediyor ve müziği ETİKETLETİYORDU — kullanıcı "neyi
-  // neden yaptığını" anlamıyordu. Yerlerine yetenek track'leri geliyor:
-  // Melodi Kulağı (yukarıda) ve Armoni Kulağı (sırada).
+  // neden yaptığını" anlamıyordu. Yerlerini yetenek track'leri aldı: Melodi
+  // Kulağı ve Armoni Kulağı ("ev neresi" artık ETİKET değil, kullanıcının
+  // BULDUĞU bir ses — bkz. har5).
 ];
 
 /// Onboarding seviye seçimi için: müfredatın ilk [trackCount] track'indeki TÜM

@@ -7,6 +7,7 @@ import '../../notifications/notification_service.dart';
 import '../../state/progress_controller.dart';
 import '../../state/settings_controller.dart';
 import '../auth/sign_in_page.dart';
+import '../dev/dev_tools_tile.dart';
 import '../profile/profile_identity.dart';
 
 // -----------------------------------------------------------------------------
@@ -364,6 +365,9 @@ class SettingsPage extends ConsumerWidget {
           // Veri taşınabilirliği (Play zorunluluğu) — §19. Profil'den buraya
           // taşındı: veri/gizlilik işlemleri Ayarlar altında toplanıyor.
           const ExportDataTile(),
+          // GEÇİCİ geliştirici bölümü — release'de kendini gizler. Kaldırma
+          // talimatı: dev_tools_tile.dart dosyasını ve bu satırı sil.
+          const DevToolsSection(),
         ],
       ),
     );

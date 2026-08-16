@@ -1,5 +1,10 @@
 import '../../core/content_locale.dart';
+import '../lesson/theory_badge.dart';
 import 'melody_generator.dart';
+
+// Rozet modeli artık Armoni Kulağı ile PAYLAŞILAN bir parça. Buradan yeniden
+// dışa aktarılıyor ki bu dosyayı import eden mevcut kod değişmeden çalışsın.
+export '../lesson/theory_badge.dart' show TheoryBadge;
 
 // -----------------------------------------------------------------------------
 // MELODİ KULAĞI — "duyduğun ezgiyi çıkarabilmek"
@@ -13,17 +18,6 @@ import 'melody_generator.dart';
 // [TheoryBadge]). "Tonik" kelimesi, kullanıcı ezgilerin hep aynı sese döndüğünü
 // kendi kulağıyla fark ettikten SONRA verilir.
 // -----------------------------------------------------------------------------
-
-/// Ders sonunda verilen teori rozeti — yaşanmış bir sezgiye ad koyar.
-class TheoryBadge {
-  /// Terimin kendisi (ör. "Tonik").
-  final String term;
-
-  /// "Şunu fark ettin, adı buymuş" cümlesi.
-  final String insight;
-
-  const TheoryBadge({required this.term, required this.insight});
-}
 
 class MelodyLesson {
   final String id;

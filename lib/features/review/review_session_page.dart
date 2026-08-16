@@ -11,6 +11,8 @@ import '../chords/chord_lesson.dart';
 import '../chords/chord_quality_recognition_page.dart';
 import '../chords/chord_recognition_page.dart';
 import '../../state/settings_controller.dart';
+import '../harmony/harmony_lesson.dart';
+import '../harmony/harmony_lesson_flow_page.dart';
 import '../lesson/lesson.dart';
 import '../melody/echo_game_page.dart';
 import '../melody/melody_lesson.dart';
@@ -53,7 +55,8 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
   bool _isKnown(String id) =>
       _noteLessonById(id) != null ||
       _chordLessonById(id) != null ||
-      _melodyLessonById(id) != null;
+      _melodyLessonById(id) != null ||
+      _harmonyLessonById(id) != null;
 
   Lesson? _noteLessonById(String id) {
     for (final l in lessons) {
@@ -71,6 +74,13 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
 
   MelodyLesson? _melodyLessonById(String id) {
     for (final l in melodyLessons) {
+      if (l.id == id) return l;
+    }
+    return null;
+  }
+
+  HarmonyLesson? _harmonyLessonById(String id) {
+    for (final l in harmonyLessons) {
       if (l.id == id) return l;
     }
     return null;
@@ -155,19 +165,32 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
       };
     }
     // Melodi dersi — Eko oyunu (tanıma değil ÜRETME). Cevap modu kullanıcının
-    // Ayarlar'daki tercihinden okunur. (_isKnown süzgecinden geçtiği için
-    // buraya gelen id mutlaka bir melodi dersidir.)
-    final melody = _melodyLessonById(id)!;
-    return EchoGamePage(
+    // Ayarlar'daki tercihinden okunur.
+    final melody = _melodyLessonById(id);
+    if (melody != null) {
+      return EchoGamePage(
+        key: key,
+        lesson: melody,
+        player: _player,
+        range: _range,
+        questionCount: _questionsPerSkill,
+        mode: ref.watch(settingsProvider).echoInputMode,
+        onModeChanged: (mode) =>
+            ref.read(settingsProvider.notifier).setEchoInputMode(mode),
+        onComplete: (r) => _grade(id, r),
+      );
+    }
+    // Armoni dersi — soru tipine göre üç oyun ekranından biri. (_isKnown
+    // süzgecinden geçtiği için buraya gelen id mutlaka bir armoni dersidir.)
+    return KeyedSubtree(
       key: key,
-      lesson: melody,
-      player: _player,
-      range: _range,
-      questionCount: _questionsPerSkill,
-      mode: ref.watch(settingsProvider).echoInputMode,
-      onModeChanged: (mode) =>
-          ref.read(settingsProvider.notifier).setEchoInputMode(mode),
-      onComplete: (r) => _grade(id, r),
+      child: buildHarmonyGame(
+        lesson: _harmonyLessonById(id)!,
+        player: _player,
+        ref: ref,
+        questionCount: _questionsPerSkill,
+        onComplete: (r) => _grade(id, r),
+      ),
     );
   }
 

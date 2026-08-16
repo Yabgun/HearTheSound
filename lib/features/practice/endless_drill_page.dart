@@ -18,6 +18,9 @@ import '../chords/chord_lesson.dart';
 import '../chords/chord_quality_recognition_page.dart';
 import '../chords/chord_recognition_page.dart';
 import '../concept/concept_sheet.dart';
+import '../harmony/harmony_lesson.dart';
+import '../harmony/harmony_lesson_flow_page.dart';
+import '../harmony/harmony_round.dart';
 import '../lesson/lesson.dart';
 import '../mascot/player_eko.dart';
 import '../melody/echo_game_page.dart';
@@ -150,6 +153,34 @@ List<DrillSkill> buildDrillSkills(PlayerProgress p, VocalRange? range) {
     );
   }
 
+  // Armoni Kulağı — soru tipine göre üç ekrandan biri. Karıştırma tipi de
+  // mekaniğe göre ayrılır ki "en çok karıştırdıkların" istatistiği anlamlı
+  // kalsın: iki seçenekli algı ('harmony'), bas bulma ('bass') ve kalıp
+  // dizme ('progression') bambaşka becerilerdir.
+  for (final l in harmonyLessons) {
+    if (!p.isLessonCompleted(l.id)) continue;
+    skills.add(
+      DrillSkill(
+        id: l.id,
+        type: switch (l.drill) {
+          HarmonyDrill.findBass || HarmonyDrill.bassLine => 'bass',
+          HarmonyDrill.pattern => 'progression',
+          _ => 'harmony',
+        },
+        title: l.title,
+        build: (player, qc, onDone) => Consumer(
+          builder: (context, ref, _) => buildHarmonyGame(
+            lesson: l,
+            player: player,
+            ref: ref,
+            questionCount: qc,
+            onComplete: onDone,
+          ),
+        ),
+      ),
+    );
+  }
+
   return skills;
 }
 
@@ -161,6 +192,9 @@ String _typeLabel(String type) => switch (type) {
   'inv' => t(en: 'inversions', tr: 'çevrimler'),
   'interval' => t(en: 'intervals', tr: 'aralıklar'),
   'melody' => t(en: 'melodies', tr: 'ezgiler'),
+  'harmony' => t(en: 'hearing harmony', tr: 'armoni duyma'),
+  'bass' => t(en: 'the bass line', tr: 'bas hattı'),
+  'progression' => t(en: 'chord patterns', tr: 'akor kalıpları'),
   _ => type,
 };
 

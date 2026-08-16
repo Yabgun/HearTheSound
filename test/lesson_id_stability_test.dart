@@ -38,6 +38,16 @@ const Set<String> kShippedLessonIds = {
   'ch_quality_master',
   // Melodi Kulağı (Eko oyunu)
   'mel1', 'mel2', 'mel3', 'mel4', 'mel5', 'mel6', 'mel7', 'mel8',
+  // Armoni Kulağı (bas duyma omurgası)
+  //
+  // 2026-08-16: 'har5' (Ev Neresi?), 'har6' (Dinlendi mi?) ve 'har7' (Sıradaki
+  // Akor) cihaz testinden sonra KALDIRILDI — kullanıcı üçünü de "ne yaptığımı
+  // anlamıyorum" diye reddetti (cevap duyulan sesin içinde değildi). Yerlerine
+  // 'har_bassline', 'har_two_chords' ve 'har_decoys' geldi. Bu, kuralın ihlali
+  // değil bilinçli bir istisnadır: uygulama HENÜZ YAYINLANMADI, üretimdeki
+  // ilerleme tablosu boş. ⚠️ Kaldırılan id'ler ASLA yeniden kullanılmamalı.
+  'har1', 'har2', 'har3', 'har4',
+  'har_bassline', 'har_two_chords', 'har8', 'har_decoys',
 };
 
 List<String> curriculumLessonIds() => [

@@ -2,12 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hear_the_sound/core/player_progress.dart';
 import 'package:hear_the_sound/features/home/curriculum.dart';
 
-// Müfredat tek SIRALI zincir: Notalar → Melodi Kulağı → Akorlar (→ Armoni
-// Kulağı, sırada). Her track bir öncekinin son dersi bitince açılır.
+// Müfredat tek SIRALI zincir: Notalar → Melodi Kulağı → Akorlar → Armoni
+// Kulağı. Her track bir öncekinin son dersi bitince açılır.
 //
 // SIRA GEREKÇESİ: doğal öğrenme yolu tek ses → zamanda çok ses (ezgi) → aynı
-// anda çok ses (akor). İnsan önce şarkı söyler, sonra akor duyar — bu yüzden
-// Melodi Kulağı, Akorlar'dan ÖNCE gelir.
+// anda çok ses (akor) → akorların birbirine göre hareketi (armoni). İnsan önce
+// şarkı söyler, sonra akor duyar — bu yüzden Melodi Kulağı, Akorlar'dan ÖNCE
+// gelir; akorun rengini tanımadan da ilerlemesi duyulamayacağı için Armoni
+// Kulağı en sondadır.
 
 void main() {
   test('track sırası doğru (Melodi Kulağı, Akorlar\'dan ÖNCE)', () {
@@ -15,6 +17,24 @@ void main() {
     expect(firstIds[0], 'first_notes'); // Notalar
     expect(firstIds[1], 'mel1'); // Melodi Kulağı
     expect(firstIds[2], 'ch1'); // Akorlar
+    expect(firstIds[3], 'har1'); // Armoni Kulağı
+  });
+
+  test('Armoni Kulağı Akorlar bitmeden açılmaz', () {
+    final tracks = curriculum;
+    // İlk 2 track tamam (Notalar + Melodi) → Akorlar açık, Armoni hâlâ kapalı.
+    final chordsOpen = PlayerProgress(
+      completedLessons: lessonIdsInFirstTracks(2),
+    );
+    expect(itemUnlocked(tracks[2], 0, chordsOpen), isTrue);
+    expect(itemUnlocked(tracks[3], 0, chordsOpen), isFalse);
+
+    // Akorlar da bitince Armoni açılır ve "Devam Et" oraya gider.
+    final chordsDone = PlayerProgress(
+      completedLessons: lessonIdsInFirstTracks(3),
+    );
+    expect(itemUnlocked(tracks[3], 0, chordsDone), isTrue);
+    expect(nextLesson(chordsDone)?.item.id, 'har1');
   });
 
   test('sıfırdan hesap: yalnızca Notalar açık; next = first_notes', () {
@@ -34,6 +54,25 @@ void main() {
     expect(itemUnlocked(tracks[1], 0, notesDone), isTrue); // Melodi açık
     expect(itemUnlocked(tracks[2], 0, notesDone), isFalse); // Akorlar kilitli
     expect(nextLesson(notesDone)?.item.id, 'mel1');
+  });
+
+  // Geliştirici "Tüm dersleri aç" düğmesinin (features/dev/dev_tools_tile.dart)
+  // dayandığı sözleşme: tüm id'ler tamam sayılınca müfredatta kilitli ders
+  // kalmamalı. Yeni bir track eklenip kilit zinciri farklı kurulursa düğme
+  // sessizce yarım iş yapardı — bu test onu yakalar.
+  test('tüm ders id\'leri tamam sayılınca hiçbir ders kilitli kalmaz', () {
+    final everything = PlayerProgress(
+      completedLessons: lessonIdsInFirstTracks(curriculum.length),
+    );
+    for (final track in curriculum) {
+      for (var i = 0; i < track.items.length; i++) {
+        expect(
+          itemUnlocked(track, i, everything),
+          isTrue,
+          reason: '${track.items[i].id} kilitli kaldı',
+        );
+      }
+    }
   });
 
   test('lessonIdsInFirstTracks seviye seçimini doğru besler', () {

@@ -8,6 +8,10 @@ import 'package:hear_the_sound/features/chords/chord_inversion_recognition_page.
 import 'package:hear_the_sound/features/chords/chord_lesson.dart';
 import 'package:hear_the_sound/features/chords/chord_quality_recognition_page.dart';
 import 'package:hear_the_sound/features/chords/chord_recognition_page.dart';
+import 'package:hear_the_sound/features/harmony/harmony_choice_page.dart';
+import 'package:hear_the_sound/features/harmony/harmony_find_page.dart';
+import 'package:hear_the_sound/features/harmony/harmony_lesson.dart';
+import 'package:hear_the_sound/features/harmony/harmony_pattern_page.dart';
 import 'package:hear_the_sound/features/melody/echo_game_page.dart';
 import 'package:hear_the_sound/features/melody/melody_lesson.dart';
 
@@ -25,6 +29,9 @@ class _FakePlayer implements NotePlayer {
 
 ChordLesson _chordLesson(String id) =>
     chordLessons.firstWhere((l) => l.id == id);
+
+HarmonyLesson _harmonyLesson(String id) =>
+    harmonyLessons.firstWhere((l) => l.id == id);
 
 void main() {
   final fake = _FakePlayer();
@@ -217,6 +224,144 @@ void main() {
       t.takeException(),
       isNull,
       reason: 'cevap sonrası taşma olmamalı',
+    );
+  });
+
+  // ARMONİ KULAĞI — üç oyun ekranı (algı / bas bulma / kalıp dizme).
+  testWidgets('armoni algı ekranı üç soru tipinde de çizilir', (t) async {
+    for (final id in ['har1', 'har2', 'har3']) {
+      await smoke(
+        t,
+        HarmonyChoicePage(
+          lesson: _harmonyLesson(id),
+          player: fake,
+          questionCount: 4,
+          onComplete: (_) {},
+        ),
+      );
+    }
+  });
+
+  testWidgets('armoni bas bulma ekranı çizilir (tuş + söyleme)', (t) async {
+    for (final id in ['har4', 'har_bassline']) {
+      await smoke(
+        t,
+        HarmonyFindPage(
+          lesson: _harmonyLesson(id),
+          player: fake,
+          mode: EchoInputMode.tap,
+          onModeChanged: (_) {},
+          questionCount: 4,
+          onComplete: (_) {},
+        ),
+      );
+    }
+    await smoke(
+      t,
+      HarmonyFindPage(
+        lesson: _harmonyLesson('har4'),
+        player: fake,
+        mode: EchoInputMode.sing,
+        onModeChanged: (_) {},
+        questionCount: 4,
+        onComplete: (_) {},
+      ),
+    );
+  });
+
+  // İki akorluk hafif hâlden en kalabalık palete (tuzaklı) kadar.
+  testWidgets('armoni kalıp ekranı üç zorlukta da çizilir', (t) async {
+    for (final id in ['har_two_chords', 'har8', 'har_decoys']) {
+      await smoke(
+        t,
+        HarmonyPatternPage(
+          lesson: _harmonyLesson(id),
+          player: fake,
+          questionCount: 4,
+          onComplete: (_) {},
+        ),
+      );
+    }
+  });
+
+  // Kısa ekranda CEVAP SONRASI hâl en taşma riskli andır (sonuç alanı açılır).
+  // Cevap verebilmek için önce cümlenin çalması beklenmeli — çalarken şıklar
+  // kapalıdır, erken dokunuş sessizce yutulur ve test yalancı yeşil yanardı.
+  testWidgets('armoni ekranları kısa ekranda cevap sonrası taşmaz', (t) async {
+    Future<void> tapAt(Finder finder) async {
+      await t.ensureVisible(finder);
+      await t.tap(finder);
+      await t.pump(const Duration(milliseconds: 400));
+    }
+
+    Future<void> answeredSmoke(
+      Widget page,
+      Future<void> Function() answer,
+    ) async {
+      await t.binding.setSurfaceSize(const Size(420, 700));
+      addTearDown(() => t.binding.setSurfaceSize(null));
+      await t.pumpWidget(MaterialApp(home: page));
+      for (var i = 0; i < 10; i++) {
+        await t.pump(const Duration(milliseconds: 800));
+      }
+      await answer();
+      for (var i = 0; i < 8; i++) {
+        await t.pump(const Duration(milliseconds: 800));
+      }
+      // Cevap gerçekten VERİLDİ mi? Dokunuşlar yutulmuşsa sayfa hâlâ cevap
+      // bekliyor olurdu ve test yalancı yeşil yanardı.
+      expect(
+        find.text('Next'),
+        findsOneWidget,
+        reason: 'cevap sonrası sonuç alanı açılmalı',
+      );
+      expect(
+        t.takeException(),
+        isNull,
+        reason: 'cevap sonrası taşma olmamalı',
+      );
+    }
+
+    // En uzun şık metni: "aynı kaldı / değişti".
+    await answeredSmoke(
+      HarmonyChoicePage(
+        lesson: _harmonyLesson('har2'),
+        player: fake,
+        questionCount: 4,
+        onComplete: (_) {},
+      ),
+      () => tapAt(find.byType(InkWell).first),
+    );
+    // Bas hattı: üç tuşa bas, sonra "Hattım bu" ile onayla (en kalabalık hâl).
+    await answeredSmoke(
+      HarmonyFindPage(
+        lesson: _harmonyLesson('har_bassline'),
+        player: fake,
+        mode: EchoInputMode.tap,
+        onModeChanged: (_) {},
+        questionCount: 4,
+        onComplete: (_) {},
+      ),
+      () async {
+        for (var i = 0; i < 3; i++) {
+          await tapAt(find.byType(InkWell).first);
+        }
+        await tapAt(find.widgetWithText(FilledButton, "That's it"));
+      },
+    );
+    // Tuzaklı kalıp: en kalabalık palet + dört yuva dolunca değerlendirilir.
+    await answeredSmoke(
+      HarmonyPatternPage(
+        lesson: _harmonyLesson('har_decoys'),
+        player: fake,
+        questionCount: 4,
+        onComplete: (_) {},
+      ),
+      () async {
+        for (var i = 0; i < 4; i++) {
+          await tapAt(find.byType(InkWell).first);
+        }
+      },
     );
   });
 }

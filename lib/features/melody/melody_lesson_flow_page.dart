@@ -5,11 +5,10 @@ import '../../audio/note_player.dart';
 import '../../core/content_locale.dart';
 import '../../state/progress_controller.dart';
 import '../../state/settings_controller.dart';
-import '../../ui/app_theme.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_complete_page.dart';
 import '../lesson/lesson_intro_page.dart';
-import '../mascot/player_eko.dart';
+import '../lesson/theory_badge.dart';
 import 'echo_game_page.dart';
 import 'melody_lesson.dart';
 
@@ -106,7 +105,11 @@ class _MelodyLessonFlowPageState extends ConsumerState<MelodyLessonFlowPage> {
           onComplete: _onComplete,
         );
       case _Phase.badge:
-        return _badgePage(context);
+        // Rozet ekranı Armoni Kulağı ile ortak (features/lesson/theory_badge.dart).
+        return TheoryBadgePage(
+          badge: widget.lesson.badge!,
+          onContinue: () => setState(() => _phase = _Phase.done),
+        );
       case _Phase.done:
         return LessonCompletePage(
           result: _result!,
@@ -119,59 +122,5 @@ class _MelodyLessonFlowPageState extends ConsumerState<MelodyLessonFlowPage> {
           }),
         );
     }
-  }
-
-  /// Teori rozeti — yaşanmış sezgiye ad koyar. ("Önce yaşat, sonra adını koy.")
-  Widget _badgePage(BuildContext context) {
-    final theme = Theme.of(context);
-    final badge = widget.lesson.badge!;
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
-              const Center(child: PlayerEko(size: 96, celebrate: true)),
-              const SizedBox(height: 20),
-              Text(
-                t(en: 'You just earned a word', tr: 'Bir kelime kazandın'),
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                badge.term,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.grape,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                badge.insight,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  height: 1.5,
-                ),
-              ),
-              const Spacer(),
-              FilledButton(
-                onPressed: () => setState(() => _phase = _Phase.done),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: Text(t(en: 'Got it', tr: 'Anladım')),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
