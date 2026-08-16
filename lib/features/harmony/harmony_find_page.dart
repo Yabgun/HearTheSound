@@ -403,7 +403,7 @@ class _HarmonyFindPageState extends State<HarmonyFindPage> {
             children: [
               for (var i = 0; i < _targets.length; i++)
                 Container(
-                  width: single ? 74 : 60,
+                  width: single ? 82 : 68,
                   height: 52,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   alignment: Alignment.center,
@@ -416,8 +416,11 @@ class _HarmonyFindPageState extends State<HarmonyFindPage> {
                   ),
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
+                    // Oktavlı tam ad ("C4"): söyleme modunda kullanıcı kendi
+                    // oktavında söyler ve doğruluk perde sınıfına bakar, ama
+                    // ne söylediğini GÖRMESİ öğreticidir.
                     child: Text(
-                      i < _attempt.length ? _attempt[i].name : '?',
+                      i < _attempt.length ? _attempt[i].label : '?',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: _matches != null ? Colors.white : AppColors.ink,
@@ -434,8 +437,8 @@ class _HarmonyFindPageState extends State<HarmonyFindPage> {
           const SizedBox(height: 8),
           Text(
             t(
-              en: 'It was: ${_targets.map((n) => n.name).join(' · ')}',
-              tr: 'Doğrusu: ${_targets.map((n) => n.name).join(' · ')}',
+              en: 'It was: ${_targets.map((n) => n.label).join(' · ')}',
+              tr: 'Doğrusu: ${_targets.map((n) => n.label).join(' · ')}',
             ),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -502,10 +505,16 @@ class _HarmonyFindPageState extends State<HarmonyFindPage> {
     );
   }
 
+  /// Tuş — OKTAVLI ad taşır ("C4", "F4").
+  ///
+  /// Oktav olmadan tuşların hangisinin daha pes olduğu okunamıyordu: ders her
+  /// soruda başka bir "ev"de çalınabildiği için tuş sırası bazen C-D-F-G-A,
+  /// bazen G-A-C-D-E oluyor ve harf sırası perde sırasını yanıltıyordu
+  /// (kullanıcının cihazda bildirdiği "F akoru C'den kalın çıkıyor" durumu).
   Widget _pad(ThemeData theme, Note note) {
     return Semantics(
       button: true,
-      label: note.name,
+      label: note.label,
       child: Material(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
@@ -519,7 +528,7 @@ class _HarmonyFindPageState extends State<HarmonyFindPage> {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                note.name,
+                note.label,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),

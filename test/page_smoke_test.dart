@@ -227,6 +227,65 @@ void main() {
     );
   });
 
+  // Cihaz geri bildirimi: oktavsız tuş yazımı hangi sesin daha pes olduğunu
+  // söylemiyordu ("F akoru C'den kalın çıkıyor"). Bu test yazımın sessizce
+  // oktavsıza dönmesini engeller.
+  testWidgets('bas tuşları ve akor taşları oktavı gösterir', (t) async {
+    await t.binding.setSurfaceSize(const Size(420, 960));
+    addTearDown(() => t.binding.setSurfaceSize(null));
+
+    // Bası Bul: ev sabit (C4) → tuşlar C4/F4/G4/A4.
+    await t.pumpWidget(
+      MaterialApp(
+        home: HarmonyFindPage(
+          lesson: _harmonyLesson('har4'),
+          player: fake,
+          mode: EchoInputMode.tap,
+          onModeChanged: (_) {},
+          questionCount: 4,
+          onComplete: (_) {},
+        ),
+      ),
+    );
+    for (var i = 0; i < 8; i++) {
+      await t.pump(const Duration(milliseconds: 800));
+    }
+    expect(find.text('C4'), findsOneWidget);
+    expect(find.text('C'), findsNothing, reason: 'oktavsız tuş kalmamalı');
+
+    // Eko Oyunu aynı dili konuşmalı: mel8'de üst oktav toniği var, oktavsız
+    // yazımda İKİ TANE "C" tuşu görünüyordu (biri doğru, biri yanlış).
+    await t.pumpWidget(
+      MaterialApp(
+        home: EchoGamePage(
+          lesson: melodyLessons.last,
+          player: fake,
+          mode: EchoInputMode.tap,
+          onModeChanged: (_) {},
+          onComplete: (_) {},
+        ),
+      ),
+    );
+    for (var i = 0; i < 8; i++) {
+      await t.pump(const Duration(milliseconds: 800));
+    }
+    expect(find.text('C'), findsNothing);
+    final padLabels = t
+        .widgetList<Semantics>(find.byType(Semantics))
+        .map((s) => s.properties.label)
+        .whereType<String>()
+        .where((l) => RegExp(r'^[A-G]#?\d$').hasMatch(l))
+        .toList();
+    // Boş liste testi sessizce yeşil yakardı — tuşların gerçekten bulunduğunu
+    // önce doğrula (mel8 havuzu 8 derece).
+    expect(padLabels.length, 8, reason: 'tuşlar bulunamadı: $padLabels');
+    expect(
+      padLabels.length,
+      padLabels.toSet().length,
+      reason: 'iki tuş aynı etiketi taşımamalı: $padLabels',
+    );
+  });
+
   // ARMONİ KULAĞI — üç oyun ekranı (algı / bas bulma / kalıp dizme).
   testWidgets('armoni algı ekranı üç soru tipinde de çizilir', (t) async {
     for (final id in ['har1', 'har2', 'har3']) {

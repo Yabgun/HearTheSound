@@ -319,6 +319,37 @@ void main() {
     });
   });
 
+  // Cihaz geri bildirimi: "bazı yerlerde F akoru C'den daha kalın çıkıyor" —
+  // oktavsız etiket hangi sesin daha pes olduğunu söylemiyordu.
+  group('etiketler oktavı taşır (hangi ses daha pes, okunabilsin)', () {
+    test('akorun tam yazımı kök oktavını içerir', () {
+      expect(fullChordName(chordForDegree(tonic: c4, degree: 1)), 'C4');
+      expect(fullChordName(chordForDegree(tonic: c4, degree: 6)), 'Am4');
+      final g4 = Note.fromName('G', 4);
+      // Sol majörde 4. derece C5'tir: harf sırası "G, C" olsa da C DAHA TİZdir.
+      // Etiket bunu söylemezse kullanıcı tam olarak yanılır.
+      expect(fullChordName(chordForDegree(tonic: g4, degree: 4)), 'C5');
+    });
+
+    test('karıştırma anahtarı OKTAVSIZ kalır (doğruluk perde sınıfına bakar)', () {
+      // shortChordName mistake key'lerde kullanılır: 'progression:C>F' iki
+      // farklı oktavda aynı hatadır, oktav girerse istatistik parçalanır.
+      expect(shortChordName(chordForDegree(tonic: Note.fromName('G', 4), degree: 4)), 'C');
+    });
+
+    test('tuş sırası etiketleriyle birlikte gerçekten yükselir', () {
+      final pads = padNotesFor(
+        tonic: Note.fromName('G', 4),
+        degrees: const [1, 2, 4, 5, 6],
+      );
+      expect(pads.map((n) => n.label), ['G4', 'A4', 'C5', 'D5', 'E5']);
+      // Perde sırası artan; harf sırası değil → oktav şart.
+      for (var i = 1; i < pads.length; i++) {
+        expect(pads[i].midi, greaterThan(pads[i - 1].midi));
+      }
+    });
+  });
+
   group('ev değişimi (varyKey) ve tuş sırası', () {
     test('varyKey kapalıyken ev sabit, açıkken gezinir', () {
       final fixed = {

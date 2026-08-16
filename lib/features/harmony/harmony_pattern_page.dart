@@ -286,16 +286,13 @@ class _HarmonyPatternPageState extends State<HarmonyPatternPage> {
                   color: theme.colorScheme.outline.withValues(alpha: 0.5),
                 ),
               ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  i < _attempt.length ? shortChordName(_attempt[i]) : '',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: _matches != null ? Colors.white : AppColors.ink,
-                  ),
-                ),
-              ),
+              child: i < _attempt.length
+                  ? _chordLabel(
+                      theme,
+                      _attempt[i],
+                      color: _matches != null ? Colors.white : AppColors.ink,
+                    )
+                  : const SizedBox.shrink(),
             ),
         ],
       ),
@@ -349,7 +346,7 @@ class _HarmonyPatternPageState extends State<HarmonyPatternPage> {
   Widget _paletteTile(ThemeData theme, Chord chord) {
     return Semantics(
       button: true,
-      label: shortChordName(chord),
+      label: fullChordName(chord),
       child: Material(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
@@ -358,16 +355,44 @@ class _HarmonyPatternPageState extends State<HarmonyPatternPage> {
           onTap: _phase == _Phase.answering ? () => _place(chord) : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 18),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                shortChordName(chord),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            child: _chordLabel(theme, chord, color: AppColors.ink),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Akor etiketi: sembol + KÖK OKTAVI (küçük punto).
+  ///
+  /// NEDEN OKTAV: cihaz testinde kullanıcı "bazı yerlerde F akoru C'den daha
+  /// kalın çıkıyor" dedi ve haklıydı — ders her soruda başka bir "ev"de
+  /// çalınabildiği için aynı harf bir soruda daha pes, bir soruda daha tiz
+  /// duyuluyordu; "C" ve "F" yazıları bunu söylemiyordu.
+  ///
+  /// NEDEN KÜÇÜK PUNTO: "Am4" tek parça yazılsaydı bir akor UZANTISI ("Am7")
+  /// gibi okunurdu. Oktav görsel olarak geride durunca sembol sembol kalır,
+  /// rakam da yalnızca "hangi yükseklikte" sorusunu cevaplar.
+  Widget _chordLabel(ThemeData theme, Chord chord, {required Color color}) {
+    final base = theme.textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w800,
+      color: color,
+    );
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text.rich(
+        TextSpan(
+          text: shortChordName(chord),
+          style: base,
+          children: [
+            TextSpan(
+              text: '${chord.root.octave}',
+              style: base?.copyWith(
+                fontSize: (base.fontSize ?? 16) * 0.62,
+                fontWeight: FontWeight.w600,
+                color: color.withValues(alpha: 0.7),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -383,9 +408,9 @@ class _HarmonyPatternPageState extends State<HarmonyPatternPage> {
             child: Text(
               t(
                 en: 'It was: '
-                    '${_round.sequence.map(shortChordName).join(' · ')}',
+                    '${_round.sequence.map(fullChordName).join(' · ')}',
                 tr: 'Kalıp şuydu: '
-                    '${_round.sequence.map(shortChordName).join(' · ')}',
+                    '${_round.sequence.map(fullChordName).join(' · ')}',
               ),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(

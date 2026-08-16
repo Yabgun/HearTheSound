@@ -100,6 +100,12 @@ class _EchoGamePageState extends State<EchoGamePage> {
   List<Note> get _target => _melody.allNotes;
 
   /// Tuş modundaki notalar — dersin derece havuzu, pesten tize.
+  ///
+  /// Tuşlar OKTAVLI ad taşır ("C4", "C5"). Oktavsız yazımda üst oktav toniği
+  /// içeren derslerde (mel5/mel8, derece 8) iki tuş da "C" görünüyordu: biri
+  /// doğru biri yanlış, ayırt edilemez halde. Ayrıca Armoni Kulağı'ndaki
+  /// tuşlarla aynı dili konuşur — kullanıcı iki oyunda iki farklı yazım
+  /// öğrenmek zorunda kalmaz.
   List<Note> get _pads => [
     for (final degree in (widget.lesson.shape.degrees.toSet().toList()..sort()))
       Note(_tonic.midi + majorDegreeSemitones(degree)),
@@ -418,7 +424,7 @@ class _EchoGamePageState extends State<EchoGamePage> {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  i < _attempt.length ? _attempt[i].name : '',
+                  i < _attempt.length ? _attempt[i].label : '',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                     color: comparison != null ? Colors.white : AppColors.ink,
@@ -450,7 +456,7 @@ class _EchoGamePageState extends State<EchoGamePage> {
               Expanded(
                 child: Semantics(
                   button: true,
-                  label: note.name,
+                  label: note.label,
                   child: Material(
                     color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
@@ -464,7 +470,7 @@ class _EchoGamePageState extends State<EchoGamePage> {
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
                           child: Text(
-                            note.name,
+                            note.label,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -543,8 +549,8 @@ class _EchoGamePageState extends State<EchoGamePage> {
             padding: const EdgeInsets.only(bottom: 10),
             child: Text(
               t(
-                en: 'The tune was: ${_target.map((n) => n.name).join(' · ')}',
-                tr: 'Ezgi şuydu: ${_target.map((n) => n.name).join(' · ')}',
+                en: 'The tune was: ${_target.map((n) => n.label).join(' · ')}',
+                tr: 'Ezgi şuydu: ${_target.map((n) => n.label).join(' · ')}',
               ),
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(

@@ -102,17 +102,36 @@ MusicalPhrase bandPhrase({
   beatsPerEvent: beatsPerChord,
 );
 
-/// Akorun kısa yazımı ("C", "Am", "B°").
+/// Akorun kısa yazımı ("C", "Am", "B°") — OKTAVSIZ.
 ///
 /// ÇEVRİLMEZ ve çevrilmemeli: akor sembolleri müziğin uluslararası yazımıdır,
 /// dünyanın her yerindeki nota/tab sitesinde kullanıcıyı bu yazım karşılar.
 /// Burada bir TERİM ezberletilmiyor — taşa basınca akor çalıyor, kullanıcı onu
 /// kulağıyla eşleştiriyor; sembol yalnızca taşın etiketi.
+///
+/// Karıştırma sayaçlarının anahtarı da budur: oktav içermez, çünkü doğruluk
+/// perde SINIFI üzerinden ölçülür ('progression:C>F' iki farklı oktavda aynı
+/// hatadır).
 String shortChordName(Chord chord) => switch (chord.quality) {
   ChordQuality.minor => '${chord.root.name}m',
   ChordQuality.diminished => '${chord.root.name}°',
   _ => chord.root.name,
 };
+
+/// Akorun kök oktavıyla birlikte yazımı ("C4", "Am4", "B°3").
+///
+/// NEDEN OKTAV: cihaz testinde kullanıcı "bazı yerlerde F akoru C'den daha
+/// kalın çıkıyor" dedi ve haklıydı — ders her soruda başka bir "ev"de
+/// çalınabildiği için aynı harf bir soruda daha pes, bir soruda daha tiz
+/// duyuluyordu; oktavsız etiket bunu söylemiyordu. Referans, akorun KÖKÜdür:
+/// bas bulma derslerindeki tuş sırasıyla aynı oktavda durur, böylece iki ekran
+/// birbiriyle tutarlı konuşur.
+///
+/// Düğmelerde bu düz metin yerine oktavı küçük puntoyla ayrı gösteren biçim
+/// kullanılır ("Am4" tek parça yazılsa bir akor uzantısı gibi okunurdu);
+/// buradaki hâl özet/etiket metinleri içindir.
+String fullChordName(Chord chord) =>
+    '${shortChordName(chord)}${chord.root.octave}';
 
 // --- 1 / 2 / 3 · İki seçenekli sorular ----------------------------------------
 
