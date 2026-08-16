@@ -10,6 +10,7 @@ import '../../ui/app_theme.dart';
 import '../../ui/phrase_dots.dart';
 import '../../ui/play_button.dart';
 import '../lesson/lesson.dart';
+import 'chord_label.dart';
 import 'harmony_lesson.dart';
 import 'harmony_round.dart';
 
@@ -287,8 +288,7 @@ class _HarmonyPatternPageState extends State<HarmonyPatternPage> {
                 ),
               ),
               child: i < _attempt.length
-                  ? _chordLabel(
-                      theme,
+                  ? ChordLabel(
                       _attempt[i],
                       color: _matches != null ? Colors.white : AppColors.ink,
                     )
@@ -355,44 +355,8 @@ class _HarmonyPatternPageState extends State<HarmonyPatternPage> {
           onTap: _phase == _Phase.answering ? () => _place(chord) : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 18),
-            child: _chordLabel(theme, chord, color: AppColors.ink),
+            child: ChordLabel(chord, color: AppColors.ink),
           ),
-        ),
-      ),
-    );
-  }
-
-  /// Akor etiketi: sembol + KÖK OKTAVI (küçük punto).
-  ///
-  /// NEDEN OKTAV: cihaz testinde kullanıcı "bazı yerlerde F akoru C'den daha
-  /// kalın çıkıyor" dedi ve haklıydı — ders her soruda başka bir "ev"de
-  /// çalınabildiği için aynı harf bir soruda daha pes, bir soruda daha tiz
-  /// duyuluyordu; "C" ve "F" yazıları bunu söylemiyordu.
-  ///
-  /// NEDEN KÜÇÜK PUNTO: "Am4" tek parça yazılsaydı bir akor UZANTISI ("Am7")
-  /// gibi okunurdu. Oktav görsel olarak geride durunca sembol sembol kalır,
-  /// rakam da yalnızca "hangi yükseklikte" sorusunu cevaplar.
-  Widget _chordLabel(ThemeData theme, Chord chord, {required Color color}) {
-    final base = theme.textTheme.titleMedium?.copyWith(
-      fontWeight: FontWeight.w800,
-      color: color,
-    );
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Text.rich(
-        TextSpan(
-          text: shortChordName(chord),
-          style: base,
-          children: [
-            TextSpan(
-              text: '${chord.root.octave}',
-              style: base?.copyWith(
-                fontSize: (base.fontSize ?? 16) * 0.62,
-                fontWeight: FontWeight.w600,
-                color: color.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
         ),
       ),
     );

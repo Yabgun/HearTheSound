@@ -14,6 +14,7 @@ import '../mascot/player_eko.dart';
 import '../profile/profile_identity.dart';
 import '../review/review_session_page.dart';
 import '../settings/settings_page.dart';
+import '../song/song_solve_page.dart';
 import '../../ui/app_theme.dart';
 
 /// Ana yolun yanındaki iki sabit varış: günlük pratik ve oyuncu profili.
@@ -24,6 +25,7 @@ class PracticeHubPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final progress = ref.watch(progressProvider);
     final due = progress.dueReviewSkills(dayKeyFor(DateTime.now()));
+    final songUnlocked = progress.isLessonCompleted(kSongSolveUnlockLesson);
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
@@ -77,6 +79,36 @@ class PracticeHubPage extends ConsumerWidget {
                         builder: (_) => ReviewSessionPage(skillIds: due),
                       ),
                     ),
+            ),
+            const SizedBox(height: 14),
+            // ŞARKI ÇÖZ — uygulamanın varış noktası, bu yüzden listenin başına
+            // yakın duruyor. Kilidi Kalıbı Çöz dersi açar; kilitliyken de
+            // görünür kalır ki kullanıcı neye doğru gittiğini bilsin.
+            _PracticeCard(
+              icon: Icons.queue_music_rounded,
+              color: AppColors.pink,
+              title: t(en: 'Solve a Song', tr: 'Şarkı Çöz'),
+              subtitle: songUnlocked
+                  ? t(
+                      en: 'A song plays. You work out its chords bar by bar — '
+                          'the reason this app exists.',
+                      tr: 'Bir şarkı çalar. Akorlarını ölçü ölçü çıkarırsın — '
+                          'bu uygulamanın var oluş sebebi.',
+                    )
+                  : t(
+                      en: 'Unlocks when you finish "Crack the Pattern" in '
+                          'Harmony Ear.',
+                      tr: 'Armoni Kulağı\'ndaki "Kalıbı Çöz" dersini '
+                          'bitirdiğinde açılır.',
+                    ),
+              buttonLabel: t(en: 'Open', tr: 'Aç'),
+              onPressed: songUnlocked
+                  ? () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SongSolvePage(),
+                      ),
+                    )
+                  : null,
             ),
             const SizedBox(height: 14),
             _PracticeCard(
