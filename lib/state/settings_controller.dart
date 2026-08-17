@@ -23,6 +23,11 @@ class AppSettings {
   final bool reminderEnabled;
   final bool onboarded; // ilk açılış akışı tamamlandı mı
   final bool tutorialSeen; // ana ekran ilk-açılış coach-mark turu görüldü mü
+
+  /// Şarkı Çöz'ün ilk-açılış turu görüldü mü. AYRI bir bayrak: o modun kilit
+  /// hareketi (ölçüye dokunup tek başına dinlemek) keşfedilebilir değil ve
+  /// kullanıcı oraya ana ekran turundan aylar sonra gelebilir.
+  final bool songTutorialSeen;
   final Instrument instrument; // egzersiz tınısı (piyano/sentez)
   final String localeCode; // 'en' (varsayılan) | 'tr'
 
@@ -34,6 +39,7 @@ class AppSettings {
     this.reminderEnabled = false,
     this.onboarded = false,
     this.tutorialSeen = false,
+    this.songTutorialSeen = false,
     this.instrument = Instrument.piano,
     this.localeCode = 'en',
     this.echoInputMode = EchoInputMode.tap,
@@ -43,6 +49,7 @@ class AppSettings {
     bool? reminderEnabled,
     bool? onboarded,
     bool? tutorialSeen,
+    bool? songTutorialSeen,
     Instrument? instrument,
     String? localeCode,
     EchoInputMode? echoInputMode,
@@ -51,6 +58,7 @@ class AppSettings {
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       onboarded: onboarded ?? this.onboarded,
       tutorialSeen: tutorialSeen ?? this.tutorialSeen,
+      songTutorialSeen: songTutorialSeen ?? this.songTutorialSeen,
       instrument: instrument ?? this.instrument,
       localeCode: localeCode ?? this.localeCode,
       echoInputMode: echoInputMode ?? this.echoInputMode,
@@ -76,6 +84,7 @@ class SettingsController extends Notifier<AppSettings> {
     reminderEnabled: _prefs.getBool('reminder_enabled') ?? false,
     onboarded: _prefs.getBool('onboarded') ?? false,
     tutorialSeen: _prefs.getBool('tutorial_seen') ?? false,
+    songTutorialSeen: _prefs.getBool('song_tutorial_seen') ?? false,
     instrument: instrumentFromPrefs(_prefs),
     localeCode: localeFromPrefs(_prefs),
     echoInputMode: _prefs.getString('echo_input_mode') == 'sing'
@@ -103,6 +112,12 @@ class SettingsController extends Notifier<AppSettings> {
   Future<void> setTutorialSeen(bool value) async {
     await _prefs.setBool('tutorial_seen', value);
     state = state.copyWith(tutorialSeen: value);
+  }
+
+  /// Şarkı Çöz turu görüldü olarak işaretle (bir kez).
+  Future<void> setSongTutorialSeen(bool value) async {
+    await _prefs.setBool('song_tutorial_seen', value);
+    state = state.copyWith(songTutorialSeen: value);
   }
 
   /// Tınıyı değiştirir: prefs'e yazar, global çalıcı fabrikasını günceller ve

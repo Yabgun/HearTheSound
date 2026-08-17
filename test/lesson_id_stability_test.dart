@@ -48,6 +48,8 @@ const Set<String> kShippedLessonIds = {
   // ilerleme tablosu boş. ⚠️ Kaldırılan id'ler ASLA yeniden kullanılmamalı.
   'har1', 'har2', 'har3', 'har4',
   'har_bassline', 'har_two_chords', 'har8', 'har_decoys',
+  // Ritim Kulağı (dokunarak tekrar)
+  'rhy1', 'rhy2', 'rhy3', 'rhy4', 'rhy5', 'rhy6', 'rhy7',
 };
 
 List<String> curriculumLessonIds() => [

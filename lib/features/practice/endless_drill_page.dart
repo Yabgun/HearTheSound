@@ -26,6 +26,8 @@ import '../mascot/player_eko.dart';
 import '../melody/echo_game_page.dart';
 import '../melody/melody_lesson.dart';
 import '../note_recognition/note_recognition_page.dart';
+import '../rhythm/rhythm_echo_page.dart';
+import '../rhythm/rhythm_lesson.dart';
 
 // -----------------------------------------------------------------------------
 // SONSUZ PRATİK — bitmeyen, ağırlıklı, karışık tanıma oturumu
@@ -181,6 +183,25 @@ List<DrillSkill> buildDrillSkills(PlayerProgress p, VocalRange? range) {
     );
   }
 
+  // Ritim Kulağı — perde yok, zamanlama var. Tanıma değil ÜRETME becerisi
+  // (melodi Eko oyunuyla aynı aile), o yüzden kendi tipiyle ayrılır.
+  for (final l in rhythmLessons) {
+    if (!p.isLessonCompleted(l.id)) continue;
+    skills.add(
+      DrillSkill(
+        id: l.id,
+        type: 'rhythm',
+        title: l.title,
+        build: (player, qc, onDone) => RhythmEchoPage(
+          lesson: l,
+          player: player,
+          questionCount: qc,
+          onComplete: onDone,
+        ),
+      ),
+    );
+  }
+
   return skills;
 }
 
@@ -195,6 +216,7 @@ String _typeLabel(String type) => switch (type) {
   'harmony' => t(en: 'hearing harmony', tr: 'armoni duyma'),
   'bass' => t(en: 'the bass line', tr: 'bas hattı'),
   'progression' => t(en: 'chord patterns', tr: 'akor kalıpları'),
+  'rhythm' => t(en: 'rhythm', tr: 'ritim'),
   _ => type,
 };
 

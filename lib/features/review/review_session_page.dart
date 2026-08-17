@@ -17,6 +17,8 @@ import '../lesson/lesson.dart';
 import '../melody/echo_game_page.dart';
 import '../melody/melody_lesson.dart';
 import '../note_recognition/note_recognition_page.dart';
+import '../rhythm/rhythm_echo_page.dart';
+import '../rhythm/rhythm_lesson.dart';
 
 // -----------------------------------------------------------------------------
 // TEKRAR OTURUMU — aralıklı tekrar (SM-2)
@@ -56,7 +58,8 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
       _noteLessonById(id) != null ||
       _chordLessonById(id) != null ||
       _melodyLessonById(id) != null ||
-      _harmonyLessonById(id) != null;
+      _harmonyLessonById(id) != null ||
+      _rhythmLessonById(id) != null;
 
   Lesson? _noteLessonById(String id) {
     for (final l in lessons) {
@@ -81,6 +84,13 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
 
   HarmonyLesson? _harmonyLessonById(String id) {
     for (final l in harmonyLessons) {
+      if (l.id == id) return l;
+    }
+    return null;
+  }
+
+  RhythmLesson? _rhythmLessonById(String id) {
+    for (final l in rhythmLessons) {
       if (l.id == id) return l;
     }
     return null;
@@ -177,6 +187,17 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
         mode: ref.watch(settingsProvider).echoInputMode,
         onModeChanged: (mode) =>
             ref.read(settingsProvider.notifier).setEchoInputMode(mode),
+        onComplete: (r) => _grade(id, r),
+      );
+    }
+    // Ritim dersi — dokunarak tekrar (perde yok).
+    final rhythm = _rhythmLessonById(id);
+    if (rhythm != null) {
+      return RhythmEchoPage(
+        key: key,
+        lesson: rhythm,
+        player: _player,
+        questionCount: _questionsPerSkill,
         onComplete: (r) => _grade(id, r),
       );
     }

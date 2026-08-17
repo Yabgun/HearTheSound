@@ -14,6 +14,8 @@ import 'package:hear_the_sound/features/harmony/harmony_lesson.dart';
 import 'package:hear_the_sound/features/harmony/harmony_pattern_page.dart';
 import 'package:hear_the_sound/features/melody/echo_game_page.dart';
 import 'package:hear_the_sound/features/melody/melody_lesson.dart';
+import 'package:hear_the_sound/features/rhythm/rhythm_echo_page.dart';
+import 'package:hear_the_sound/features/rhythm/rhythm_lesson.dart';
 
 // -----------------------------------------------------------------------------
 // ERİŞİLEBİLİRLİK — BÜYÜK METİN ÖLÇEĞİ (1.3x)
@@ -135,6 +137,17 @@ void main() {
       t,
       HarmonyPatternPage(
         lesson: harmonyLessons.firstWhere((l) => l.id == 'har_decoys'),
+        player: fake,
+        onComplete: (_) {},
+      ),
+    );
+  });
+
+  testWidgets('ritim eko oyunu 1.3x ölçekte taşmaz', (t) async {
+    await scaledSmoke(
+      t,
+      RhythmEchoPage(
+        lesson: rhythmLessons.last, // en uzun kalıp + en çok vuruş
         player: fake,
         onComplete: (_) {},
       ),

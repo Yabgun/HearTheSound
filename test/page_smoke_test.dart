@@ -14,6 +14,8 @@ import 'package:hear_the_sound/features/harmony/harmony_lesson.dart';
 import 'package:hear_the_sound/features/harmony/harmony_pattern_page.dart';
 import 'package:hear_the_sound/features/melody/echo_game_page.dart';
 import 'package:hear_the_sound/features/melody/melody_lesson.dart';
+import 'package:hear_the_sound/features/rhythm/rhythm_echo_page.dart';
+import 'package:hear_the_sound/features/rhythm/rhythm_lesson.dart';
 
 // Ses eklentisi çağırmayan sahte oynatıcı — testte plugin hatası olmasın.
 class _FakePlayer implements NotePlayer {
@@ -422,5 +424,58 @@ void main() {
         }
       },
     );
+  });
+
+  // RİTİM KULAĞI — dokunarak tekrar (perde yok). En basit ve en yoğun ders.
+  testWidgets('ritim eko oyunu çizilir (ilk ve son ders)', (t) async {
+    for (final lesson in [rhythmLessons.first, rhythmLessons.last]) {
+      await smoke(
+        t,
+        RhythmEchoPage(
+          lesson: lesson,
+          player: fake,
+          questionCount: 4,
+          onComplete: (_) {},
+        ),
+      );
+    }
+  });
+
+  testWidgets('ritim: vurunca sonuç açılır, kısa ekranda taşmaz', (t) async {
+    await t.binding.setSurfaceSize(const Size(420, 700));
+    addTearDown(() => t.binding.setSurfaceSize(null));
+    final lesson = rhythmLessons.first; // 2 vuruşluk kalıp
+    await t.pumpWidget(
+      MaterialApp(
+        home: RhythmEchoPage(
+          lesson: lesson,
+          player: fake,
+          questionCount: 4,
+          onComplete: (_) {},
+        ),
+      ),
+    );
+    // Kalıp çalsın, cevap aşamasına geçilsin.
+    for (var i = 0; i < 10; i++) {
+      await t.pump(const Duration(milliseconds: 800));
+    }
+    // Vuruş alanına kalıptaki ses sayısı kadar dokun → değerlendirme açılır.
+    // (Semantik etiket yerine görünen metin: bySemanticsLabel için semantik
+    // ağacının açık olması gerekir, smoke testinde gereksiz yük.)
+    final pad = find.text('TAP');
+    expect(pad, findsOneWidget, reason: 'kalıp bitince vuruş alanı açılmalı');
+    for (var i = 0; i < lesson.shape.onsetCount; i++) {
+      await t.tap(pad);
+      await t.pump(const Duration(milliseconds: 400));
+    }
+    expect(
+      find.text('Next'),
+      findsOneWidget,
+      reason: 'tüm vuruşlar girilince sonuç alanı açılmalı',
+    );
+    for (var i = 0; i < 6; i++) {
+      await t.pump(const Duration(milliseconds: 800));
+    }
+    expect(t.takeException(), isNull, reason: 'cevap sonrası taşma olmamalı');
   });
 }

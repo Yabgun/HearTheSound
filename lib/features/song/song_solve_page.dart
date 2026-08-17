@@ -8,7 +8,9 @@ import '../../audio/phrase_player.dart';
 import '../../core/chord.dart';
 import '../../core/content_locale.dart';
 import '../../state/progress_controller.dart';
+import '../../state/settings_controller.dart';
 import '../../ui/app_theme.dart';
+import '../../ui/coach_mark.dart';
 import '../../ui/play_button.dart';
 import '../harmony/chord_label.dart';
 import '../harmony/harmony_round.dart';
@@ -73,6 +75,15 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
   late SongDifficulty _difficulty;
   SongPuzzle? _puzzle;
 
+  // Coach-mark turu hedefleri. Modun kilit hareketi — ÖLÇÜYE DOKUNUP TEK
+  // BAŞINA DİNLEMEK — kendiliğinden keşfedilmiyor (cihaz geri bildirimi:
+  // "genel kitlenin aklına gelmeyebilir"). Bu yüzden üç katmanlı anlatım var:
+  // ilk şarkıda spot ışıklı tur + ızgaranın altında kalıcı tek satır ipucu +
+  // başlıkta istendiği zaman turu tekrar açan düğme.
+  final GlobalKey _firstBarKey = GlobalKey();
+  final GlobalKey _paletteKey = GlobalKey();
+  bool _showCoach = false;
+
   /// Kullanıcının ölçü ölçü cevabı (null = boş ölçü).
   List<Chord?> _answer = [];
 
@@ -102,8 +113,48 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
       _phase = _Phase.solving;
       _newPuzzle();
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _playSong());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Önce şarkı bir kez çalsın: tur, kullanıcı NE duyduğunu bildikten sonra
+      // "şimdi bununla ne yapacaksın"ı anlatır. Ters sırada tur soyut kalırdı.
+      await _playSong();
+      if (!mounted) return;
+      if (!ref.read(settingsProvider).songTutorialSeen) _openCoach();
+    });
   }
+
+  void _openCoach() {
+    if (mounted) setState(() => _showCoach = true);
+  }
+
+  void _closeCoach() {
+    ref.read(settingsProvider.notifier).setSongTutorialSeen(true);
+    if (mounted) setState(() => _showCoach = false);
+  }
+
+  List<CoachStep> _coachSteps() => [
+    CoachStep(
+      title: t(en: 'Stuck on a bar?', tr: 'Bir ölçüde takıldın mı?'),
+      body: t(
+        en: 'Tap any bar and it plays on its own, as many times as you like. '
+            'That is how musicians actually work a song out — loop the bit you '
+            'cannot catch.',
+        tr: 'Herhangi bir ölçüye dokun; o ölçü tek başına çalar, istediğin '
+            'kadar. Müzisyenler bir şarkıyı gerçekte böyle çıkarır — '
+            'yakalayamadığın yeri döngüye alarak.',
+      ),
+      targetKey: _firstBarKey,
+    ),
+    CoachStep(
+      title: t(en: 'Then place a chord', tr: 'Sonra bir akor koy'),
+      body: t(
+        en: 'Tap a chord down here to hear it. If it matches, it drops into '
+            'the bar you are working on. Wrong one? Just tap another.',
+        tr: 'Aşağıdaki akorlardan birine dokun, çalsın. Tuttuysa üzerinde '
+            'çalıştığın ölçüye yazılır. Tutmadıysa başkasına dokun.',
+      ),
+      targetKey: _paletteKey,
+    ),
+  ];
 
   void _newPuzzle() {
     final puzzle = generateSongPuzzle(difficulty: _difficulty, rng: _rng);
@@ -198,7 +249,15 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
   @override
   Widget build(BuildContext context) {
     if (_phase == _Phase.chooser) return _buildChooser(context);
-    return _buildSolving(context);
+    // Tur, çözme ekranının ÜSTÜNDE tam ekran bir katman: spot ışığı hedefin
+    // gerçek konumunu ölçtüğü için sayfa normal yerleşimiyle çizilmeli.
+    return Stack(
+      children: [
+        _buildSolving(context),
+        if (_showCoach)
+          CoachMarks(steps: _coachSteps(), onDone: _closeCoach),
+      ],
+    );
   }
 
   // ---- Zorluk seçimi --------------------------------------------------------
@@ -366,6 +425,13 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
       appBar: AppBar(
         title: Text(t(en: 'Solve a Song', tr: 'Şarkı Çöz')),
         actions: [
+          // Turu atlayan ya da unutan kullanıcı elinde kalmasın: tek dokunuşla
+          // her zaman geri açılır.
+          IconButton(
+            tooltip: t(en: 'How does this work?', tr: 'Bu nasıl çalışıyor?'),
+            icon: const Icon(Icons.help_outline_rounded),
+            onPressed: _openCoach,
+          ),
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -411,6 +477,32 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
                         ),
                       const SizedBox(height: 14),
                       _barGrid(theme, puzzle),
+                      const SizedBox(height: 8),
+                      // KALICI ipucu: tur atlanmış ya da unutulmuş olabilir ve
+                      // "ölçüye dokun" hareketi kendiliğinden akla gelmiyor.
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.touch_app_rounded,
+                            size: 16,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              t(
+                                en: 'Tap a bar to hear it on its own',
+                                tr: 'Bir ölçüye dokun, tek başına çalsın',
+                              ),
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       if (_checked != null) ...[
                         const SizedBox(height: 14),
                         _verdict(theme, puzzle),
@@ -458,7 +550,12 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
           runSpacing: spacing,
           children: [
             for (var i = 0; i < puzzle.barCount; i++)
-              SizedBox(width: width, child: _bar(theme, i)),
+              SizedBox(
+                // İlk ölçü tur hedefidir (spot ışığı buraya düşer).
+                key: i == 0 ? _firstBarKey : null,
+                width: width,
+                child: _bar(theme, i),
+              ),
           ],
         );
       },
@@ -548,6 +645,7 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
     const spacing = 8.0;
     final perRow = puzzle.palette.length <= 4 ? puzzle.palette.length : 3;
     return Column(
+      key: _paletteKey,
       children: [
         Text(
           t(

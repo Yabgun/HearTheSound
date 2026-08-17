@@ -12,6 +12,8 @@ import '../lesson/lesson.dart';
 import '../lesson/lesson_flow_page.dart';
 import '../melody/melody_lesson.dart';
 import '../melody/melody_lesson_flow_page.dart';
+import '../rhythm/rhythm_lesson.dart';
+import '../rhythm/rhythm_lesson_flow_page.dart';
 
 // -----------------------------------------------------------------------------
 // MÜFREDAT — tüm track'ler ve dersleri TEK, birleşik bir modelde.
@@ -132,6 +134,30 @@ List<Track> _buildCurriculum() => [
           id: l.id,
           title: l.title,
           open: () => HarmonyLessonFlowPage(lesson: l),
+        ),
+    ],
+  ),
+  // RİTİM KULAĞI — "müziğin NEREDE olduğunu duymak".
+  // Transkripsiyonun diğer yarısı: Armoni Kulağı "hangi akor"u, bu track
+  // "nerede değişiyor"u verir. Bu yüzden Armoni'den SONRA gelir — son rozet
+  // ("Ölçü") iki track'i açıkça birbirine bağlar.
+  //
+  // (Zincirin SONUNA eklendi: araya girseydi Melodi/Akorlar/Armoni kilidi
+  // öne kayar, o dersleri bitirmiş kullanıcıya track yeniden kilitli görünürdü.
+  // Ritim perde gerektirmediği için daha erkene alınabilir — bilinçli bir
+  // tercih olarak sona kondu.)
+  Track(
+    name: t(en: 'Rhythm Ear', tr: 'Ritim Kulağı'),
+    color: AppColors.catTonality,
+    // Dokunma ikonu bilinçli: bu track'in cevabı sesle değil PARMAKLA veriliyor.
+    icon: Icons.touch_app_rounded,
+    unlockAfter: harmonyLessons.last.id,
+    items: [
+      for (final l in rhythmLessons)
+        TrackItem(
+          id: l.id,
+          title: l.title,
+          open: () => RhythmLessonFlowPage(lesson: l),
         ),
     ],
   ),

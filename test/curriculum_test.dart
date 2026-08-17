@@ -18,6 +18,23 @@ void main() {
     expect(firstIds[1], 'mel1'); // Melodi Kulağı
     expect(firstIds[2], 'ch1'); // Akorlar
     expect(firstIds[3], 'har1'); // Armoni Kulağı
+    expect(firstIds[4], 'rhy1'); // Ritim Kulağı
+  });
+
+  test('Ritim Kulağı zincirin SONUNDA — Armoni bitmeden açılmaz', () {
+    final tracks = curriculum;
+    // Armoni'ye kadar her şey tamam → Ritim hâlâ kapalı.
+    final beforeHarmony = PlayerProgress(
+      completedLessons: lessonIdsInFirstTracks(3),
+    );
+    expect(itemUnlocked(tracks[4], 0, beforeHarmony), isFalse);
+
+    // Armoni de bitince açılır ve "Devam Et" oraya gider.
+    final harmonyDone = PlayerProgress(
+      completedLessons: lessonIdsInFirstTracks(4),
+    );
+    expect(itemUnlocked(tracks[4], 0, harmonyDone), isTrue);
+    expect(nextLesson(harmonyDone)?.item.id, 'rhy1');
   });
 
   test('Armoni Kulağı Akorlar bitmeden açılmaz', () {

@@ -7,6 +7,8 @@ import 'package:hear_the_sound/core/player_progress.dart';
 import 'package:hear_the_sound/data/progress_repository.dart';
 import 'package:hear_the_sound/features/song/song_solve_page.dart';
 import 'package:hear_the_sound/state/progress_controller.dart';
+import 'package:hear_the_sound/state/settings_controller.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // -----------------------------------------------------------------------------
 // ŞARKI ÇÖZ — ekranın sözleşmeleri
@@ -49,11 +51,19 @@ void main() {
     WidgetTester tester, {
     required bool unlocked,
     double textScale = 1.0,
+    bool tutorialSeen = true,
   }) async {
     await tester.binding.setSurfaceSize(const Size(420, 960));
     addTearDown(() => tester.binding.setSurfaceSize(null));
+    // Tur varsayılan olarak "görüldü": çözme akışını sınayan testler
+    // overlay'in arkasına dokunamaz. Turu sınayan test bunu açıkça kapatır.
+    SharedPreferences.setMockInitialValues({
+      'song_tutorial_seen': tutorialSeen,
+    });
+    final prefs = await SharedPreferences.getInstance();
     final container = ProviderContainer(
       overrides: [
+        prefsProvider.overrideWithValue(prefs),
         progressRepositoryProvider.overrideWithValue(
           _MemoryProgressRepository(
             PlayerProgress(
@@ -164,4 +174,55 @@ void main() {
     await settleAudio(t);
     expect(t.takeException(), isNull, reason: '1.3x ölçekte taşma olmamalı');
   });
+
+  // Modun kilit hareketi ("ölçüye dokun, tek başına dinle") keşfedilebilir
+  // değil — cihaz geri bildirimi: "genel kitlenin aklına gelmeyebilir".
+  // Üç katmanın da yerinde olduğunu kilitleriz.
+  group('ölçüye dokunma öğretilir', () {
+    testWidgets('ilk şarkıda tur AÇILIR ve bir kez gösterilir', (t) async {
+      final container = await pump(
+        t,
+        unlocked: true,
+        tutorialSeen: false,
+      );
+      await t.tap(find.text('Short song'));
+      await settleAudio(t);
+
+      expect(
+        find.textContaining('Stuck on a bar?'),
+        findsOneWidget,
+        reason: 'ilk şarkıda tur kendiliğinden açılmalı',
+      );
+
+      // Turu bitir → bir daha açılmasın diye işaretlenir.
+      await t.tap(find.widgetWithText(TextButton, 'Skip'));
+      await t.pump();
+      expect(find.textContaining('Stuck on a bar?'), findsNothing);
+      expect(container.read(settingsProvider).songTutorialSeen, isTrue);
+      await settleAudio(t);
+    });
+
+    testWidgets('tur görülmüşse kendiliğinden açılmaz', (t) async {
+      await pump(t, unlocked: true);
+      await t.tap(find.text('Short song'));
+      await settleAudio(t);
+      expect(find.textContaining('Stuck on a bar?'), findsNothing);
+    });
+
+    testWidgets('kalıcı ipucu + başlıktaki düğme her zaman durur', (t) async {
+      await pump(t, unlocked: true);
+      await t.tap(find.text('Short song'));
+      await settleAudio(t);
+
+      // (a) Ekranda kalıcı tek satır ipucu.
+      expect(find.text('Tap a bar to hear it on its own'), findsOneWidget);
+
+      // (b) Turu atlayan/unutan kullanıcı için her an geri açan düğme.
+      await t.tap(find.byIcon(Icons.help_outline_rounded));
+      await t.pump();
+      expect(find.textContaining('Stuck on a bar?'), findsOneWidget);
+      await settleAudio(t);
+    });
+  });
 }
+
