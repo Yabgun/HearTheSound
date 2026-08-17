@@ -9,6 +9,7 @@ import '../../core/content_locale.dart';
 import '../../core/echo.dart';
 import '../../core/note.dart';
 import '../../ui/app_theme.dart';
+import '../../ui/note_names_sheet.dart';
 import '../../ui/phrase_dots.dart';
 import '../../ui/play_button.dart';
 import '../lesson/lesson.dart';
@@ -305,6 +306,8 @@ class _HarmonyFindPageState extends State<HarmonyFindPage> {
           ),
         ),
         actions: [
+          // Bas tuşları/yuvaları oktavlı nota adı taşıyor (C4…) — köprü kartı.
+          const NoteNamesButton(),
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 16),

@@ -6,6 +6,7 @@ import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../../core/vocal_range.dart';
 import '../../ui/app_theme.dart';
+import '../../ui/note_names_sheet.dart';
 import '../../ui/pitch_meter.dart';
 import '../calibration/reach_badge.dart';
 
@@ -268,6 +269,7 @@ class _SingNotesPageState extends State<SingNotesPage> {
           ),
         ),
         actions: [
+          const NoteNamesButton(),
           TextButton(
             onPressed: _skip,
             child: Text(t(en: 'Skip', tr: 'Geç')),

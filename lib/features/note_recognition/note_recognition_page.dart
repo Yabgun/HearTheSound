@@ -7,6 +7,7 @@ import '../../audio/note_player.dart';
 import '../../core/content_locale.dart';
 import '../../core/note.dart';
 import '../../ui/app_theme.dart';
+import '../../ui/note_names_sheet.dart';
 import '../../ui/play_button.dart';
 import '../dev/pitch_spike_page.dart';
 import '../lesson/lesson.dart';
@@ -122,6 +123,8 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
           ),
         ),
         actions: [
+          // Şıklar nota ADIYLA yazıyor (C, D…) → harf-solfej köprüsü burada.
+          const NoteNamesButton(),
           if (widget.onRelearn != null)
             IconButton(
               icon: const Icon(Icons.school_rounded),

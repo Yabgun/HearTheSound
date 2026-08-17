@@ -13,6 +13,7 @@ import '../../core/note.dart';
 import '../../core/octave_mapping.dart';
 import '../../core/vocal_range.dart';
 import '../../ui/app_theme.dart';
+import '../../ui/note_names_sheet.dart';
 import '../../ui/pitch_meter.dart';
 import '../../ui/play_button.dart';
 import '../lesson/lesson.dart';
@@ -328,6 +329,8 @@ class _ChordProducePageState extends State<ChordProducePage> {
           ),
         ),
         actions: [
+          // Akoru KURARKEN tuşlar nota adı gösteriyor (kök C4, +4 tuş…).
+          const NoteNamesButton(),
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 16),

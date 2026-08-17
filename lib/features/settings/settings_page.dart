@@ -7,6 +7,7 @@ import '../../notifications/notification_service.dart';
 import '../../state/progress_controller.dart';
 import '../../state/settings_controller.dart';
 import '../../ui/app_theme.dart';
+import '../../ui/note_names_sheet.dart';
 import '../auth/sign_in_page.dart';
 import '../dev/dev_tools_tile.dart';
 import '../profile/profile_identity.dart';
@@ -351,6 +352,16 @@ class SettingsPage extends ConsumerWidget {
             const _AccountSection(),
             const Divider(),
           ],
+          // Nota adları başvuru kartı — ders ekranlarındaki ℹ️ ile AYNI kart.
+          // Ayarlar'da da olması şart: kullanıcı ders ortasında değilken de
+          // "C ne demekti?" diye bakabilmeli.
+          ListTile(
+            leading: const Icon(Icons.music_note_rounded),
+            title: Text(t(en: 'Note names', tr: 'Nota adları')),
+            subtitle: Text(t(en: 'C = Do, D = Re…', tr: 'C = Do, D = Re…')),
+            onTap: () => showNoteNamesSheet(context),
+          ),
+          const Divider(),
           // Not: "Ses aralığı" ve "Oyun alanı" Pratik sekmesinde yaşıyor (Ayarlar'da
           // kopyaları kaldırıldı). "Piyano tınısı" anahtarı da kaldırıldı — v1
           // her zaman gerçek piyano; başka enstrümanlar ileride gelir.

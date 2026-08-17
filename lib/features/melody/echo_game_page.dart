@@ -12,6 +12,7 @@ import '../../core/note.dart';
 import '../../core/octave_mapping.dart';
 import '../../core/vocal_range.dart';
 import '../../ui/app_theme.dart';
+import '../../ui/note_names_sheet.dart';
 import '../../ui/phrase_dots.dart';
 import '../../ui/play_button.dart';
 import '../lesson/lesson.dart';
@@ -324,6 +325,8 @@ class _EchoGamePageState extends State<EchoGamePage> {
           ),
         ),
         actions: [
+          // Tuşlar oktavlı nota adı taşıyor (C4, E4…) — köprü kartı.
+          const NoteNamesButton(),
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 16),

@@ -103,6 +103,15 @@ void main() {
     expect(find.text('Delete account & data'), findsNothing);
   });
 
+  testWidgets('nota adları satırı kartı açar', (t) async {
+    await pumpSettings(t);
+    await t.tap(find.text('Note names'));
+    await t.pumpAndSettle();
+    // Ders ekranlarındaki ℹ️ ile AYNI kart — içerik tek yerde yaşıyor.
+    expect(find.text('Do'), findsOneWidget);
+    expect(find.text('Si'), findsOneWidget);
+  });
+
   testWidgets('sürüm satırı bilindiğinde görünür', (t) async {
     await pumpSettings(t, version: '0.1.0 (1)');
     await t.scrollUntilVisible(find.text('Version 0.1.0 (1)'), 200);

@@ -6,6 +6,25 @@ const List<String> noteNames = [
   'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B', //
 ];
 
+/// Harf adlarının solfej (Do-Re-Mi) karşılıkları — beyaz tuşlar, C'den B'ye.
+///
+/// **Bu bir yeniden adlandırma DEĞİL, bir köprüdür.** Uygulamanın birincil
+/// isimlendirmesi harf sistemidir (ürün kararı, PROJECT.md §4) ve karıştırma
+/// istatistiği anahtarları da harf kullanır — solfej yalnızca "Nota adları"
+/// başvuru kartında görünür (`ui/note_names_sheet.dart`).
+///
+/// Harf ve solfej ÇİFT olarak duruyor: iki ayrı liste olsaydı biri düzenlenip
+/// diğeri unutulduğunda sessizce kayabilirlerdi.
+const List<({String letter, String solfege})> noteNameBridge = [
+  (letter: 'C', solfege: 'Do'),
+  (letter: 'D', solfege: 'Re'),
+  (letter: 'E', solfege: 'Mi'),
+  (letter: 'F', solfege: 'Fa'),
+  (letter: 'G', solfege: 'Sol'),
+  (letter: 'A', solfege: 'La'),
+  (letter: 'B', solfege: 'Si'),
+];
+
 /// Bir müzik notası. Kanonik temsil: MIDI numarası (60 = C4, 69 = A4 = 440 Hz).
 ///
 /// Uygulamanın çekirdek müzik birimidir — hem çalma (frekans) hem tanıma

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../audio/note_player.dart';
 import '../../core/content_locale.dart';
 import '../../core/note.dart';
+import '../../ui/note_names_sheet.dart';
 import '../concept/concept_sheet.dart';
 import 'lesson.dart';
 
@@ -66,6 +67,8 @@ class _LearnNotesPageState extends State<LearnNotesPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(t(en: 'Meet the Notes', tr: 'Notaları Tanı')),
+        // "C" harfini hiç görmemiş kullanıcı için köprü kartı (C = Do).
+        actions: const [NoteNamesButton()],
       ),
       body: SafeArea(
         child: Padding(
