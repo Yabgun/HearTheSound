@@ -64,9 +64,14 @@ Future<void> main() async {
 
   // Build numarası (pubspec `+N`) — zorunlu güncelleme kapısı bu sayıyı
   // sunucudaki eşiklerle karşılaştırır. Okunamazsa 0 kalır → kapı fail-open.
+  // Aynı okumadan Ayarlar'daki sürüm satırı da beslenir (tek PackageInfo
+  // çağrısı); okunamazsa null kalır ve o satır hiç çizilmez.
   var currentBuild = 0;
+  String? appVersion;
   try {
-    currentBuild = int.tryParse((await PackageInfo.fromPlatform()).buildNumber) ?? 0;
+    final info = await PackageInfo.fromPlatform();
+    currentBuild = int.tryParse(info.buildNumber) ?? 0;
+    appVersion = '${info.version} (${info.buildNumber})';
   } catch (_) {}
 
   // Container'ı elle kuruyoruz ki açılış SONRASI arka plan bulut birleştirmesi
@@ -76,6 +81,7 @@ Future<void> main() async {
       progressRepositoryProvider.overrideWithValue(repo),
       prefsProvider.overrideWithValue(prefs),
       currentBuildProvider.overrideWithValue(currentBuild),
+      appVersionProvider.overrideWithValue(appVersion),
     ],
   );
 

@@ -15,6 +15,14 @@ final prefsProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('prefsProvider main içinde override edilmeli');
 });
 
+/// Görünen sürüm etiketi — "0.1.0 (1)" biçiminde. main() gerçek değeri
+/// `PackageInfo`'dan okuyup override eder.
+///
+/// Varsayılan null = "bilinmiyor" ve Ayarlar satırı hiç çizilmez: yanlış bir
+/// sürüm göstermek, hiç göstermemekten kötüdür (destek isteğinde kullanıcı
+/// buradaki sayıyı bize okur).
+final appVersionProvider = Provider<String?>((_) => null);
+
 /// Uygulama ayarları (hatırlatma + onboarding + tını + dil).
 ///
 /// Not: Günlük hatırlatmanın SAATİ ayar değil sabit ([NotificationService.

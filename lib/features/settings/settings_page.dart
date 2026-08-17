@@ -6,20 +6,140 @@ import '../../data/cloud/cloud_sync.dart';
 import '../../notifications/notification_service.dart';
 import '../../state/progress_controller.dart';
 import '../../state/settings_controller.dart';
+import '../../ui/app_theme.dart';
 import '../auth/sign_in_page.dart';
 import '../dev/dev_tools_tile.dart';
 import '../profile/profile_identity.dart';
 
 // -----------------------------------------------------------------------------
-// AYARLAR — ses aralığı kalibrasyonu + günlük hatırlatma bildirimi
+// AYARLAR — dil + hesap + günlük hatırlatma + veri + sürüm
+//
+// HESAP YERLEŞİMİ: giriş/çıkış AppBar'ın SAĞINDA tek dokunuşluk bir EYLEM
+// (`_AccountAction`); gövdede kalan hesap satırları yalnızca oturum açıkken
+// görünür. Eskiden hesap bloğu listenin en büyük ve en karmaşık parçasıydı
+// (girişsizken koca bir tanıtım paragrafı + tam genişlik düğme) — oysa
+// kullanıcının orada yapacağı iş tek bir dokunuştan ibaret.
 // -----------------------------------------------------------------------------
 
-/// Hesap & bulut senkron bölümü.
+/// AppBar'ın sağındaki hesap eylemi.
 ///
-/// Oturum KAPALIYKEN: adanmış giriş ekranına (`SignInPage`) götüren tek düğme.
-/// Oturum AÇIKKEN: e-posta + şimdi eşitle / çıkış / hesap silme.
-/// Giriş akışının kendisi burada değil — kimlik, Ayarlar'ın bir satırı değil
-/// birinci sınıf bir akıştır (bkz. `features/auth/sign_in_page.dart`).
+/// Oturum KAPALIYSA: "Sign in" metin düğmesi → adanmış giriş ekranı.
+/// Oturum AÇIKSA: kırmızı kapı ikonu → onay diyaloğu → çıkış.
+///
+/// Bulut yapılandırılmamışsa (supabase_config boş) hiç çizilmez — uygulama o
+/// hâlde tamamen yereldir, hesap kavramı yoktur.
+class _AccountAction extends ConsumerStatefulWidget {
+  const _AccountAction();
+
+  @override
+  ConsumerState<_AccountAction> createState() => _AccountActionState();
+}
+
+class _AccountActionState extends ConsumerState<_AccountAction> {
+  bool _busy = false;
+
+  /// Adanmış giriş ekranını açar. Ekran `true` ile dönerse oturum açılmış ve
+  /// ilerleme çoktan birleştirilmiştir (bkz. `SignInPage._afterSignIn`) —
+  /// burada yalnızca yeniden çizip kullanıcıya haber veriyoruz.
+  Future<void> _openSignIn() async {
+    final signedIn = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(builder: (_) => const SignInPage()),
+    );
+    if (!mounted) return;
+    setState(() {});
+    if (signedIn == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            t(
+              en: 'Signed in — progress synced. ✓',
+              tr: 'Giriş yapıldı — ilerleme eşitlendi. ✓',
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Çıkış — onaylı. İkon sözsüz olduğu için niyet diyalogda yazıyla kurulur;
+  /// ayrıca ilerlemenin cihazda KALDIĞI söyleniyor: kırmızı bir kapı ikonu
+  /// "her şeyi sileceğim" gibi okunabilir, oysa çıkış veri silmez.
+  Future<void> _confirmSignOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t(en: 'Sign out?', tr: 'Çıkış yapılsın mı?')),
+        content: Text(
+          t(
+            en: 'Are you sure you want to sign out of your account? Your '
+                'progress stays on this device.',
+            tr: 'Hesaptan çıkmak istediğinize emin misiniz? İlerlemeniz bu '
+                'cihazda kalır.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(t(en: 'Cancel', tr: 'Vazgeç')),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(t(en: 'Sign out', tr: 'Çıkış yap')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _busy = true);
+    try {
+      await CloudSync.instance.signOut();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              t(
+                en: 'Could not sign out. Check your connection and try again.',
+                tr: 'Çıkış yapılamadı. Bağlantını kontrol edip tekrar dene.',
+              ),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!CloudSync.instance.isConfigured) return const SizedBox.shrink();
+
+    if (CloudSync.instance.user == null) {
+      return TextButton(
+        onPressed: _busy ? null : _openSignIn,
+        child: Text(t(en: 'Sign in', tr: 'Giriş yap')),
+      );
+    }
+
+    // Sözsüz düğme → etiket ZORUNLU: ekran okuyucu "düğme" değil "çıkış yap"
+    // demeli. `tooltip` hem uzun basışta yazıyı gösterir hem Semantics etiketini
+    // kurar, yani tek yerde iki iş.
+    return IconButton(
+      onPressed: _busy ? null : _confirmSignOut,
+      tooltip: t(en: 'Sign out', tr: 'Çıkış yap'),
+      icon: const Icon(Icons.logout_rounded, color: AppColors.danger),
+    );
+  }
+}
+
+/// Oturum AÇIKKEN gövdede görünen hesap satırları: kimlik + elle eşitle +
+/// hesap silme. Girişsizken hiçbir şey çizmez (o durumda yapılacak tek iş
+/// AppBar'daki "Sign in").
+///
+/// "Hesabımı ve verimi sil" burada KALIR — Play Store zorunluluğu.
 class _AccountSection extends ConsumerStatefulWidget {
   const _AccountSection();
 
@@ -50,34 +170,14 @@ class _AccountSectionState extends ConsumerState<_AccountSection> {
     }
   }
 
-  /// Adanmış giriş ekranını açar. Ekran `true` ile dönerse oturum açılmış ve
-  /// ilerleme çoktan birleştirilmiştir (bkz. `SignInPage._afterSignIn`) —
-  /// burada yalnızca bölümü yeniden çizip kullanıcıya haber veriyoruz.
-  Future<void> _openSignIn() async {
-    final signedIn = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(builder: (_) => const SignInPage()),
-    );
-    if (!mounted) return;
-    setState(() {});
-    if (signedIn == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            t(
-              en: 'Signed in — progress synced. ✓',
-              tr: 'Giriş yapıldı — ilerleme eşitlendi. ✓',
-            ),
-          ),
-        ),
-      );
-    }
-  }
-
   Future<void> _syncNow() => _run(() async {
     final repo = ref.read(progressRepositoryProvider);
     await CloudSync.instance.pullAndMerge(repo);
     if (!mounted) return;
     ref.read(progressProvider.notifier).reload();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(t(en: 'Synced. ✓', tr: 'Eşitlendi. ✓'))),
+    );
   });
 
   /// Hesap silme — Play Store "veri silme" zorunluluğu. Çift onaylı, geri alınamaz.
@@ -150,117 +250,48 @@ class _AccountSectionState extends ConsumerState<_AccountSection> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final user = CloudSync.instance.user;
+    if (user == null) return const SizedBox.shrink();
 
-    if (user != null) {
-      // OTURUM AÇIK — e-posta + eşitle/çıkış.
-      return Column(
-        children: [
-          ListTile(
-            leading: const Icon(Icons.cloud_done_rounded),
-            title: Text(t(en: 'Account', tr: 'Hesap')),
-            subtitle: Text(user.email ?? ''),
-          ),
+    return Column(
+      children: [
+        ListTile(
+          leading: const Icon(Icons.cloud_done_rounded),
+          title: Text(t(en: 'Account', tr: 'Hesap')),
+          subtitle: Text(user.email ?? ''),
+        ),
+        // Eşitleme zaten otomatik (kayıt sonrası debounce'lu itme); bu satır
+        // "şimdi olsun" diyebilmek için — bir düğme sırası yerine liste satırı,
+        // ayarların geri kalanıyla aynı ritimde.
+        ListTile(
+          leading: const Icon(Icons.sync_rounded),
+          title: Text(t(en: 'Sync now', tr: 'Şimdi eşitle')),
+          enabled: !_busy,
+          onTap: _busy ? null : _syncNow,
+        ),
+        // Eşitleme/silme hataları burada görünür (sessizce yutulmaz).
+        if (_error != null)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _busy ? null : _syncNow,
-                    icon: const Icon(Icons.sync_rounded),
-                    label: Text(t(en: 'Sync now', tr: 'Şimdi eşitle')),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _busy
-                        ? null
-                        : () => _run(() async {
-                            await CloudSync.instance.signOut();
-                            if (mounted) setState(() {});
-                          }),
-                    icon: const Icon(Icons.logout_rounded),
-                    label: Text(t(en: 'Sign out', tr: 'Çıkış yap')),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Eşitleme/çıkış/silme hataları burada görünür (sessizce yutulmaz).
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Text(
-                _error!,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-              ),
-            ),
-          const SizedBox(height: 4),
-          // Hesap silme — Play Store "veri silme" zorunluluğu (çift onaylı).
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _busy ? null : _deleteAccount,
-              icon: Icon(
-                Icons.delete_forever_rounded,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              _error!,
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.error,
               ),
-              label: Text(
-                t(en: 'Delete account & data', tr: 'Hesabımı ve verimi sil'),
-                style: TextStyle(color: theme.colorScheme.error),
-              ),
             ),
           ),
-          const SizedBox(height: 8),
-        ],
-      );
-    }
-
-    // OTURUM KAPALI — adanmış giriş ekranına yönlendir.
-    // (Form artık burada değil: kimlik, Ayarlar'ın bir satırı değil kendi akışı.)
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.cloud_outlined),
-              const SizedBox(width: 12),
-              Text(
-                t(en: 'Account & sync', tr: 'Hesap & senkron'),
-                style: theme.textTheme.titleMedium,
-              ),
-            ],
+        ListTile(
+          leading: const Icon(
+            Icons.delete_forever_rounded,
+            color: AppColors.danger,
           ),
-          const SizedBox(height: 4),
-          Text(
-            t(
-              en:
-                  'Sign in to back up your progress and continue on any '
-                  'device. Google, email code, or password — your choice.',
-              tr:
-                  'İlerlemeni yedeklemek ve her cihazda devam etmek için giriş '
-                  'yap. Google, e-posta kodu ya da şifre — sen seç.',
-            ),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          title: Text(
+            t(en: 'Delete account & data', tr: 'Hesabımı ve verimi sil'),
+            style: const TextStyle(color: AppColors.danger),
           ),
-          const SizedBox(height: 10),
-          FilledButton.icon(
-            onPressed: _busy ? null : _openSignIn,
-            icon: const Icon(Icons.login_rounded),
-            label: Text(t(en: 'Sign in', tr: 'Giriş yap')),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-            ),
-          ),
-        ],
-      ),
+          enabled: !_busy,
+          onTap: _busy ? null : _deleteAccount,
+        ),
+      ],
     );
   }
 }
@@ -274,10 +305,12 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final ctrl = ref.read(settingsProvider.notifier);
+    final version = ref.watch(appVersionProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(t(en: 'Settings', tr: 'Ayarlar')),
+        actions: const [_AccountAction(), SizedBox(width: 4)],
       ),
       body: ListView(
         children: [
@@ -311,9 +344,10 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
           const Divider(),
-          // Hesap & bulut senkron — yalnızca Supabase yapılandırıldıysa görünür
-          // (supabase_config.dart doldurulunca). Yerel kullanım için şart değil.
-          if (CloudSync.instance.isConfigured) ...[
+          // Hesap satırları — yalnızca bulut yapılandırılmış VE oturum açıkken
+          // görünür (girişsizken tek iş AppBar'daki "Sign in").
+          if (CloudSync.instance.isConfigured &&
+              CloudSync.instance.user != null) ...[
             const _AccountSection(),
             const Divider(),
           ],
@@ -368,6 +402,21 @@ class SettingsPage extends ConsumerWidget {
           // GEÇİCİ geliştirici bölümü — release'de kendini gizler. Kaldırma
           // talimatı: dev_tools_tile.dart dosyasını ve bu satırı sil.
           const DevToolsSection(),
+          // Sürüm — destek isteğinde kullanıcının bize okuyacağı sayı; ayrıca
+          // "güncelledim mi?" sorusunun tek cevabı. PackageInfo okunamadıysa
+          // (bkz. appVersionProvider) satır hiç çizilmez.
+          if (version != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+              child: Center(
+                child: Text(
+                  t(en: 'Version $version', tr: 'Sürüm $version'),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.muted,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
