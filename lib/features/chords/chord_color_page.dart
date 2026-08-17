@@ -13,16 +13,18 @@ import 'chord_lesson.dart';
 import 'chord_round.dart';
 
 // -----------------------------------------------------------------------------
-// AKOR RENGİ — ALGI EKRANI (dersler 1, 2, 6, 7, 8)
+// AKOR RENGİ — ALGI EKRANI (dersler 1, 2, 6)
 //
-// "Hangisi parlak? · Parlak mı hüzünlü mü? · Gergin renkler · Üç mü dört mü?"
-// Hepsi aynı mekanik: dinle, şıklardan birini seç.
+// İki iş yapar:
+//  • EŞLEŞTİR (ders 1): şıklar DİNLENEBİLİR. Eko bir akor çalar; kullanıcı iki
+//    şıkkı da çalıp aynısını seçer. Görev kendini anlatır — "aynı sesi bul" —
+//    ve hiçbir terim gerektirmez. (Cihaz geri bildirimi: derslerde "amaç ve
+//    hedef eksikliği" vardı; en somut giriş bu.)
+//  • ALGI (dersler 2, 6): tek akor, iki şık — parlak/hüzünlü, üç/dört ses.
 //
-// KALDIRILAN ESKİ EKRANDAN FARKI: soru artık bir TERİM sormuyor. Eskiden
-// "Bu hangi nitelik?" deyip Majör/Minör/Eksik/Artık şıkları veriliyordu —
-// kullanıcı önce kelimeyi öğrenmek zorundaydı. Şimdi "parlak mı, hüzünlü mü"
-// diye soruluyor; kelime dersin SONUNDA rozet olarak geliyor. Aynı algı, ama
-// önce yaşanıyor sonra adlandırılıyor.
+// Soru bir TERİM sormaz. Eskiden "Bu hangi nitelik?" deyip Majör/Minör/Eksik/
+// Artık şıkları veriliyordu; kullanıcı önce kelimeyi öğrenmek zorundaydı.
+// Şimdi his soruluyor, kelime dersin SONUNDA rozet olarak geliyor.
 // -----------------------------------------------------------------------------
 
 enum _Phase { playing, answering, answered }
@@ -57,6 +59,11 @@ class _ChordColorPageState extends State<ChordColorPage> {
   int? _eventIndex;
   int? _picked;
 
+  /// Dinlenebilir şıklarda seçili olan (henüz onaylanmamış) şık.
+  /// Kullanıcı iki sesi de çalıp KARŞILAŞTIRABİLMELİ; ilk dokunuşu cevap
+  /// saymak eşleştirmeyi kumara çevirirdi.
+  int? _selected;
+
   int _index = 0;
   int _correct = 0;
   final List<String> _mistakes = [];
@@ -78,11 +85,25 @@ class _ChordColorPageState extends State<ChordColorPage> {
     super.dispose();
   }
 
+  bool get _optionsPlayable => _round.optionChords != null;
+
   void _newRound() {
-    _round = generateChordChoice(drill: widget.lesson.drill, rng: _rng);
+    _round = generateChordChoice(
+      drill: widget.lesson.drill,
+      qualities: widget.lesson.qualities,
+      rng: _rng,
+    );
     _phase = _Phase.playing;
     _eventIndex = null;
     _picked = null;
+    _selected = null;
+  }
+
+  /// Dinlenebilir şıkka dokunma: akoru çalar ve şıkkı seçer (onaylamaz).
+  Future<void> _previewOption(int index) async {
+    if (_phase != _Phase.answering) return;
+    setState(() => _selected = index);
+    await widget.player.playChord(_round.optionChords![index].notes);
   }
 
   Future<void> _playPhrase() async {
@@ -201,6 +222,19 @@ class _ChordColorPageState extends State<ChordColorPage> {
               const Spacer(),
               _options(theme),
               const SizedBox(height: 12),
+              if (_phase != _Phase.answered && _optionsPlayable)
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _selected == null
+                        ? null
+                        : () => _pick(_selected!),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(t(en: 'This one', tr: 'Bu akor')),
+                    ),
+                  ),
+                ),
               if (_phase == _Phase.answered) _resultArea(theme),
               const SizedBox(height: 12),
             ],
@@ -218,9 +252,9 @@ class _ChordColorPageState extends State<ChordColorPage> {
           : t(en: 'Not this time — listen again', tr: 'Olmadı — tekrar dinle');
     }
     return switch (widget.lesson.drill) {
-      ChordDrill.brighter => t(
-        en: 'Which one sounded brighter?',
-        tr: 'Hangisi daha parlak duyuldu?',
+      ChordDrill.match => t(
+        en: 'Play both and pick the one that matches',
+        tr: 'İkisini de çal, aynısını seç',
       ),
       ChordDrill.countTones => t(
         en: 'How many notes were stacked up?',
@@ -282,6 +316,9 @@ class _ChordColorPageState extends State<ChordColorPage> {
     } else if (answered && isPicked) {
       background = AppColors.danger;
       foreground = Colors.white;
+    } else if (index == _selected) {
+      background = AppColors.grapeSoft;
+      foreground = AppColors.ink;
     } else {
       background = theme.colorScheme.surfaceContainerHighest;
       foreground = AppColors.ink;
@@ -295,12 +332,20 @@ class _ChordColorPageState extends State<ChordColorPage> {
         borderRadius: BorderRadius.circular(16),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: _phase == _Phase.answering ? () => _pick(index) : null,
+          onTap: _phase == _Phase.answering
+              ? () => _optionsPlayable ? _previewOption(index) : _pick(index)
+              : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Row(
               children: [
-                Icon(chordOptionIcon(key), color: foreground, size: 24),
+                Icon(
+                  _optionsPlayable && !answered
+                      ? Icons.play_circle_outline_rounded
+                      : chordOptionIcon(key),
+                  color: foreground,
+                  size: 24,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: FittedBox(

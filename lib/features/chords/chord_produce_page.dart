@@ -20,26 +20,26 @@ import 'chord_lesson.dart';
 import 'chord_round.dart';
 
 // -----------------------------------------------------------------------------
-// AKORDA SES ÜRETME (dersler 3, 4, 5) — track'in kalbi
+// AKORU KUR — track'in kalbi (dersler 3, 4, 5, 7)
 //
-// ESKİ "SÖYLE" ADIMININ SORUNU: akoru arpejleyerek söyletiyordu. Akor AYNI ANDA
-// duyulan bir şeydir; onu tek tek söyletmek nesneyi melodiye çevirir. Üstelik
-// eski ekran her hedef notayı söylemeden ÖNCE tek tek çalıyor ve ibreyi hedefe
-// dikiyordu → egzersiz "şu tek sesi tuttur"a dönüşüyordu; akor kulağını hiç
-// çalıştırmıyordu.
+// TEK KAZANIM: duyduğun akoru ÇALABİLMEK. Kullanıcı akoru ses ses kurar; doğru
+// kurunca akor ÇALINIR — "işte, ben çaldım" anı. Amaç görevin içindedir.
 //
-// YENİ KURAL: akorda söylenecek şey akorun TEK bir sesidir —
-//   • ÜÇLÜ (ders 3): majörle minörü ayıran tek ses. Bulabilen kullanıcı rengin
-//     sebebini ezberlemez, elinde tutar.
-//   • TEPE (ders 4): en tiz ses. Çevrimler burada, "kaçıncı çevrim" diye
-//     sordurmadan yaşanır.
-// Arpej yalnızca ders 5'te dürüsttür: orada amaç taklit değil İNŞA — kök
-// verilir, üç sesi kullanıcı kurar.
+// ⚠️ CİHAZ GERİ BİLDİRİMİ (2026-08-17) VE KARŞILIKLARI:
+//  • "Majör akorun nasıl kurulduğunu kullanıcı bilmiyor" → akorun TARİFİ artık
+//    ekranda: "kökten 4 tuş, sonra 3 tuş". Kromatik tuş sırasında bu SAYILABİLİR
+//    bir talimattır; tuşlar kökten uzaklıklarını (+4 gibi) yazar. Tanım değil
+//    tarif veriyoruz.
+//  • "Gergin/askıda ne demek bilmiyor" → o akorları önce KURAR (3+3 ve 4+4),
+//    adını rozette alır. Kurduğu şeyin adını öğrenmek, adını duyup aramaktan
+//    farklıdır.
+//  • İlk kurma dersi REHBERLİdir: renk ekranda yazar ve sıradaki doğru tuş
+//    işaretlenir. Sonraki derste rehber kalkar, renk kulakla bulunur.
 //
-// PITCHMETER YALNIZCA "AKORU KUR"DA: orada hedef zaten söylenmiştir, ibre
-// cevabı ele vermez, tam tersine NOKTA ATIŞI akort geri bildirimi verir.
-// Üçlü/tepe bulmada hedef cevabın kendisidir — ibre gösterilse soru ölürdü;
-// oralarda yalnızca "sesini sabit tut" halkası vardır.
+// PITCHMETER: hedefin kullanıcıya SÖYLENDİĞİ derslerde (renk ekranda yazarken)
+// görünür — orada ibre cevabı ele vermez, nokta atışı akort geri bildirimi
+// verir. Rengin kulakla bulunduğu derslerde ibre YOKTUR; olsaydı doğru sesi
+// göstererek soruyu öldürürdü.
 // -----------------------------------------------------------------------------
 
 enum _Phase { playing, answering, answered }
@@ -62,8 +62,7 @@ class ChordProducePage extends StatefulWidget {
   final ValueChanged<EchoInputMode> onModeChanged;
   final void Function(LessonResult result) onComplete;
 
-  /// Kullanıcının ses aralığı — akor onun rahat oktavına taşınır (söyleme modu
-  /// için şart; ibre de o zaman doğru oktavı gösterir).
+  /// Kullanıcının ses aralığı — akor onun rahat oktavına taşınır.
   final VocalRange? range;
 
   final int? questionCount;
@@ -82,7 +81,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
   late Chord _chord;
   late MusicalPhrase _phrase;
   late List<Note> _targets;
-  ChordQuality? _buildQuality;
+  late bool _colorIsHeard;
 
   final List<Note> _attempt = [];
   List<bool>? _matches;
@@ -110,10 +109,9 @@ class _ChordProducePageState extends State<ChordProducePage> {
 
   bool get _isPerfect => _matches != null && _matches!.every((m) => m);
 
-  /// Hedefin kullanıcıya SÖYLENDİĞİ ders — yalnızca burada ibre gösterilir.
-  bool get _targetIsKnown => widget.lesson.drill == ChordDrill.buildChord;
+  /// Renk ekranda yazıyorsa hedef bilinir → ibre gösterilebilir.
+  bool get _targetIsKnown => !_colorIsHeard;
 
-  /// Şu an üretilmesi beklenen ses (ibre bunu gösterir).
   Note get _currentTarget =>
       _targets[_attempt.length.clamp(0, _targets.length - 1)];
 
@@ -134,21 +132,21 @@ class _ChordProducePageState extends State<ChordProducePage> {
   }
 
   void _newRound() {
-    final raw = generateChordProduce(drill: widget.lesson.drill, rng: _rng);
+    final raw = generateChordProduce(
+      qualities: widget.lesson.qualities,
+      colorIsHeard: widget.lesson.colorIsHeard,
+      rng: _rng,
+    );
     // Akoru kullanıcının rahat oktavına taşı; hedefler ve çalınan ses aynı
     // kaymayı alır ki ilişkiler bozulmasın.
     final offset = octaveOffsetFor(
       raw.chord.notes.map((n) => n.midi),
       widget.range,
     );
-    _chord = Chord(
-      Note(raw.chord.root.midi + offset),
-      raw.chord.quality,
-      inversion: raw.chord.inversion,
-    );
+    _chord = Chord(Note(raw.chord.root.midi + offset), raw.chord.quality);
     _phrase = raw.phrase.transposedBy(offset);
     _targets = [for (final note in raw.targets) Note(note.midi + offset)];
-    _buildQuality = raw.buildQuality;
+    _colorIsHeard = raw.colorIsHeard;
 
     _attempt.clear();
     _matches = null;
@@ -178,7 +176,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
   Future<void> _tapPad(Note note) async {
     if (_phase != _Phase.answering || _isFull) return;
     setState(() => _attempt.add(note));
-    await widget.player.play(note); // kulakla arayabilsin diye ses verir
+    await widget.player.play(note);
   }
 
   void _undo() {
@@ -261,7 +259,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
 
   // --- Değerlendirme ----------------------------------------------------------
 
-  void _evaluate() {
+  Future<void> _evaluate() async {
     if (_phase != _Phase.answering) return;
     // Perde SINIFI üzerinden: söylerken herkes kendi oktavında söyler.
     final matches = [
@@ -274,22 +272,30 @@ class _ChordProducePageState extends State<ChordProducePage> {
         _mistakes.add('chordNote:${_targets[i].name}>${_attempt[i].name}');
       }
     }
+    final perfect = matches.every((m) => m);
     setState(() {
       _matches = matches;
       _phase = _Phase.answered;
       _lockProgress = 0;
       _candidateMidi = null;
-      if (matches.every((m) => m)) _correct++;
+      if (perfect) _correct++;
     });
+    // ÖDÜL: doğru kurulan akor bir bütün olarak çalar. Kullanıcı ses ses
+    // dizdiği şeyin AKOR olduğunu ancak böyle duyar — "işte, ben çaldım".
+    if (perfect) {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      if (mounted) await widget.player.playChord(_chord.notes);
+    }
   }
 
-  /// Doğru cevabı duyurur — yanlışta "doğrusu buymuş" anı olmadan öğrenme olmaz.
+  /// Doğru cevabı duyurur: önce tek tek, sonra akor olarak.
   Future<void> _playTargets() async {
     for (final note in _targets) {
       await widget.player.play(note);
-      await Future<void>.delayed(const Duration(milliseconds: 520));
+      await Future<void>.delayed(const Duration(milliseconds: 450));
       if (!mounted) return;
     }
+    await widget.player.playChord(_chord.notes);
   }
 
   Future<void> _next() async {
@@ -346,8 +352,6 @@ class _ChordProducePageState extends State<ChordProducePage> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          // Kaydırılabilir gövde + sabit alt eylemler: 12 kromatik tuş + yuvalar
-          // + ibre büyük yazı tipinde ekrana sığmayabilir.
           child: Column(
             children: [
               Expanded(
@@ -362,14 +366,16 @@ class _ChordProducePageState extends State<ChordProducePage> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
                       PlayButton(
                         onTap: _playPhrase,
                         playing: _phase == _Phase.playing,
-                        size: 80,
-                        iconSize: 34,
+                        size: 72,
+                        iconSize: 30,
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 12),
+                      _recipeCard(theme),
+                      const SizedBox(height: 12),
                       _slotRow(theme),
                       const SizedBox(height: 12),
                       if (_phase != _Phase.answered) ...[
@@ -398,34 +404,76 @@ class _ChordProducePageState extends State<ChordProducePage> {
     if (_phase == _Phase.playing) return t(en: 'Listen…', tr: 'Dinle…');
     if (_phase == _Phase.answered) {
       return _isPerfect
-          ? t(en: 'Exactly right!', tr: 'Tam isabet!')
+          ? t(en: 'That is the chord!', tr: 'İşte akor bu!')
           : t(en: 'Not quite — hear the answer', tr: 'Olmadı — doğrusunu dinle');
     }
-    return switch (widget.lesson.drill) {
-      ChordDrill.findThird => t(
-        en: 'Find the note that gives it that colour',
-        tr: 'Ona o rengi veren sesi bul',
-      ),
-      ChordDrill.findTop => t(
-        en: 'Find the highest note in the chord',
-        tr: 'Akorun en tiz sesini bul',
-      ),
-      ChordDrill.buildChord => _buildQuality == ChordQuality.minor
-          ? t(
-              en: 'Build a MINOR chord on ${_chord.root.label}',
-              tr: '${_chord.root.label} üstüne MİNÖR akoru kur',
-            )
-          : t(
-              en: 'Build a MAJOR chord on ${_chord.root.label}',
-              tr: '${_chord.root.label} üstüne MAJÖR akoru kur',
-            ),
-      _ => '',
-    };
+    if (_colorIsHeard) {
+      return t(
+        en: 'Play back the chord you just heard',
+        tr: 'Az önce duyduğun akoru sen çal',
+      );
+    }
+    return t(
+      en: 'Build this chord on ${_chord.root.label}',
+      tr: '${_chord.root.label} üstüne bu akoru kur',
+    );
   }
 
-  /// Cevap yuvaları + yanlışta doğru cevabın yazısı.
+  /// AKORUN TARİFİ — dersin öğrettiği asıl şey.
+  ///
+  /// "Majör akor 1-3-5'tir" bir TANIMdır; kullanıcı onunla hiçbir şey yapamaz.
+  /// "Kökten 4 tuş, sonra 3 tuş" bir TARİFtir — kromatik tuş sırasında
+  /// sayılarak uygulanır. Rengin kulakla bulunduğu derslerde tüm tarifler
+  /// listelenir (hangisini duyduğuna kullanıcı karar verir); söylendiği
+  /// derslerde yalnızca kurulacak olan gösterilir.
+  Widget _recipeCard(ThemeData theme) {
+    final qualities = _colorIsHeard
+        ? widget.lesson.qualities
+        : [_chord.quality];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.grapeSoft,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t(en: 'Chord recipe', tr: 'Akorun tarifi'),
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: AppColors.grape,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          for (final quality in qualities)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  t(
+                    en: '${chordColorName(quality)}: '
+                        'root → ${chordRecipe(quality).map((s) => '+$s').join(' → ')} keys',
+                    tr: '${chordColorName(quality)}: '
+                        'kök → ${chordRecipe(quality).map((s) => '+$s').join(' → ')} tuş',
+                  ),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _slotRow(ThemeData theme) {
-    final single = _targets.length == 1;
     return Column(
       children: [
         SizedBox(
@@ -435,7 +483,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
             children: [
               for (var i = 0; i < _targets.length; i++)
                 Container(
-                  width: single ? 84 : 70,
+                  width: 70,
                   height: 52,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   alignment: Alignment.center,
@@ -463,13 +511,20 @@ class _ChordProducePageState extends State<ChordProducePage> {
             ],
           ),
         ),
-        if (_phase == _Phase.answered && !_isPerfect) ...[
+        if (_phase == _Phase.answered) ...[
           const SizedBox(height: 8),
           Text(
-            t(
-              en: 'It was: ${_targets.map((n) => n.label).join(' · ')}',
-              tr: 'Doğrusu: ${_targets.map((n) => n.label).join(' · ')}',
-            ),
+            _isPerfect
+                ? t(
+                    en: 'You played ${_chord.root.name} '
+                        '${chordColorName(_chord.quality)}',
+                    tr: '${_chord.root.name} '
+                        '${chordColorName(_chord.quality)} çaldın',
+                  )
+                : t(
+                    en: 'It was: ${_targets.map((n) => n.label).join(' · ')}',
+                    tr: 'Doğrusu: ${_targets.map((n) => n.label).join(' · ')}',
+                  ),
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
@@ -489,14 +544,15 @@ class _ChordProducePageState extends State<ChordProducePage> {
     return theme.colorScheme.surfaceContainerHighest;
   }
 
-  /// Kromatik tuş sırası — 12 ses, iki satırda altışar. Diyatonik bir havuz
-  /// yetmezdi: minör üçlü çoğu tonda dizinin dışında kalır.
+  /// Kromatik tuş sırası. Her tuş KÖKTEN UZAKLIĞINI yazar (+4 gibi) — tarif
+  /// böylece ekranda uygulanabilir hale gelir; sayma işi kullanıcıyı yormaz,
+  /// öğrenilen şey zaten hangi rengin kurulacağıdır.
   Widget _padGrid(ThemeData theme) {
     final pads = _pads;
-    const spacing = 6.0;
+    const spacing = 5.0;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = (constraints.maxWidth - spacing * 5) / 6;
+        final width = (constraints.maxWidth - spacing * 6) / 7;
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
@@ -510,17 +566,24 @@ class _ChordProducePageState extends State<ChordProducePage> {
   }
 
   Widget _pad(ThemeData theme, Note note) {
-    // Akorun kendi sesleri hafifçe belirgin: "nokta atışı" demek kör atış
-    // demek değil — kullanıcı aradığı sesin çevresini görebilmeli.
-    final isChordTone = _chord.notes.any(
-      (n) => n.pitchClass == note.pitchClass,
-    );
+    final distance = note.midi - _chord.root.midi;
+    final isRoot = distance == 0;
+    // REHBERLİ ders: sıradaki doğru tuş işaretlenir. Tarif ilk kez burada
+    // uygulanıyor; kullanıcıyı boşlukta bırakmak öğretmek değil sınamaktır.
+    final isHint =
+        widget.lesson.guided &&
+        _phase == _Phase.answering &&
+        !_isFull &&
+        note.midi == _currentTarget.midi;
+
     return Semantics(
       button: true,
       label: note.label,
       child: Material(
-        color: isChordTone && _phase == _Phase.answered
+        color: isHint
             ? AppColors.grapeSoft
+            : isRoot
+            ? AppColors.wash
             : theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
         clipBehavior: Clip.antiAlias,
@@ -528,16 +591,36 @@ class _ChordProducePageState extends State<ChordProducePage> {
           onTap: _phase == _Phase.answering && !_isFull
               ? () => _tapPad(note)
               : null,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                note.label,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: isHint
+                  ? Border.all(color: AppColors.grape, width: 2)
+                  : null,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    note.label,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
-              ),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    isRoot ? t(en: 'root', tr: 'kök') : '+$distance',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -566,8 +649,6 @@ class _ChordProducePageState extends State<ChordProducePage> {
         ),
         const SizedBox(height: 10),
         if (_targetIsKnown)
-          // Hedef zaten söylendi → ibre cevabı ele vermez, NOKTA ATIŞI akort
-          // geri bildirimi verir. Kullanıcının en net bulduğu gösterge bu.
           PitchMeter(
             target: _currentTarget,
             reading: _reading,
@@ -640,7 +721,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
               icon: const Icon(Icons.volume_up_rounded, size: 18),
               label: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(t(en: 'Hear it', tr: 'Doğrusunu duy')),
+                child: Text(t(en: 'Hear it', tr: 'Akoru duy')),
               ),
             ),
           ),
@@ -679,11 +760,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
             onPressed: _isFull ? _evaluate : null,
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: Text(
-                _targets.length == 1
-                    ? t(en: 'This one', tr: 'Bu ses')
-                    : t(en: "That's my chord", tr: 'Akorum bu'),
-              ),
+              child: Text(t(en: 'Play it', tr: 'Akorum bu')),
             ),
           ),
         ),

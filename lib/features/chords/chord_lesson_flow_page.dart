@@ -116,26 +116,39 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
     }
   }
 
-  String _howItWorks() => switch (widget.lesson.drill) {
-    ChordDrill.findThird || ChordDrill.findTop => t(
-      en: 'How it works: Eko plays a chord — you find one note inside it, on '
-          'the keys or with your voice. Hunt around until it matches.',
-      tr: 'Nasıl oynanır: Eko bir akor çalar — sen içindeki tek bir sesi '
-          'bulursun, tuşlarda ya da sesinle. Tutana kadar arayabilirsin.',
-    ),
-    ChordDrill.buildChord => t(
-      en: 'How it works: Eko gives you one note — you build the whole chord on '
-          'top of it, note by note.',
-      tr: 'Nasıl oynanır: Eko sana tek bir ses verir — sen onun üstüne akorun '
-          'tamamını, ses ses kurarsın.',
-    ),
-    _ => t(
-      en: 'How it works: Eko plays a chord — you say how it felt. No terms to '
-          'learn first.',
-      tr: 'Nasıl oynanır: Eko bir akor çalar — sen nasıl geldiğini '
-          'söylersin. Önceden öğrenilecek terim yok.',
-    ),
-  };
+  String _howItWorks() {
+    if (widget.lesson.drill == ChordDrill.match) {
+      return t(
+        en: 'How it works: Eko plays a chord, then you play both options and '
+            'pick the one that sounds the same. Nothing to memorise.',
+        tr: 'Nasıl oynanır: Eko bir akor çalar; sen iki şıkkı da çalıp aynı '
+            'gelen sesi seçersin. Ezberlenecek bir şey yok.',
+      );
+    }
+    if (!widget.lesson.isProduction) {
+      return t(
+        en: 'How it works: Eko plays a chord — you say how it felt. No terms '
+            'to learn first.',
+        tr: 'Nasıl oynanır: Eko bir akor çalar — sen nasıl geldiğini '
+            'söylersin. Önceden öğrenilecek terim yok.',
+      );
+    }
+    if (widget.lesson.colorIsHeard) {
+      return t(
+        en: 'How it works: Eko plays a chord — you work out its colour and '
+            'play the same chord back, note by note. Get it right and it rings '
+            'out as one chord.',
+        tr: 'Nasıl oynanır: Eko bir akor çalar — sen rengini bulup aynısını ses '
+            'ses çalarsın. Doğru kurunca akor bir bütün olarak çalar.',
+      );
+    }
+    return t(
+      en: 'How it works: the recipe is on screen and the next key is marked. '
+          'Count up from the root and the chord appears under your fingers.',
+      tr: 'Nasıl oynanır: tarif ekranda, sıradaki tuş işaretli. Kökten sayarak '
+          'ilerle, akor parmaklarının altında oluşsun.',
+    );
+  }
 }
 
 /// Bir akor dersinin oyun ekranını kurar.

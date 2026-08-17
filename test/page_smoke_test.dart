@@ -103,8 +103,8 @@ void main() {
 
   // AKORLAR — renk algısı + akorda ses üretme (track 2026-08-17'de yeniden
   // kuruldu: çoktan seçmeli etiketleme yerine his + üretim).
-  testWidgets('akor renk ekranı iki ve dört şıkla çizilir', (t) async {
-    for (final id in ['ch_bright', 'ch_color', 'ch_tense', 'ch_master']) {
+  testWidgets('akor renk ekranı çizilir (eşleştirme + algı)', (t) async {
+    for (final id in ['ch_bright', 'ch_color', 'ch_seventh']) {
       await smoke(
         t,
         ChordColorPage(
@@ -118,7 +118,7 @@ void main() {
   });
 
   testWidgets('akor üretme ekranı çizilir (tuş + söyleme)', (t) async {
-    for (final id in ['ch_third', 'ch_top', 'ch_build']) {
+    for (final id in ['ch_third', 'ch_build', 'ch_tense', 'ch_master']) {
       await smoke(
         t,
         ChordProducePage(
@@ -131,11 +131,12 @@ void main() {
         ),
       );
     }
-    // "Akoru Kur" söyleme modunda PitchMeter gösterir (hedef zaten söylenmiş).
+    // Rehberli ders söyleme modunda PitchMeter gösterir (renk ekranda yazılı,
+    // ibre cevabı ele vermez).
     await smoke(
       t,
       ChordProducePage(
-        lesson: _chordLesson('ch_build'),
+        lesson: _chordLesson('ch_third'),
         player: fake,
         mode: EchoInputMode.sing,
         onModeChanged: (_) {},
@@ -149,7 +150,7 @@ void main() {
     await compactAnsweredSmoke(
       t,
       ChordColorPage(
-        lesson: _chordLesson('ch_tense'), // dört şıklı, en kalabalık
+        lesson: _chordLesson('ch_color'), // tek dokunuşla cevaplanır
         player: fake,
         questionCount: 4,
         onComplete: (_) {},

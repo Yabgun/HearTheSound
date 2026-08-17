@@ -7,56 +7,48 @@ import '../../core/note.dart';
 // -----------------------------------------------------------------------------
 // AKOR SORU ÜRETİMİ — saf, testli
 //
-// Track'in yeni işi TEK bir şey: AKORUN RENGİ ve o rengi ÜRETEBİLMEK.
-// Kök bulma ve akorların birbirine göre hareketi Armoni Kulağı'nın işi; burada
-// tekrar edilmez. İş bölümü: **Akorlar = dikey renk · Armoni = yatay hareket.**
+// TRACK'İN TEK KAZANIMI: **duyduğun akoru çalabilmek.**
 //
-// Eski track 13 dersti ve yarısı ya çakışıyordu ya da yanlış soruyu soruyordu:
-//   • "Bu hangi akor?" → kök bulma + renk duyma TEK soruda; kullanıcı hangisinde
-//     takıldığını bilemiyordu, üstelik kök bulma zaten Armoni'de var.
-//   • "Bu kaçıncı çevrim?" → bir ANALİZ sorusu. İçindeki gerçek beceri "en
-//     üstte/altta hangi ses var" — o yüzden burada [findTop] olarak, cevabı
-//     ÜRETTİREREK yaşatılıyor.
-//   • Arpej söyleme → akoru melodiye çeviriyordu (bkz. chord_produce_page).
+// ⚠️ CİHAZ TESTİNİN DERSİ (2026-08-17): ilk yeniden kurulumda cevap sesin
+// içindeydi ama AMAÇ görevde değildi. Kullanıcı: *"seçenekleri doğru bulur ama
+// neden bulduğunu bilmiyor, bulunca ne kazanacağını nerede kullanacağını
+// anlayamıyor."* Teşhis: "üçlüyü bul", "tepe sesini bul" birer ANALİZ
+// alt-becerisiydi — Melodi/Armoni/Ritim'de görev kendi anlamını taşırken
+// ("duyduğunu geri kur") burada taşımıyordu.
 //
-// SORULAR TERİM SORMAZ: "majör mü?" değil "parlak mı?". Terim en sonda rozet.
+// Ayrıca üç somut kusur bildirildi ve üçü de burada kapandı:
+//   • "Tepe Sesi" dersi KALDIRILDI — çevrimde tepe kökten bir oktav yukarı
+//     çıkabiliyordu ve tuş sırası (kök..kök+11) o sesi hiç içermiyordu; doğru
+//     cevap ekranda görünmüyordu. Gerçek bir hata, dersin de amacı zayıftı.
+//   • "Rengi Bul" (üçlüyü tek başına bul) KALDIRILDI — üçlü artık akoru
+//     KURARKEN öğreniliyor, tek başına aranan bir bilmece olarak değil.
+//   • "Akoru Kur"da tarif öğretilmiyordu → artık akor TARİFİ (kökten kaç tuş)
+//     ders içeriğinin parçası; önce rehberli kurulur, sonra rehber kalkar.
+//
+// Kalan her ders ya "duyduğun akoru kur" ya da onu mümkün kılan tek adımlık
+// bir ayrım. Sorular TERİM sormaz; terim en sonda rozet olur.
 // -----------------------------------------------------------------------------
 
 /// Akor derslerinin soru tipleri.
 enum ChordDrill {
-  /// 1 · Hangisi Parlak? — aynı kökte iki akor; fark TEK nota.
-  brighter,
+  /// Eşleştir — Eko bir akor çalar, iki DİNLENEBİLİR şıktan aynısını seç.
+  /// Görev kendini anlatır: "aynı sesi bul". Hiçbir terim gerekmez.
+  match,
 
-  /// 2 · Parlak mı Hüzünlü mü? — tek akor, karşılaştırma koltuk değneği yok.
+  /// Parlak mı hüzünlü mü — tek akor, karşılaştırma koltuk değneği yok.
   color,
 
-  /// 3 · Rengi Bul — akoru renklendiren sesi (üçlüyü) ÜRET.
-  findThird,
-
-  /// 4 · Tepe Sesi — akorun en tiz sesini bul (çevrimler burada yaşanır).
-  findTop,
-
-  /// 5 · Akoru Kur — verilen kökte istenen rengi kendin üret.
-  buildChord,
-
-  /// 6 · Gergin Renkler — eksik ve artık akorlar devrede.
-  tense,
-
-  /// 7 · Üç mü Dört mü? — üstüne bir ses daha binmiş mi (yedililer).
+  /// Üç mü dört mü — akorun üstüne bir ses daha binmiş mi (yedililer).
   countTones,
 
-  /// 8 · Renk Ustası — öğrenilen algı sorularının karışımı.
-  master,
+  /// Akoru kur — kullanıcı akoru ses ses ÜRETİR. Track'in kalbi.
+  build,
 }
 
-/// Ders havuzlarındaki kökler. Aynı ilişkiyi farklı evlerde yaşatmak beceriyi
-/// tek bir akordan koparır.
+/// Ders havuzlarındaki kökler.
 const List<String> kChordRoots = ['C', 'D', 'E', 'F', 'G', 'A'];
 
-/// Üçlü akorların rengi → dil-bağımsız seçenek anahtarı.
-///
-/// Sözcükler TERİM değil HİS: kullanıcı "majör" kelimesini bilmeden de
-/// "parlak"ı duyar. Adı rozet olarak sonra konur.
+/// Üçlü akorların rengi → dil-bağımsız anahtar. Sözcükler TERİM değil HİS.
 String colorKeyOf(ChordQuality quality) => switch (quality) {
   ChordQuality.major || ChordQuality.major7 || ChordQuality.dominant7 =>
     'bright',
@@ -67,102 +59,111 @@ String colorKeyOf(ChordQuality quality) => switch (quality) {
   ChordQuality.augmented => 'floating',
 };
 
+/// Akorun TARİFİ: kökten sonra kaç tuş, sonra kaç tuş daha.
+///
+/// Kullanıcıya "majör akor 1-3-5'tir" demek bir tanımdır, tarif değil.
+/// Kromatik tuş sırasında "kökten 4 tuş, sonra 3 tuş" SAYILABİLİR bir
+/// talimattır — 6 yaşındaki de uygular. Track bunu ekranda gösterir.
+List<int> chordRecipe(ChordQuality quality) {
+  final intervals = quality.intervals;
+  return [
+    for (var i = 1; i < intervals.length; i++) intervals[i] - intervals[i - 1],
+  ];
+}
+
 /// Tek bir akoru çalınabilir cümleye çevirir.
 ///
 /// Armoni'deki `bandVoicing`in aksine bas İKİLENMEZ: orada mesele bası
-/// duyurmaktı, burada mesele yığının RENGİ. Fazladan bir oktav bası, üçlünün
-/// taşıdığı rengi bulanıklaştırır.
+/// duyurmaktı, burada mesele yığının RENGİ.
 MusicalPhrase chordSoundPhrase(Chord chord, {int beats = 3}) => MusicalPhrase(
   events: [PhraseEvent(chord.notes, beats: beats)],
   tonic: chord.root,
 );
 
-/// İki seçenekli/çok seçenekli algı sorusu.
+/// Algı sorusu.
 class ChordChoiceRound {
+  /// Eko'nun çaldığı ses.
   final MusicalPhrase phrase;
 
-  /// Seçeneklerin dil-bağımsız anahtarları (UI bunları çevirir).
+  /// Seçeneklerin dil-bağımsız anahtarları.
   final List<String> optionKeys;
 
-  /// [optionKeys] içindeki doğru cevabın indisi.
+  /// Doğru cevabın indisi.
   final int answer;
+
+  /// Şıklar DİNLENEBİLİRSE (eşleştirme dersi) her şıkkın akoru.
+  /// null ise şıklar yalnızca metindir.
+  final List<Chord>? optionChords;
 
   const ChordChoiceRound({
     required this.phrase,
     required this.optionKeys,
     required this.answer,
+    this.optionChords,
   });
 }
 
-/// Kullanıcının SES ÜRETTİĞİ soru.
+/// Akor kurma sorusu.
 class ChordProduceRound {
-  /// Duyulan (ya da kurulacak) akor.
+  /// Kurulacak akor.
   final Chord chord;
 
-  /// Çalınacak ses. [ChordDrill.buildChord] için yalnızca KÖK çalar — akorun
-  /// tamamı çalsaydı kullanıcı kurmaz, taklit ederdi.
+  /// Eko'nun çaldığı: hedef akorun kendisi (kulakla çözülecek) ya da yalnızca
+  /// kök (renk kullanıcıya söylenir).
   final MusicalPhrase phrase;
 
-  /// Kullanıcının sırayla üreteceği sesler.
+  /// Sırayla üretilecek sesler.
   final List<Note> targets;
 
-  /// Kurulacak renk (yalnızca [ChordDrill.buildChord]); kullanıcıya söylenir.
-  final ChordQuality? buildQuality;
+  /// Kullanıcı akorun rengini KULAĞIYLA mı bulacak? false ise ekranda yazar.
+  final bool colorIsHeard;
 
   const ChordProduceRound({
     required this.chord,
     required this.phrase,
     required this.targets,
-    this.buildQuality,
+    required this.colorIsHeard,
   });
 }
-
-Note _root(String name, Random rng) => Note.fromName(name, 4);
 
 Chord _randomChord(
   Random rng, {
   required List<ChordQuality> qualities,
-  int inversion = 0,
 }) => Chord(
-  _root(kChordRoots[rng.nextInt(kChordRoots.length)], rng),
+  Note.fromName(kChordRoots[rng.nextInt(kChordRoots.length)], 4),
   qualities[rng.nextInt(qualities.length)],
-  inversion: inversion,
 );
 
 /// Algı sorusu üretir.
 ChordChoiceRound generateChordChoice({
   required ChordDrill drill,
+  required List<ChordQuality> qualities,
   required Random rng,
 }) {
   switch (drill) {
-    // Aynı KÖKTE majör ve minör peş peşe: fark tek nota (üçlü), o yüzden
-    // duyulması en kolay renk zıtlığı. Track buradan başlar.
-    case ChordDrill.brighter:
-      final root = _root(kChordRoots[rng.nextInt(kChordRoots.length)], rng);
+    // Eşleştir: Eko bir akor çalar, iki dinlenebilir şıktan aynısı seçilir.
+    // Şıklar AYNI KÖKTE majör/minör → fark tek nota, ama görev "aynısını bul"
+    // olduğu için kullanıcı ne yaptığını ilk saniyeden biliyor.
+    case ChordDrill.match:
+      final root = Note.fromName(
+        kChordRoots[rng.nextInt(kChordRoots.length)],
+        4,
+      );
+      final major = Chord(root, ChordQuality.major);
+      final minor = Chord(root, ChordQuality.minor);
       final majorFirst = rng.nextBool();
-      final first = Chord(root, majorFirst
-          ? ChordQuality.major
-          : ChordQuality.minor);
-      final second = Chord(root, majorFirst
-          ? ChordQuality.minor
-          : ChordQuality.major);
+      final options = majorFirst ? [major, minor] : [minor, major];
+      final targetIsMajor = rng.nextBool();
+      final target = targetIsMajor ? major : minor;
       return ChordChoiceRound(
-        phrase: MusicalPhrase(
-          events: [
-            PhraseEvent(first.notes, beats: 3),
-            PhraseEvent(second.notes, beats: 3),
-          ],
-          tonic: root,
-        ),
-        optionKeys: const ['first', 'second'],
-        answer: majorFirst ? 0 : 1,
+        phrase: chordSoundPhrase(target),
+        optionKeys: const ['soundA', 'soundB'],
+        answer: options.indexOf(target),
+        optionChords: options,
       );
 
     case ChordDrill.color:
-      final chord = _randomChord(
-        rng,
-        qualities: const [ChordQuality.major, ChordQuality.minor],
-      );
+      final chord = _randomChord(rng, qualities: qualities);
       const options = ['bright', 'dark'];
       return ChordChoiceRound(
         phrase: chordSoundPhrase(chord),
@@ -170,36 +171,8 @@ ChordChoiceRound generateChordChoice({
         answer: options.indexOf(colorKeyOf(chord.quality)),
       );
 
-    case ChordDrill.tense:
-      final chord = _randomChord(
-        rng,
-        qualities: const [
-          ChordQuality.major,
-          ChordQuality.minor,
-          ChordQuality.diminished,
-          ChordQuality.augmented,
-        ],
-      );
-      const options = ['bright', 'dark', 'tense', 'floating'];
-      return ChordChoiceRound(
-        phrase: chordSoundPhrase(chord),
-        optionKeys: options,
-        answer: options.indexOf(colorKeyOf(chord.quality)),
-      );
-
-    // Yedililer bir RENK değil bir KALINLIK sorusu olarak öğretilir: üstüne bir
-    // ses daha binmiş mi? (Armoni'nin sevilen "Kaç Ses?" mekaniğinin akor hâli.)
     case ChordDrill.countTones:
-      final chord = _randomChord(
-        rng,
-        qualities: const [
-          ChordQuality.major,
-          ChordQuality.minor,
-          ChordQuality.dominant7,
-          ChordQuality.major7,
-          ChordQuality.minor7,
-        ],
-      );
+      final chord = _randomChord(rng, qualities: qualities);
       const options = ['three', 'four'];
       return ChordChoiceRound(
         phrase: chordSoundPhrase(chord),
@@ -207,86 +180,44 @@ ChordChoiceRound generateChordChoice({
         answer: chord.quality.isSeventh ? 1 : 0,
       );
 
-    // Capstone: öğrenilen algı sorularını karıştırır. Dokuz şıklı dev bir
-    // etiketleme ekranı YAPILMADI — o, kaldırdığımız hatanın ta kendisi olurdu.
-    case ChordDrill.master:
-      const mixed = [ChordDrill.color, ChordDrill.tense, ChordDrill.countTones];
-      return generateChordChoice(
-        drill: mixed[rng.nextInt(mixed.length)],
-        rng: rng,
-      );
-
-    case ChordDrill.findThird:
-    case ChordDrill.findTop:
-    case ChordDrill.buildChord:
-      throw ArgumentError('$drill is not a perception drill');
+    case ChordDrill.build:
+      throw ArgumentError('$drill is a production drill');
   }
 }
 
-/// Üretim sorusu üretir.
+/// Akor kurma sorusu üretir.
+///
+/// [colorIsHeard] false → yalnızca KÖK çalar, renk ekranda yazar (rehberli
+/// öğrenme). true → akorun tamamı çalar, rengi kullanıcı kulağıyla bulur ve
+/// aynısını kurar. Track'in kazanımı budur: duy → çal.
 ChordProduceRound generateChordProduce({
-  required ChordDrill drill,
+  required List<ChordQuality> qualities,
+  required bool colorIsHeard,
   required Random rng,
 }) {
-  switch (drill) {
-    // Majörle minörü ayıran TEK ses üçlüdür. Onu bulabilen kullanıcı, rengin
-    // sebebini ezberlemez — elinde tutar.
-    case ChordDrill.findThird:
-      final chord = _randomChord(
-        rng,
-        qualities: const [ChordQuality.major, ChordQuality.minor],
-      );
-      return ChordProduceRound(
-        chord: chord,
-        phrase: chordSoundPhrase(chord),
-        targets: [chord.notes[1]],
-      );
-
-    // Çevrimlerin dürüst hâli: "kaçıncı çevrim" diye sormak yerine en tiz sesi
-    // buldururuz. Kapalı pozisyonda tepe her zaman beşli olurdu (tahmin
-    // edilebilirdi); çevrim onu değiştirdiği için soru gerçek bir kulak sorusu.
-    case ChordDrill.findTop:
-      final chord = _randomChord(
-        rng,
-        qualities: const [ChordQuality.major, ChordQuality.minor],
-        inversion: rng.nextInt(3),
-      );
-      return ChordProduceRound(
-        chord: chord,
-        phrase: chordSoundPhrase(chord),
-        targets: [chord.notes.last],
-      );
-
-    // Akoru KUR: yalnızca kök çalar, rengi söylenir, üç sesi kullanıcı üretir.
-    // Arpejin dürüst olduğu tek yer burası — amaç taklit değil İNŞA.
-    case ChordDrill.buildChord:
-      final chord = _randomChord(
-        rng,
-        qualities: const [ChordQuality.major, ChordQuality.minor],
-      );
-      return ChordProduceRound(
-        chord: chord,
-        phrase: MusicalPhrase(
-          events: [PhraseEvent([chord.root], beats: 3)],
-          tonic: chord.root,
-        ),
-        targets: chord.notes,
-        buildQuality: chord.quality,
-      );
-
-    case ChordDrill.brighter:
-    case ChordDrill.color:
-    case ChordDrill.tense:
-    case ChordDrill.countTones:
-    case ChordDrill.master:
-      throw ArgumentError('$drill is not a production drill');
-  }
+  final chord = _randomChord(rng, qualities: qualities);
+  return ChordProduceRound(
+    chord: chord,
+    phrase: colorIsHeard
+        ? chordSoundPhrase(chord)
+        : MusicalPhrase(
+            events: [
+              PhraseEvent([chord.root], beats: 3),
+            ],
+            tonic: chord.root,
+          ),
+    targets: chord.notes,
+    colorIsHeard: colorIsHeard,
+  );
 }
 
-/// Üretim ekranındaki tuş sırası: kökten başlayan KROMATİK bir oktav.
+/// Kurma ekranındaki tuş sırası: kökten başlayan kromatik bir oktav + oktav
+/// sesi (13 tuş).
 ///
-/// Diyatonik bir havuz yetmez — minör üçlü (kök+3) çoğu tonda dizinin dışında
-/// kalır. "Nokta atışı" istiyorsak aradaki sesler de tuşta olmalı.
+/// Kromatik olması şart: minör üçlü çoğu tonda dizinin dışında kalır. Oktavın
+/// dahil olması da şart — dört sesli akorlarda üst ses kök+10/11'e kadar
+/// çıkabilir ve aranan ses tuşta YOKSA soru çözülemez hâle gelir (cihazda
+/// bildirilen "cevap şıklarda yok" hatası tam olarak buydu).
 List<Note> chromaticPadsFrom(Note root) => [
-  for (var semitone = 0; semitone < 12; semitone++) Note(root.midi + semitone),
+  for (var semitone = 0; semitone <= 12; semitone++) Note(root.midi + semitone),
 ];

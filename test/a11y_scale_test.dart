@@ -102,8 +102,8 @@ void main() {
     await scaledSmoke(
       t,
       ChordColorPage(
-        // Dört şıklı ders: en kalabalık hâl.
-        lesson: chordLessons.firstWhere((l) => l.id == 'ch_tense'),
+        // Algı dersi (iki şık); ch_tense artık bir KURMA dersi.
+        lesson: chordLessons.firstWhere((l) => l.id == 'ch_color'),
         player: fake,
         onComplete: (_) {},
       ),
@@ -114,8 +114,9 @@ void main() {
     await scaledSmoke(
       t,
       ChordProducePage(
-        // Üç yuvalı + 12 kromatik tuş: ekranın en yoğun hâli.
-        lesson: chordLessons.firstWhere((l) => l.id == 'ch_build'),
+        // Üç yuva + tarif kartı + 13 kromatik tuş: ekranın en yoğun hâli
+        // (ch_tense dört rengin tarifini birden gösterir).
+        lesson: chordLessons.firstWhere((l) => l.id == 'ch_tense'),
         player: fake,
         mode: EchoInputMode.tap,
         onModeChanged: (_) {},

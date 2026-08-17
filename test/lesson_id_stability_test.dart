@@ -40,7 +40,11 @@ const Set<String> kShippedLessonIds = {
   // söyleme adımı akoru arpejleyerek melodiye çeviriyordu. Yayın ÖNCESİ
   // olduğumuz için serbest (üretim tablosu boş) — har5/har6/har7'de olduğu
   // gibi. ⚠️ Kaldırılan id'ler ASLA yeniden kullanılmamalı.
-  'ch_bright', 'ch_color', 'ch_third', 'ch_top',
+  // 2026-08-17 (2. tur, cihaz geri bildirimi): 'ch_top' (Tepe Sesi) KALDIRILDI —
+  // çevrimde tepe sesi tuş sırasının dışına taşıyordu (doğru cevap ekranda
+  // görünmüyordu) ve dersin amacı zayıftı. Kalan yedi ders tek kazanım
+  // etrafında toplandı: duyduğun akoru çalabilmek.
+  'ch_bright', 'ch_color', 'ch_third',
   'ch_build', 'ch_tense', 'ch_seventh', 'ch_master',
   // Melodi Kulağı (Eko oyunu)
   'mel1', 'mel2', 'mel3', 'mel4', 'mel5', 'mel6', 'mel7', 'mel8',

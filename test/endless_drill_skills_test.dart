@@ -33,10 +33,10 @@ void main() {
     final byId = {
       for (final s in buildDrillSkills(p, null)) s.id: s.type,
     };
-    expect(byId['ch_color'], 'color');
-    expect(byId['ch_master'], 'color');
-    expect(byId['ch_third'], 'chordNote'); // üçlüyü üret
-    expect(byId['ch_build'], 'chordNote'); // akoru kur
+    expect(byId['ch_color'], 'color'); // algı: parlak mı hüzünlü mü
+    expect(byId['ch_third'], 'chordNote'); // rehberli kurma (tarif)
+    expect(byId['ch_build'], 'chordNote'); // duyduğunu çal
+    expect(byId['ch_master'], 'chordNote'); // hepsini çal
   });
 
   test('hiç tamamlanmamışsa boş liste (drill edilecek beceri yok)', () {
