@@ -6,11 +6,12 @@ import 'package:flutter/material.dart';
 import '../../audio/note_player.dart';
 import '../../core/content_locale.dart';
 import '../../core/note.dart';
-import '../../ui/app_theme.dart';
 import '../../ui/play_button.dart';
 import '../lesson/lesson.dart';
+import '../mascot/player_eko.dart';
 import 'rhythm_lesson.dart';
 import 'rhythm_pattern.dart';
+import 'rhythm_timeline.dart';
 
 // -----------------------------------------------------------------------------
 // RİTİM EKO OYUNU — "çaldığımı geri vur"
@@ -54,8 +55,25 @@ class RhythmEchoPage extends StatefulWidget {
   State<RhythmEchoPage> createState() => _RhythmEchoPageState();
 }
 
-class _RhythmEchoPageState extends State<RhythmEchoPage> {
+class _RhythmEchoPageState extends State<RhythmEchoPage>
+    with TickerProviderStateMixin {
   final Random _rng = Random();
+
+  /// Çalma imleci (0→1). Süresi her kalıpta yeniden ayarlanır; çizelge bunu
+  /// dinleyip yalnızca kendini yeniden boyar (sayfa yeniden kurulmaz).
+  late final AnimationController _playhead = AnimationController(vsync: this);
+
+  /// Eko'nun tempo tutuşu: her seste bir kez tetiklenir.
+  late final AnimationController _bounce = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 280),
+  );
+
+  /// Vuruş alanının dokunma dalgası.
+  late final AnimationController _tapPulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 320),
+  );
 
   /// Kullanıcının vuruşlarını ölçen kronometre (ilk vuruşta başlar).
   final Stopwatch _watch = Stopwatch();
@@ -91,8 +109,16 @@ class _RhythmEchoPageState extends State<RhythmEchoPage> {
   @override
   void dispose() {
     _timer?.cancel();
+    _playhead.dispose();
+    _bounce.dispose();
+    _tapPulse.dispose();
     super.dispose();
   }
+
+  /// İmlecin kat edeceği süre: son sesten sonra kısa bir kuyruk. Ölçünün
+  /// sonuna kadar süzülmesi, kalıp erken bitiyorsa kullanıcıyı boş yere
+  /// bekletirdi.
+  int get _playheadSpanMs => (_targetMs.isEmpty ? 0 : _targetMs.last) + 400;
 
   void _newRound() {
     _targetMs = onsetTimesMs(
@@ -113,6 +139,9 @@ class _RhythmEchoPageState extends State<RhythmEchoPage> {
       _phase = _Phase.playing;
       _soundingIndex = null;
     });
+    _playhead
+      ..duration = Duration(milliseconds: _playheadSpanMs)
+      ..forward(from: 0);
     _scheduleOnset(0, DateTime.now());
   }
 
@@ -139,6 +168,7 @@ class _RhythmEchoPageState extends State<RhythmEchoPage> {
     _timer = Timer(Duration(milliseconds: wait > 0 ? wait : 0), () {
       if (!mounted) return;
       setState(() => _soundingIndex = index);
+      _bounce.forward(from: 0); // Eko her seste tempo tutar
       // Beklemeden çal: çalma çağrısını beklemek bir sonraki sesi geciktirir.
       unawaited(widget.player.play(kRhythmNote));
       _scheduleOnset(index + 1, start);
@@ -150,6 +180,7 @@ class _RhythmEchoPageState extends State<RhythmEchoPage> {
     if (_phase != _Phase.answering || _tapMs.length >= _targetMs.length) return;
     if (!_watch.isRunning) _watch.start();
     setState(() => _tapMs.add(_watch.elapsedMilliseconds));
+    _tapPulse.forward(from: 0);
     await widget.player.play(kRhythmNote);
     if (_tapMs.length == _targetMs.length) _evaluate();
   }
@@ -177,6 +208,7 @@ class _RhythmEchoPageState extends State<RhythmEchoPage> {
   }
 
   void _retry() {
+    _playhead.stop();
     setState(() {
       _tapMs.clear();
       _watch.reset();
@@ -250,14 +282,31 @@ class _RhythmEchoPageState extends State<RhythmEchoPage> {
                 ),
               ),
               const SizedBox(height: 12),
-              PlayButton(
-                onTap: _playPattern,
-                playing: _phase == _Phase.playing,
-                size: 72,
-                iconSize: 30,
+              // Eko + çal düğmesi yan yana: bu, uygulamadaki TEK karaktersiz
+              // ekrandı ve diğer derslerden kopuk duruyordu.
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _keepingTime(),
+                  const SizedBox(width: 18),
+                  PlayButton(
+                    onTap: _playPattern,
+                    playing: _phase == _Phase.playing,
+                    size: 72,
+                    iconSize: 30,
+                  ),
+                ],
               ),
-              const SizedBox(height: 14),
-              _timeline(theme),
+              const SizedBox(height: 10),
+              RhythmTimeline(
+                shape: _shape,
+                targetMs: _targetMs,
+                tapMs: _tapMs,
+                comparison: _comparison,
+                soundingIndex: _soundingIndex,
+                playhead: _phase == _Phase.playing ? _playhead : null,
+                playheadSpanMs: _playheadSpanMs,
+              ),
               const Spacer(),
               if (_phase == _Phase.answered)
                 _resultArea(theme)
@@ -282,107 +331,30 @@ class _RhythmEchoPageState extends State<RhythmEchoPage> {
         : t(en: 'Close — listen again', tr: 'Az kaldı — tekrar dinle'),
   };
 
-  /// Zaman çizelgesi: üstte kalıp, cevaptan sonra altta kullanıcının vuruşları.
-  /// İki satır alt alta durunca "erken mi geç mi vurdum" tek bakışta görülür.
-  Widget _timeline(ThemeData theme) {
-    final comparison = _comparison;
-    final totalMs = _shape.totalMs;
-    return Column(
-      children: [
-        SizedBox(
-          height: 44,
-          child: LayoutBuilder(
-            builder: (context, constraints) => Stack(
-              children: [
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  top: 20,
-                  child: Container(
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.wash,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                ),
-                for (var i = 0; i < _targetMs.length; i++)
-                  _mark(
-                    x: _targetMs[i] / totalMs * (constraints.maxWidth - 18),
-                    color: _soundingIndex == i
-                        ? AppColors.grape
-                        : theme.colorScheme.outline,
-                    big: _soundingIndex == i,
-                  ),
-              ],
-            ),
-          ),
-        ),
-        if (comparison != null) ...[
-          Text(
-            t(en: 'you', tr: 'sen'),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(
-            height: 34,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // Kullanıcının vuruşları hedefle AYNI hizalamayla çizilir
-                // (ilk vuruş = sıfır), yoksa "geç başladım" hatası gibi
-                // görünürdü — oysa ölçülen şey aralıklar.
-                final base = _tapMs.isEmpty ? 0 : _tapMs.first;
-                return Stack(
-                  children: [
-                    for (var i = 0; i < _tapMs.length; i++)
-                      _mark(
-                        x:
-                            (_tapMs[i] - base + _targetMs.first) /
-                            totalMs *
-                            (constraints.maxWidth - 18),
-                        color: comparison.matches[i]
-                            ? AppColors.success
-                            : AppColors.danger,
-                        big: true,
-                        top: 6,
-                      ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _mark({
-    required double x,
-    required Color color,
-    required bool big,
-    double top = 12,
-  }) => Positioned(
-    left: x.clamp(0, double.infinity),
-    top: big ? top - 2 : top,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 120),
-      width: big ? 22 : 18,
-      height: big ? 22 : 18,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: big
-            ? [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 8)]
-            : null,
-      ),
+  /// Eko tempo tutar: her seste hafifçe zıplar. Hareket GERÇEK sese bağlı —
+  /// serbest bir animasyon olsaydı yanlış tempo öğretirdi.
+  Widget _keepingTime() => AnimatedBuilder(
+    animation: _bounce,
+    builder: (context, child) {
+      final pulse = sin(pi * _bounce.value); // 0 → 1 → 0
+      return Transform.translate(
+        offset: Offset(0, -10 * pulse),
+        child: Transform.scale(scale: 1 + 0.07 * pulse, child: child),
+      );
+    },
+    child: PlayerEko(
+      size: 60,
+      celebrate: _phase == _Phase.answered && (_comparison?.isPerfect ?? false),
     ),
   );
 
   /// Vuruş alanı: ekranın en büyük hedefi. Ritimde gecikme her şeydir, o yüzden
   /// [GestureDetector.onTapDown] kullanılır — onTap parmağın kalkmasını bekler.
+  ///
+  /// Her dokunuşta genişleyen bir halka + hafif büyüme: eskiden 160 px'lik bu
+  /// daireye basınca ekranda HİÇBİR ŞEY olmuyordu; en büyük öğe en sessiz
+  /// öğeydi.
   Widget _tapPad(ThemeData theme) {
-    final remaining = _targetMs.length - _tapMs.length;
     final active = _phase == _Phase.answering;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -393,42 +365,74 @@ class _RhythmEchoPageState extends State<RhythmEchoPage> {
           label: t(en: 'Tap the beat', tr: 'Vuruşa dokun'),
           child: GestureDetector(
             onTapDown: active ? (_) => _tap() : null,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: active
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.surfaceContainerHighest,
-                boxShadow: active
-                    ? [
-                        BoxShadow(
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.32,
+            child: AnimatedBuilder(
+              animation: _tapPulse,
+              builder: (context, child) {
+                final v = _tapPulse.value; // 0 → 1
+                return SizedBox(
+                  width: 150,
+                  height: 150,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Dışa açılan halka — dokunuşun "duyulur" karşılığı.
+                      if (v > 0 && v < 1)
+                        Container(
+                          width: 130 + 60 * v,
+                          height: 130 + 60 * v,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: theme.colorScheme.primary.withValues(
+                                alpha: 0.45 * (1 - v),
+                              ),
+                              width: 3,
+                            ),
                           ),
-                          blurRadius: 28,
-                          spreadRadius: 2,
                         ),
-                      ]
-                    : null,
-              ),
-              child: Center(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      active
-                          ? t(en: 'TAP', tr: 'VUR')
-                          : t(en: '…', tr: '…'),
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
-                        color: active
-                            ? theme.colorScheme.onPrimary
-                            : theme.colorScheme.outline,
+                      Transform.scale(
+                        scale: 1 + 0.06 * (1 - v) * (v > 0 ? 1 : 0),
+                        child: child,
+                      ),
+                    ],
+                  ),
+                );
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: active
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.surfaceContainerHighest,
+                  boxShadow: active
+                      ? [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withValues(
+                              alpha: 0.32,
+                            ),
+                            blurRadius: 26,
+                            spreadRadius: 2,
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Text(
+                        active ? t(en: 'TAP', tr: 'VUR') : '…',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                          color: active
+                              ? theme.colorScheme.onPrimary
+                              : theme.colorScheme.outline,
+                        ),
                       ),
                     ),
                   ),
@@ -437,18 +441,39 @@ class _RhythmEchoPageState extends State<RhythmEchoPage> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
-        Text(
-          active
-              ? t(
-                  en: '$remaining hits to go',
-                  tr: '$remaining vuruş kaldı',
-                )
-              : t(en: 'Listening…', tr: 'Dinleniyor…'),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+        const SizedBox(height: 12),
+        _remainingDots(theme, active),
+      ],
+    );
+  }
+
+  /// Kalan vuruşlar — sayı yerine NOKTA: kaç kez daha vuracağını saymadan
+  /// görürsün (ritim sırasında okumak için vakit yok).
+  Widget _remainingDots(ThemeData theme, bool active) {
+    if (!active) {
+      return Text(
+        t(en: 'Listening…', tr: 'Dinleniyor…'),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
         ),
+      );
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (var i = 0; i < _targetMs.length; i++)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            width: i < _tapMs.length ? 12 : 10,
+            height: i < _tapMs.length ? 12 : 10,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: i < _tapMs.length
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outline.withValues(alpha: 0.35),
+            ),
+          ),
       ],
     );
   }

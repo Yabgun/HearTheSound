@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hear_the_sound/audio/note_player.dart';
+import 'package:hear_the_sound/core/player_progress.dart';
+import 'package:hear_the_sound/data/progress_repository.dart';
+import 'package:hear_the_sound/state/progress_controller.dart';
 import 'package:hear_the_sound/core/echo.dart';
 import 'package:hear_the_sound/core/note.dart';
 import 'package:hear_the_sound/features/chords/chord_arpeggio_page.dart';
@@ -16,6 +20,8 @@ import 'package:hear_the_sound/features/melody/echo_game_page.dart';
 import 'package:hear_the_sound/features/melody/melody_lesson.dart';
 import 'package:hear_the_sound/features/rhythm/rhythm_echo_page.dart';
 import 'package:hear_the_sound/features/rhythm/rhythm_lesson.dart';
+import 'package:hear_the_sound/features/rhythm/rhythm_timeline.dart';
+import 'package:hear_the_sound/features/mascot/player_eko.dart';
 
 // Ses eklentisi çağırmayan sahte oynatıcı — testte plugin hatası olmasın.
 class _FakePlayer implements NotePlayer {
@@ -35,6 +41,23 @@ ChordLesson _chordLesson(String id) =>
 HarmonyLesson _harmonyLesson(String id) =>
     harmonyLessons.firstWhere((l) => l.id == id);
 
+
+// Ritim ekranı kullanıcının Eko rengini gösterdiği için (PlayerEko) ProviderScope
+// gerekiyor; bellek-içi sahte repo ile besliyoruz (SharedPreferences'e girmeden).
+class _FakeRepo implements ProgressRepository {
+  PlayerProgress _p = PlayerProgress.empty;
+  @override
+  PlayerProgress load() => _p;
+  @override
+  Future<void> save(PlayerProgress p) async => _p = p;
+}
+
+/// Sayfayı ProviderScope + MaterialApp ile sarmalar.
+Widget _wrap(Widget page) => ProviderScope(
+  overrides: [progressRepositoryProvider.overrideWithValue(_FakeRepo())],
+  child: MaterialApp(home: page),
+);
+
 void main() {
   final fake = _FakePlayer();
 
@@ -45,7 +68,7 @@ void main() {
   Future<void> smoke(WidgetTester tester, Widget page) async {
     await tester.binding.setSurfaceSize(const Size(420, 960));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(MaterialApp(home: page));
+    await tester.pumpWidget(_wrap(page));
     expect(tester.takeException(), isNull, reason: 'ilk çizimde hata olmamalı');
     for (var i = 0; i < 8; i++) {
       await tester.pump(const Duration(milliseconds: 800));
@@ -59,7 +82,7 @@ void main() {
   Future<void> compactAnsweredSmoke(WidgetTester tester, Widget page) async {
     await tester.binding.setSurfaceSize(const Size(420, 700));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    await tester.pumpWidget(MaterialApp(home: page));
+    await tester.pumpWidget(_wrap(page));
     await tester.pump();
     final firstOption = find.byType(InkWell).first;
     await tester.ensureVisible(firstOption);
@@ -198,8 +221,8 @@ void main() {
     await t.binding.setSurfaceSize(const Size(420, 700));
     addTearDown(() => t.binding.setSurfaceSize(null));
     await t.pumpWidget(
-      MaterialApp(
-        home: EchoGamePage(
+      _wrap(
+        EchoGamePage(
           lesson: melodyLessons.first, // 2 notalık ezgi
           player: fake,
           mode: EchoInputMode.tap,
@@ -238,8 +261,8 @@ void main() {
 
     // Bası Bul: ev sabit (C4) → tuşlar C4/F4/G4/A4.
     await t.pumpWidget(
-      MaterialApp(
-        home: HarmonyFindPage(
+      _wrap(
+        HarmonyFindPage(
           lesson: _harmonyLesson('har4'),
           player: fake,
           mode: EchoInputMode.tap,
@@ -258,8 +281,8 @@ void main() {
     // Eko Oyunu aynı dili konuşmalı: mel8'de üst oktav toniği var, oktavsız
     // yazımda İKİ TANE "C" tuşu görünüyordu (biri doğru, biri yanlış).
     await t.pumpWidget(
-      MaterialApp(
-        home: EchoGamePage(
+      _wrap(
+        EchoGamePage(
           lesson: melodyLessons.last,
           player: fake,
           mode: EchoInputMode.tap,
@@ -361,7 +384,7 @@ void main() {
     ) async {
       await t.binding.setSurfaceSize(const Size(420, 700));
       addTearDown(() => t.binding.setSurfaceSize(null));
-      await t.pumpWidget(MaterialApp(home: page));
+      await t.pumpWidget(_wrap(page));
       for (var i = 0; i < 10; i++) {
         await t.pump(const Duration(milliseconds: 800));
       }
@@ -438,6 +461,10 @@ void main() {
           onComplete: (_) {},
         ),
       );
+      // Dersin görsel kalbi ve maskotu yerinde mi? İkisi de cihaz geri
+      // bildirimiyle ("UI fazla sade kalmış") eklendi; sessizce kaybolmasınlar.
+      expect(find.byType(RhythmTimeline), findsOneWidget);
+      expect(find.byType(PlayerEko), findsOneWidget);
     }
   });
 
@@ -446,8 +473,8 @@ void main() {
     addTearDown(() => t.binding.setSurfaceSize(null));
     final lesson = rhythmLessons.first; // 2 vuruşluk kalıp
     await t.pumpWidget(
-      MaterialApp(
-        home: RhythmEchoPage(
+      _wrap(
+        RhythmEchoPage(
           lesson: lesson,
           player: fake,
           questionCount: 4,

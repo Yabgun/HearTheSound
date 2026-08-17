@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hear_the_sound/audio/note_player.dart';
+import 'package:hear_the_sound/core/player_progress.dart';
+import 'package:hear_the_sound/data/progress_repository.dart';
+import 'package:hear_the_sound/state/progress_controller.dart';
 import 'package:hear_the_sound/core/chord.dart';
 import 'package:hear_the_sound/core/note.dart';
 import 'package:hear_the_sound/features/chords/chord_arpeggio_page.dart';
@@ -36,6 +40,17 @@ class _FakePlayer implements NotePlayer {
   Future<void> dispose() async {}
 }
 
+
+// Ritim ekranı kullanıcının Eko rengini gösterdiği için (PlayerEko) ProviderScope
+// gerekiyor; bellek-içi sahte repo ile besliyoruz (SharedPreferences'e girmeden).
+class _FakeRepo implements ProgressRepository {
+  PlayerProgress _p = PlayerProgress.empty;
+  @override
+  PlayerProgress load() => _p;
+  @override
+  Future<void> save(PlayerProgress p) async => _p = p;
+}
+
 void main() {
   final fake = _FakePlayer();
 
@@ -43,14 +58,17 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(420, 960));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
-      MaterialApp(
-        builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: const TextScaler.linear(1.3)),
-          child: child!,
+      ProviderScope(
+        overrides: [progressRepositoryProvider.overrideWithValue(_FakeRepo())],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.3)),
+            child: child!,
+          ),
+          home: page,
         ),
-        home: page,
       ),
     );
     expect(tester.takeException(), isNull, reason: '1.3x ilk çizim taşmamalı');
