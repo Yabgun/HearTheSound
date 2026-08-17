@@ -7,7 +7,7 @@ import '../../core/octave_mapping.dart';
 import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
 import '../chords/chord_lesson.dart';
-import '../chords/chord_recognition_page.dart';
+import '../chords/chord_color_page.dart';
 import '../lesson/lesson.dart';
 import '../note_recognition/note_recognition_page.dart';
 
@@ -84,11 +84,17 @@ class _PlacementTestPageState extends ConsumerState<PlacementTestPage> {
           'l5_chromatic',
         ],
       ),
-      _Rung(track: 'chord', chord: cl('ch1'), unlocks: const ['ch1']),
+      // Akor kademeleri artık RENK sorar (track'in yeni işi). "Bu hangi
+      // akor?" sorusu kaldırıldı — kök bulma Armoni Kulağı'nın işi.
       _Rung(
         track: 'chord',
-        chord: cl('ch3'),
-        unlocks: const ['ch1', 'ch2', 'ch3'],
+        chord: cl('ch_bright'),
+        unlocks: const ['ch_bright'],
+      ),
+      _Rung(
+        track: 'chord',
+        chord: cl('ch_color'),
+        unlocks: const ['ch_bright', 'ch_color'],
       ),
     ];
   }
@@ -235,9 +241,9 @@ class _PlacementTestPageState extends ConsumerState<PlacementTestPage> {
         onComplete: (r) => _onRungComplete(rung, r),
       );
     }
-    return ChordRecognitionPage(
+    return ChordColorPage(
       key: key,
-      pool: transposeChordsForVoice(rung.chord!.pool, _range),
+      lesson: rung.chord!,
       player: _player,
       questionCount: _questionsPerRung,
       onComplete: (r) => _onRungComplete(rung, r),

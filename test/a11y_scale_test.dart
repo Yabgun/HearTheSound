@@ -5,9 +5,10 @@ import 'package:hear_the_sound/audio/note_player.dart';
 import 'package:hear_the_sound/core/player_progress.dart';
 import 'package:hear_the_sound/data/progress_repository.dart';
 import 'package:hear_the_sound/state/progress_controller.dart';
-import 'package:hear_the_sound/core/chord.dart';
 import 'package:hear_the_sound/core/note.dart';
-import 'package:hear_the_sound/features/chords/chord_arpeggio_page.dart';
+import 'package:hear_the_sound/features/chords/chord_color_page.dart';
+import 'package:hear_the_sound/features/chords/chord_lesson.dart';
+import 'package:hear_the_sound/features/chords/chord_produce_page.dart';
 import 'package:hear_the_sound/features/lesson/lesson.dart';
 import 'package:hear_the_sound/features/lesson/sing_notes_page.dart';
 import 'package:hear_the_sound/features/note_recognition/note_recognition_page.dart';
@@ -97,14 +98,28 @@ void main() {
     );
   });
 
-  testWidgets('akor arpej 1.3x ölçekte taşmaz', (t) async {
+  testWidgets('akor renk ekranı 1.3x ölçekte taşmaz', (t) async {
     await scaledSmoke(
       t,
-      ChordArpeggioPage(
-        chords: [Chord(Note.fromName('C', 4), ChordQuality.major)],
+      ChordColorPage(
+        // Dört şıklı ders: en kalabalık hâl.
+        lesson: chordLessons.firstWhere((l) => l.id == 'ch_tense'),
         player: fake,
-        onComplete: () {},
-        title: 'Arpej',
+        onComplete: (_) {},
+      ),
+    );
+  });
+
+  testWidgets('akor üretme ekranı 1.3x ölçekte taşmaz', (t) async {
+    await scaledSmoke(
+      t,
+      ChordProducePage(
+        // Üç yuvalı + 12 kromatik tuş: ekranın en yoğun hâli.
+        lesson: chordLessons.firstWhere((l) => l.id == 'ch_build'),
+        player: fake,
+        mode: EchoInputMode.tap,
+        onModeChanged: (_) {},
+        onComplete: (_) {},
       ),
     );
   });

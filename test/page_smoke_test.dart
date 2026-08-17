@@ -7,11 +7,9 @@ import 'package:hear_the_sound/data/progress_repository.dart';
 import 'package:hear_the_sound/state/progress_controller.dart';
 import 'package:hear_the_sound/core/echo.dart';
 import 'package:hear_the_sound/core/note.dart';
-import 'package:hear_the_sound/features/chords/chord_arpeggio_page.dart';
-import 'package:hear_the_sound/features/chords/chord_inversion_recognition_page.dart';
+import 'package:hear_the_sound/features/chords/chord_color_page.dart';
 import 'package:hear_the_sound/features/chords/chord_lesson.dart';
-import 'package:hear_the_sound/features/chords/chord_quality_recognition_page.dart';
-import 'package:hear_the_sound/features/chords/chord_recognition_page.dart';
+import 'package:hear_the_sound/features/chords/chord_produce_page.dart';
 import 'package:hear_the_sound/features/harmony/harmony_choice_page.dart';
 import 'package:hear_the_sound/features/harmony/harmony_find_page.dart';
 import 'package:hear_the_sound/features/harmony/harmony_lesson.dart';
@@ -103,83 +101,55 @@ void main() {
     expect(tester.takeException(), isNull);
   }
 
-  testWidgets('A1/A4 nitelik tanıma çizilir', (t) async {
+  // AKORLAR — renk algısı + akorda ses üretme (track 2026-08-17'de yeniden
+  // kuruldu: çoktan seçmeli etiketleme yerine his + üretim).
+  testWidgets('akor renk ekranı iki ve dört şıkla çizilir', (t) async {
+    for (final id in ['ch_bright', 'ch_color', 'ch_tense', 'ch_master']) {
+      await smoke(
+        t,
+        ChordColorPage(
+          lesson: _chordLesson(id),
+          player: fake,
+          questionCount: 4,
+          onComplete: (_) {},
+        ),
+      );
+    }
+  });
+
+  testWidgets('akor üretme ekranı çizilir (tuş + söyleme)', (t) async {
+    for (final id in ['ch_third', 'ch_top', 'ch_build']) {
+      await smoke(
+        t,
+        ChordProducePage(
+          lesson: _chordLesson(id),
+          player: fake,
+          mode: EchoInputMode.tap,
+          onModeChanged: (_) {},
+          questionCount: 4,
+          onComplete: (_) {},
+        ),
+      );
+    }
+    // "Akoru Kur" söyleme modunda PitchMeter gösterir (hedef zaten söylenmiş).
     await smoke(
       t,
-      ChordQualityRecognitionPage(
-        pool: _chordLesson('ch5').pool,
+      ChordProducePage(
+        lesson: _chordLesson('ch_build'),
         player: fake,
+        mode: EchoInputMode.sing,
+        onModeChanged: (_) {},
         questionCount: 4,
         onComplete: (_) {},
       ),
     );
   });
 
-  testWidgets('A3 çevrim tanıma çizilir', (t) async {
-    await smoke(
-      t,
-      ChordInversionRecognitionPage(
-        pool: _chordLesson('ch9').pool,
-        player: fake,
-        questionCount: 4,
-        onComplete: (_) {},
-      ),
-    );
-  });
-
-  // NOT: Aralık ekranlarının smoke testleri kaldırıldı — "Aralıklar" track'i
-  // dağıtıldı (melodik kısım Melodi Kulağı'nda, harmonik kısım Armoni
-  // Kulağı'na taşınacak).
-
-  testWidgets('A8 yeni kök akor tanıma çizilir', (t) async {
-    await smoke(
-      t,
-      ChordRecognitionPage(
-        pool: _chordLesson('ch11').pool,
-        player: fake,
-        questionCount: 4,
-        onComplete: (_) {},
-      ),
-    );
-  });
-
-  testWidgets('akor arpej çizilir', (t) async {
-    await smoke(
-      t,
-      ChordArpeggioPage(
-        chords: _chordLesson('ch5').pool.take(2).toList(),
-        player: fake,
-        onComplete: () {},
-        title: 'Arpej',
-      ),
-    );
-  });
-
-  // Akor tanıma ekranları kısa yükseklikte cevap sonrası taşmamalı — cihazda
-  // görülen 3px taşmaların ve uzun nitelik etiketlerinin nöbetçisi.
-  testWidgets('akor tanıma ekranları kısa ekranda taşmaz', (t) async {
+  testWidgets('akor ekranları kısa ekranda cevap sonrası taşmaz', (t) async {
     await compactAnsweredSmoke(
       t,
-      ChordRecognitionPage(
-        pool: _chordLesson('ch11').pool,
-        player: fake,
-        questionCount: 4,
-        onComplete: (_) {},
-      ),
-    );
-    await compactAnsweredSmoke(
-      t,
-      ChordQualityRecognitionPage(
-        pool: _chordLesson('ch_quality_master').pool,
-        player: fake,
-        questionCount: 4,
-        onComplete: (_) {},
-      ),
-    );
-    await compactAnsweredSmoke(
-      t,
-      ChordInversionRecognitionPage(
-        pool: _chordLesson('ch9').pool,
+      ChordColorPage(
+        lesson: _chordLesson('ch_tense'), // dört şıklı, en kalabalık
         player: fake,
         questionCount: 4,
         onComplete: (_) {},

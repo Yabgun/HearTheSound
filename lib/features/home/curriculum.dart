@@ -114,7 +114,6 @@ List<Track> _buildCurriculum() => [
         TrackItem(
           id: l.id,
           title: l.title,
-          concept: l.concept,
           open: () => ChordLessonFlowPage(lesson: l),
         ),
     ],

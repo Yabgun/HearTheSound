@@ -1,51 +1,87 @@
-import '../../core/chord.dart';
-import '../../core/concept.dart';
+import 'package:flutter/material.dart';
+
 import '../../core/content_locale.dart';
-import '../../core/note.dart';
+import '../lesson/theory_badge.dart';
+import 'chord_round.dart';
 
-/// Bir akor dersinde tanıma (test) aşamasının neyi sorduğu.
-enum ChordRecognizeBy {
-  /// Spesifik akoru sor ("Bu hangi akor?" / notaları). Varsayılan.
-  chord,
+// -----------------------------------------------------------------------------
+// AKORLAR — "akorun rengini duy, o sesi kendin çıkar"
+//
+// Track 2026-08-17'de KÖKTEN yeniden kuruldu (13 ders → 8). Eski hâli
+// uygulamadaki son "çoktan seçmeli etiketleme" adasıydı ve üç sorunu vardı:
+//   1. "Bu hangi akor?" iki beceriyi (kök + renk) tek soruda soruyordu;
+//      üstelik kök bulma Armoni Kulağı'nın omurgası — çakışma.
+//   2. "Bu kaçıncı çevrim?" bir analiz sorusuydu (kaldırılan teori
+//      track'lerindeki hatanın aynısı).
+//   3. Söyleme adımı akoru ARPEJLEYEREK söyletiyordu — bu, akoru melodiye
+//      çevirmek demek; akor kulağını hiç çalıştırmıyordu.
+//
+// YENİ YAY — algıdan üretime, sonra yeni renklere:
+//   parlak/hüzünlü ayır → tek akorda ayır → RENGİ VEREN SESİ ÜRET →
+//   tepe sesini bul → akoru kendin kur → gergin renkler → yedililer → usta
+//
+// Sorular TERİM sormaz ("majör mü?" değil "parlak mı?"); terim en sonda rozet.
+// Üç ders doğrudan ÜRETİMdir: kullanıcı duyduğu sesi kendi sesiyle ya da
+// tuşlarda nokta atışı bulur — uygulamanın çekirdek Duy→Söyle döngüsü.
+// -----------------------------------------------------------------------------
 
-  /// Akorun niteliğini/rengini sor ("Bu ne niteliği?": majör/minör/eksik/artık).
-  /// Kökten bağımsız renk kulağını eğitir.
-  quality,
-
-  /// Akorun çevrimini sor ("Bu kaçıncı çevrim?": kapalı/1./2.).
-  inversion,
-}
-
-/// Bir akor dersi = kimlik + başlık + o derste öğretilen akorlar havuzu.
-/// Nota dersleri gibi akor akor ilerler; bir ders geçilince sonraki açılır.
 class ChordLesson {
   final String id;
   final String title;
-  final List<Chord> pool;
-  final ChordRecognizeBy recognizeBy;
-  final Concept? concept; // öğretici kart — test'ten önce öğret
 
-  /// "Bu dersten sonra şunu yapabileceksin" (bkz. lesson_intro_page.dart).
-  final String? promise;
+  /// "Bu dersten sonra şunu yapabileceksin" — derse girmeden gösterilir.
+  final String promise;
+
+  final ChordDrill drill;
+
+  final int questionCount;
+
+  final TheoryBadge? badge;
 
   const ChordLesson({
     required this.id,
     required this.title,
-    required this.pool,
-    this.recognizeBy = ChordRecognizeBy.chord,
-    this.concept,
-    this.promise,
+    required this.promise,
+    required this.drill,
+    this.questionCount = 6,
+    this.badge,
   });
+
+  /// Bu ders ses ÜRETTİRİYOR mu? (akış hangi ekranı açacağını buna bakar)
+  bool get isProduction =>
+      drill == ChordDrill.findThird ||
+      drill == ChordDrill.findTop ||
+      drill == ChordDrill.buildChord;
 }
 
-Chord _c(String root, ChordQuality quality, [int octave = 4]) =>
-    Chord(Note.fromName(root, octave), quality);
+/// Seçenek anahtarı → GÖRÜNEN metin. Anahtarlar dil-bağımsız (karıştırma
+/// sayaçları onları kullanır), çeviri burada yaşar.
+String chordOptionLabel(String key) => switch (key) {
+  'first' => t(en: 'The first one', tr: 'Birincisi'),
+  'second' => t(en: 'The second one', tr: 'İkincisi'),
+  'bright' => t(en: 'Bright', tr: 'Parlak'),
+  'dark' => t(en: 'Sad', tr: 'Hüzünlü'),
+  'tense' => t(en: 'Tense', tr: 'Gergin'),
+  'floating' => t(en: 'Floating', tr: 'Askıda'),
+  'three' => t(en: 'Three notes', tr: 'Üç ses'),
+  'four' => t(en: 'Four notes', tr: 'Dört ses'),
+  _ => key,
+};
 
-Chord _ci(String root, ChordQuality quality, int inversion, [int octave = 4]) =>
-    Chord(Note.fromName(root, octave), quality, inversion: inversion);
+/// Seçenek ikonları — metin okunmadan da anlaşılsın ("6 yaşında testi").
+IconData chordOptionIcon(String key) => switch (key) {
+  'first' => Icons.looks_one_rounded,
+  'second' => Icons.looks_two_rounded,
+  'bright' => Icons.wb_sunny_rounded,
+  'dark' => Icons.nights_stay_rounded,
+  'tense' => Icons.bolt_rounded,
+  'floating' => Icons.cloud_rounded,
+  'three' => Icons.filter_3_rounded,
+  'four' => Icons.filter_4_rounded,
+  _ => Icons.help_outline_rounded,
+};
 
-/// Akor müfredatı — kolaydan zora, akor akor. Locale-anahtarlı önbellekten
-/// döner (i18n); dil değişince bir sonraki erişim yeni dilde kurar.
+/// Ders listesi — locale-anahtarlı önbellek (dil değişince yeni dilde kurulur).
 final Map<String, List<ChordLesson>> _lessonCache = {};
 
 List<ChordLesson> get chordLessons =>
@@ -53,640 +89,134 @@ List<ChordLesson> get chordLessons =>
 
 List<ChordLesson> _buildChordLessons() => [
   ChordLesson(
-    id: 'ch1',
-    title: t(en: '1 · C Major & A Minor', tr: '1 · C Majör & A Minör'),
+    id: 'ch_bright',
+    title: t(en: '1 · Which One Is Bright?', tr: '1 · Hangisi Parlak?'),
     promise: t(
-      en: 'You will hear the difference between a happy and a sad chord — the '
-          'most useful ear skill in all of music.',
-      tr: 'Neşeli akorla hüzünlü akoru ayırabileceksin — müzikteki en işe '
-          'yarar kulak becerisi.',
+      en: 'You will hear the difference between the two most common chord '
+          'colours — the single biggest sound in all of music.',
+      tr: 'En yaygın iki akor rengi arasındaki farkı duyabileceksin — bütün '
+          'müzikteki en büyük tek ses farkı.',
     ),
-    pool: [_c('C', ChordQuality.major), _c('A', ChordQuality.minor)],
-    concept: Concept(
-      title: t(
-        en: 'What Is a Chord? Major & Minor',
-        tr: 'Akor Nedir? Majör & Minör',
+    drill: ChordDrill.brighter,
+  ),
+  ChordLesson(
+    id: 'ch_color',
+    title: t(en: '2 · Bright or Sad?', tr: '2 · Parlak mı Hüzünlü mü?'),
+    promise: t(
+      en: 'You will name a chord\'s mood from a single listen, with nothing to '
+          'compare it against.',
+      tr: 'Bir akorun havasını tek dinleyişte, karşılaştıracak hiçbir şey '
+          'olmadan söyleyebileceksin.',
+    ),
+    drill: ChordDrill.color,
+    badge: TheoryBadge(
+      term: t(en: 'Major & Minor', tr: 'Majör & Minör'),
+      insight: t(
+        en: 'The bright one is called MAJOR, the sad one MINOR. You have been '
+            'hearing them your whole life — now you can tell them apart on '
+            'purpose.',
+        tr: 'Parlak olana MAJÖR, hüzünlü olana MİNÖR denir. Hayatın boyunca '
+            'bunları duydun — artık bilerek ayırt edebiliyorsun.',
       ),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'A chord is (at least) three notes played at once. It is not a '
-                'single sound but a "color".',
-            tr:
-                'Akor = aynı anda çalınan (en az) üç nota. Tek bir ses değil, '
-                'bir "renk"tir.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Major', tr: 'Majör'),
-          t(
-            en: 'Bright, cheerful, "open". Example — C major: C-E-G.',
-            tr: 'Parlak, neşeli, "açık" duyulur. Örnek — C majör: C-E-G.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Minor', tr: 'Minör'),
-          t(
-            en: 'Darker, sadder, more "closed". Example — A minor: A-C-E.',
-            tr: 'Daha koyu, hüzünlü, "kapalı" duyulur. Örnek — A minör: A-C-E.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Tip', tr: 'İpucu'),
-          t(
-            en:
-                'Don\'t try to pick apart the notes; listen to the chord\'s '
-                'overall mood.',
-            tr:
-                'Notaları tek tek çözmeye çalışma; akorun genel "havasını" '
-                'dinle.',
-          ),
-        ),
-      ],
     ),
   ),
   ChordLesson(
-    id: 'ch2',
-    title: t(en: '2 · F & G Major', tr: '2 · F & G Majör'),
+    id: 'ch_third',
+    title: t(en: '3 · Find the Colour', tr: '3 · Rengi Bul'),
     promise: t(
-      en: 'You will recognize chords built on different roots — the same color '
-          'can start from anywhere.',
-      tr: 'Farklı köklerden kurulan akorları tanıyabileceksin — aynı renk her '
-          'yerden başlayabilir.',
+      en: 'You will find the exact note that makes a chord bright or sad — on '
+          'the keys or with your own voice.',
+      tr: 'Bir akoru parlak ya da hüzünlü yapan sesi tam olarak '
+          'bulabileceksin — tuşlarda ya da kendi sesinle.',
     ),
-    pool: [_c('F', ChordQuality.major), _c('G', ChordQuality.major)],
-    concept: Concept(
-      title: t(en: 'More Major', tr: 'Daha Fazla Majör'),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'F and G major — the same "bright major" feel on different '
-                'roots. The root changes; the color stays.',
-            tr:
-                'F ve G majör — aynı "parlak majör" hissi, farklı köklerde. '
-                'Kök değişse de renk aynı kalır.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Goal', tr: 'Amaç'),
-          t(
-            en: 'Start recognizing the major color independent of the root.',
-            tr: 'Majör rengini kökten bağımsız tanımaya başlamak.',
-          ),
-        ),
-      ],
-    ),
-  ),
-  ChordLesson(
-    id: 'ch3',
-    title: t(en: '3 · D & E Minor', tr: '3 · D & E Minör'),
-    promise: t(
-      en: 'You will pick out minor chords on new roots — the darker half of '
-          'almost every song.',
-      tr: 'Yeni köklerdeki minör akorları seçebileceksin — neredeyse her '
-          'şarkının koyu tarafı.',
-    ),
-    pool: [_c('D', ChordQuality.minor), _c('E', ChordQuality.minor)],
-    concept: Concept(
-      title: t(en: 'Minor Chords', tr: 'Minör Akorlar'),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'D and E minor — the minor color on different roots. Dark, '
-                'melancholic feel.',
-            tr: 'D ve E minör — minör rengi farklı köklerde. Koyu, hüzünlü his.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Compare', tr: 'Karşılaştır'),
-          t(
-            en:
-                'The difference between major and minor lives in the middle '
-                '(third) note — just a half step. Yet the emotion completely '
-                'changes.',
-            tr:
-                'Majör ile minör arasındaki fark aslında ortadaki (üçlü) '
-                'notadadır — sadece yarım ses. Ama duygu tamamen değişir.',
-          ),
-        ),
-      ],
-    ),
-  ),
-  ChordLesson(
-    id: 'ch4',
-    title: t(en: '4 · Mixed Chords', tr: '4 · Karışık Akorlar'),
-    promise: t(
-      en: 'You will name any of the six most common chords the moment you hear '
-          'it.',
-      tr: 'En yaygın altı akordan hangisi çalarsa çalsın anında '
-          'tanıyabileceksin.',
-    ),
-    pool: [
-      _c('C', ChordQuality.major),
-      _c('A', ChordQuality.minor),
-      _c('F', ChordQuality.major),
-      _c('G', ChordQuality.major),
-    ],
-    concept: Concept(
-      title: t(en: 'Mixed: Major or Minor?', tr: 'Karışık: Majör mü Minör mü?'),
-      sections: [
-        ConceptSection(
-          t(
-            en: 'Major and minor chords arrive shuffled across different roots.',
-            tr: 'Farklı köklerde majör ve minör akorlar karışık gelir.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Goal', tr: 'Amaç'),
-          t(
-            en:
-                'Tell them apart purely by color (bright vs. sad) without '
-                'knowing the root.',
-            tr:
-                'Kökü bilmeden yalnızca renkten (parlak mı, hüzünlü mü) '
-                'ayırmak.',
-          ),
-        ),
-      ],
-    ),
-  ),
-  // A1 — akor kapsamı: dört nitelik (renk) tanıma.
-  ChordLesson(
-    id: 'ch5',
-    title: t(en: '5 · Diminished & Augmented', tr: '5 · Eksik & Artık'),
-    promise: t(
-      en: 'You will spot the two unsettling chords — the ones film music uses '
-          'to build tension.',
-      tr: 'İki tedirgin edici akoru fark edebileceksin — film müziğinin '
-          'gerilim kurmak için kullandığı akorlar.',
-    ),
-    recognizeBy: ChordRecognizeBy.quality,
-    // Aynı kök (C) üstünde dört renk yan yana → kontrastı net duy.
-    pool: [
-      _c('C', ChordQuality.major),
-      _c('C', ChordQuality.minor),
-      _c('C', ChordQuality.diminished),
-      _c('C', ChordQuality.augmented),
-    ],
-    concept: Concept(
-      title: t(
-        en: 'Diminished & Augmented Chords',
-        tr: 'Eksik & Artık Akorlar',
+    drill: ChordDrill.findThird,
+    badge: TheoryBadge(
+      term: t(en: 'The third', tr: 'Üçlü'),
+      insight: t(
+        en: 'That note you kept finding is the THIRD. It is the only note that '
+            'differs between a major and a minor chord — the whole mood of a '
+            'song hangs on it.',
+        tr: 'Bulup durduğun o ses ÜÇLÜdür. Majör ile minör akor arasındaki '
+            'TEK farklı ses odur — bir şarkının bütün havası ona bağlıdır.',
       ),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'Beyond major and minor there are two more "colors". We get '
-                'them by shifting the top (fifth) note of the chord.',
-            tr:
-                'Majör ve minör dışında iki "renk" daha var. Bunları akorun en '
-                'üstteki (beşli) notasını kaydırarak elde ederiz.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Diminished (dim)', tr: 'Eksik (dim)'),
-          t(
-            en:
-                'Tense, unstable, slightly "eerie". Two minor thirds stacked: '
-                'root + 3 + 3 semitones (e.g. C-Eb-Gb).',
-            tr:
-                'Gergin, kararsız, biraz "tekinsiz" duyulur. İki minör üçlü '
-                'üst üste: kök + 3 + 3 yarım ses (ör. C-Eb-Gb).',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Augmented (aug)', tr: 'Artık (aug)'),
-          t(
-            en:
-                'Dreamlike, "suspended", unresolved. Two major thirds stacked: '
-                'root + 4 + 4 semitones (e.g. C-E-G#).',
-            tr:
-                'Rüya gibi, "asılı kalan", çözülmemiş bir his. İki majör üçlü '
-                'üst üste: kök + 4 + 4 yarım ses (ör. C-E-G#).',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Tip', tr: 'İpucu'),
-          t(
-            en:
-                'Major/minor sound "settled"; diminished/augmented sound '
-                'restless, like they want to go somewhere.',
-            tr:
-                'Majör/minör "oturmuş" duyulur; eksik/artık "bir yere gitmek '
-                'isteyen", huzursuz duyulur.',
-          ),
-        ),
-      ],
     ),
   ),
   ChordLesson(
-    id: 'ch6',
-    title: t(en: '6 · Tell the Colors Apart', tr: '6 · Renkleri Ayırt Et'),
+    id: 'ch_top',
+    title: t(en: '4 · The Top Note', tr: '4 · Tepe Sesi'),
     promise: t(
-      en: 'You will judge a chord by its COLOR alone, whatever note it starts '
-          'from.',
-      tr: 'Bir akoru yalnızca RENGİNDEN tanıyabileceksin — hangi notadan '
-          'başlarsa başlasın.',
+      en: 'You will pick out the highest note inside a chord — the one a '
+          'melody usually sits on.',
+      tr: 'Bir akorun içindeki en tiz sesi ayırt edebileceksin — melodinin '
+          'genelde üstüne oturduğu ses.',
     ),
-    recognizeBy: ChordRecognizeBy.quality,
-    // Karışık kök × nitelik → rengi kökten bağımsız tanı.
-    pool: [
-      _c('C', ChordQuality.major),
-      _c('G', ChordQuality.major),
-      _c('A', ChordQuality.minor),
-      _c('E', ChordQuality.minor),
-      _c('B', ChordQuality.diminished),
-      _c('D', ChordQuality.diminished),
-      _c('F', ChordQuality.augmented),
-      _c('C', ChordQuality.augmented),
-    ],
-    concept: Concept(
-      title: t(en: 'Four Colors, Apart', tr: 'Dört Rengi Ayırt Et'),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'Major, minor, diminished, augmented — all four arrive '
-                'shuffled across different roots.',
-            tr:
-                'Majör, minör, eksik, artık — dördü de farklı köklerde karışık '
-                'gelir.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Goal', tr: 'Amaç'),
-          t(
-            en:
-                'Recognize the color purely by feel, fully independent of the '
-                'root.',
-            tr: 'Rengi tamamen kökten bağımsız, sadece "his"ten tanımak.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Reminder', tr: 'Hatırlatma'),
-          t(
-            en:
-                'Major: bright · Minor: sad · Diminished: tense · Augmented: '
-                'suspended/dreamy.',
-            tr:
-                'Majör: parlak · Minör: hüzünlü · Eksik: gergin · Artık: '
-                'asılı/rüyamsı.',
-          ),
-        ),
-      ],
-    ),
+    drill: ChordDrill.findTop,
+    questionCount: 5,
   ),
-  // A4 — yedili akorlar (4 nota).
   ChordLesson(
-    id: 'ch7',
-    title: t(en: '7 · Seventh Chords', tr: '7 · Yedili Akorlar'),
+    id: 'ch_build',
+    title: t(en: '5 · Build the Chord', tr: '5 · Akoru Kur'),
     promise: t(
-      en: 'You will hear the richer four-note chords — the sound of jazz, soul '
-          'and film scores.',
-      tr: 'Daha zengin dört sesli akorları duyabileceksin — caz, soul ve film '
-          'müziğinin sesi.',
+      en: 'You will build a chord yourself from a single starting note — sing '
+          'or play all three notes, in tune.',
+      tr: 'Tek bir başlangıç sesinden akoru kendin kurabileceksin — üç sesin '
+          'hepsini, akortlu şekilde söyle ya da çal.',
     ),
-    recognizeBy: ChordRecognizeBy.quality,
-    pool: [
-      _c('C', ChordQuality.dominant7),
-      _c('C', ChordQuality.major7),
-      _c('C', ChordQuality.minor7),
-    ],
-    concept: Concept(
-      title: t(en: 'Seventh Chords', tr: 'Yedili Akorlar'),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'Add one more note (the 7th) to a triad and the color gets '
-                'richer — the texture of jazz and pop comes from here.',
-            tr:
-                'Üçlü akora bir nota daha (7\'li) eklenince renk zenginleşir — '
-                'cazın ve pop\'un dokusu buradan gelir.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Dominant 7', tr: 'Dominant 7'),
-          t(
-            en: 'Tense, "wants to resolve" (V7 → I). Example C7: C-E-G-Bb.',
-            tr:
-                'Gergin, "çözülmek isteyen" bir ses (V7 → I). Örnek C7: '
-                'C-E-G-Bb.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Major 7', tr: 'Majör 7'),
-          t(
-            en: 'Soft, bright, dreamy. Example Cmaj7: C-E-G-B.',
-            tr: 'Yumuşak, parlak, hülyalı. Örnek Cmaj7: C-E-G-B.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Minor 7', tr: 'Minör 7'),
-          t(
-            en: 'Velvety, mellow minor. Example Cm7: C-Eb-G-Bb.',
-            tr: 'Kadifemsi, yumuşak minör. Örnek Cm7: C-Eb-G-Bb.',
-          ),
-        ),
-      ],
+    drill: ChordDrill.buildChord,
+    questionCount: 5,
+    badge: TheoryBadge(
+      term: t(en: 'Arpeggio', tr: 'Arpej'),
+      insight: t(
+        en: 'Playing a chord one note at a time is called an ARPEGGIO — what a '
+            'guitarist does string by string. Building one yourself is how '
+            'chords stop being a wall of sound and become three notes you own.',
+        tr: 'Bir akoru tek tek seslendirmeye ARPEJ denir — gitaristin tel tel '
+            'çalması gibi. Akoru kendin kurmak, onu bir ses duvarı olmaktan '
+            'çıkarıp sahip olduğun üç sese çevirir.',
+      ),
     ),
   ),
   ChordLesson(
-    id: 'ch8',
-    title: t(en: '8 · Seventh Colors', tr: '8 · Yedili Renkler'),
+    id: 'ch_tense',
+    title: t(en: '6 · Tense Colours', tr: '6 · Gergin Renkler'),
     promise: t(
-      en: 'You will separate the seventh chords from each other — subtle '
-          'shades most listeners never notice.',
-      tr: 'Yedili akorları birbirinden ayırabileceksin — çoğu dinleyicinin '
-          'hiç fark etmediği ince tonlar.',
+      en: 'You will spot the two unsettled chords — the ones films use when '
+          'something is about to happen.',
+      tr: 'Huzursuz iki akoru yakalayabileceksin — filmlerde bir şey olmak '
+          'üzereyken kullanılanlar.',
     ),
-    recognizeBy: ChordRecognizeBy.quality,
-    pool: [
-      _c('C', ChordQuality.dominant7),
-      _c('G', ChordQuality.dominant7),
-      _c('F', ChordQuality.major7),
-      _c('C', ChordQuality.major7),
-      _c('D', ChordQuality.minor7),
-      _c('A', ChordQuality.minor7),
-      _c('B', ChordQuality.halfDiminished7),
-      _c('D', ChordQuality.diminished7),
-    ],
-    concept: Concept(
-      title: t(en: 'Seventh Colors', tr: 'Yedili Renkleri'),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'Sevenths arrive shuffled across roots. Two darker colors join '
-                'in: Half-diminished 7 (tense but soft) and Diminished 7 (the '
-                'most unstable, "crawling").',
-            tr:
-                'Yedililer farklı köklerde karışık gelir. Ayrıca iki koyu renk '
-                'katılıyor: Yarım Eksik 7 (gergin ama yumuşak) ve Tam Eksik 7 '
-                '(en kararsız, "sürünen").',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Goal', tr: 'Amaç'),
-          t(
-            en:
-                'Tell the five seventh colors apart independent of root — the '
-                'foundation of a jazz ear.',
-            tr:
-                'Beş yedili rengini kökten bağımsız ayırmak — caz kulağının '
-                'temeli.',
-          ),
-        ),
-      ],
-    ),
+    drill: ChordDrill.tense,
   ),
-  // A3 — akor çevrimleri (aynı notalar, farklı bas).
   ChordLesson(
-    id: 'ch9',
-    title: t(en: '9 · Chord Inversions', tr: '9 · Akor Çevrimleri'),
+    id: 'ch_seventh',
+    title: t(en: '7 · Three or Four?', tr: '7 · Üç mü Dört mü?'),
     promise: t(
-      en: 'You will hear which note is at the BOTTOM of a chord — that bass '
-          'note is what makes a progression flow.',
-      tr: 'Bir akorun EN ALTINDA hangi sesin olduğunu duyabileceksin — bir '
-          'akor dizisini akıcı yapan şey o bas sestir.',
+      en: 'You will hear when a fourth note is stacked on top of a chord — the '
+          'sound of almost every jazz and soul record.',
+      tr: 'Bir akorun üstüne dördüncü bir ses bindiğini duyabileceksin — '
+          'neredeyse her caz ve soul kaydının sesi.',
     ),
-    recognizeBy: ChordRecognizeBy.inversion,
-    // Tek akor (C majör) üç çevrimde → değişkeni yalnızca çevrim yap.
-    pool: [
-      _ci('C', ChordQuality.major, 0),
-      _ci('C', ChordQuality.major, 1),
-      _ci('C', ChordQuality.major, 2),
-    ],
-    concept: Concept(
-      title: t(en: 'Chord Inversions', tr: 'Akor Çevrimleri'),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'A chord\'s notes stay the same, but we can change which one '
-                'is at the bottom (the bass). That is called an "inversion".',
-            tr:
-                'Bir akorun notaları aynı kalır; ama en alttaki (bas) notayı '
-                'değiştirebiliriz. Buna "çevrim" denir.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Root position', tr: 'Kapalı'),
-          t(
-            en: 'Root at the bottom — C major: C-E-G.',
-            tr: 'Kök en altta — C majör: C-E-G.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: '1st inversion', tr: '1. çevrim'),
-          t(
-            en: 'The third at the bottom — E-G-C.',
-            tr: '3\'lü en altta — E-G-C.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: '2nd inversion', tr: '2. çevrim'),
-          t(
-            en: 'The fifth at the bottom — G-C-E.',
-            tr: '5\'li en altta — G-C-E.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Tip', tr: 'İpucu'),
-          t(
-            en:
-                'The color stays the same; listen for the LOWEST note — where '
-                'is the floor?',
-            tr: 'Akorun rengi aynı; en PES notaya kulak ver — taban nerede?',
-          ),
-        ),
-      ],
+    drill: ChordDrill.countTones,
+    badge: TheoryBadge(
+      term: t(en: 'Seventh chords', tr: 'Yedili akorlar'),
+      insight: t(
+        en: 'A chord with a fourth note stacked on is called a SEVENTH chord. '
+            'That extra note is what makes music sound smoky rather than plain.',
+        tr: 'Üstüne dördüncü ses binen akora YEDİLİ akor denir. O fazladan ses, '
+            'müziği düz olmaktan çıkarıp dumanlı yapan şeydir.',
+      ),
     ),
   ),
   ChordLesson(
-    id: 'ch10',
-    title: t(en: '10 · Mixed Inversions', tr: '10 · Karışık Çevrimler'),
+    id: 'ch_master',
+    title: t(en: '★ Colour Master', tr: '★ Renk Ustası'),
     promise: t(
-      en: 'You will still recognize a chord even when its notes are stacked in '
-          'a different order.',
-      tr: 'Bir akorun notaları başka sırayla dizilse de onu yine '
-          'tanıyabileceksin.',
+      en: 'You will take on every colour at once: bright, sad, tense, floating '
+          'and thick.',
+      tr: 'Bütün renklerin altından bir arada kalkabileceksin: parlak, '
+          'hüzünlü, gergin, askıda ve kalın.',
     ),
-    recognizeBy: ChordRecognizeBy.inversion,
-    pool: [
-      _ci('C', ChordQuality.major, 0),
-      _ci('G', ChordQuality.major, 1),
-      _ci('F', ChordQuality.major, 2),
-      _ci('A', ChordQuality.minor, 1),
-      _ci('D', ChordQuality.minor, 0),
-      _ci('E', ChordQuality.minor, 2),
-    ],
-    concept: Concept(
-      title: t(en: 'Mixed Inversions', tr: 'Karışık Çevrimler'),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'Different chords arrive in different inversions. The goal is '
-                'to recognize only the INVERSION (the bass), not the chord '
-                'itself.',
-            tr:
-                'Farklı akorlar, farklı çevrimlerde gelir. Amaç akorun '
-                'kendisini değil, yalnızca ÇEVRİMİNİ (bası) tanımak.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Reminder', tr: 'Hatırlatma'),
-          t(
-            en:
-                'Root position = root in bass · 1st inversion = third in bass '
-                '· 2nd inversion = fifth in bass.',
-            tr:
-                'Kapalı = kök bası · 1. çevrim = 3\'lü bası · 2. çevrim = '
-                '5\'li bası.',
-          ),
-        ),
-      ],
-    ),
-  ),
-  // A8 — kök kapsamı genişler: yeni kökler A ve E, iki nitelikle.
-  ChordLesson(
-    id: 'ch11',
-    title: t(en: '11 · New Roots: A & E', tr: '11 · Yeni Kökler: A & E'),
-    promise: t(
-      en: 'You will handle chords from roots you have not trained yet — the '
-          'skill stops depending on familiar notes.',
-      tr: 'Henüz çalışmadığın köklerden gelen akorların altından '
-          'kalkabileceksin — beceri tanıdık notalara bağlı olmaktan çıkar.',
-    ),
-    pool: [
-      _c('A', ChordQuality.major),
-      _c('A', ChordQuality.minor),
-      _c('E', ChordQuality.major),
-      _c('E', ChordQuality.minor),
-    ],
-    concept: Concept(
-      title: t(en: 'Same Colors, New Homes', tr: 'Aynı Renkler, Yeni Evler'),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'A and E now appear as BOTH major and minor. The root is the '
-                'same; only the middle (third) note decides the color.',
-            tr:
-                'A ve E artık HEM majör HEM minör olarak geliyor. Kök aynı; '
-                'rengi yalnızca ortadaki (üçlü) nota belirliyor.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Goal', tr: 'Amaç'),
-          t(
-            en:
-                'Hear root and color as two separate answers: first "which '
-                'letter is home?", then "bright or sad?".',
-            tr:
-                'Kökü ve rengi iki ayrı cevap gibi duy: önce "ev hangi harf?", '
-                'sonra "parlak mı hüzünlü mü?".',
-          ),
-        ),
-      ],
-    ),
-  ),
-  ChordLesson(
-    id: 'ch12',
-    title: t(en: '12 · Root Mix-Up', tr: '12 · Kök Karmaşası'),
-    promise: t(
-      en: 'You will identify chords from many different roots in one sitting — '
-          'no more guessing from habit.',
-      tr: 'Tek oturumda birçok farklı kökten akoru tanıyabileceksin — artık '
-          'alışkanlıkla tahmin yok.',
-    ),
-    pool: [
-      _c('A', ChordQuality.major),
-      _c('E', ChordQuality.major),
-      _c('D', ChordQuality.major),
-      _c('A', ChordQuality.minor),
-      _c('E', ChordQuality.minor),
-      _c('B', ChordQuality.minor),
-    ],
-    concept: Concept(
-      title: t(en: 'Six Chords, Full Answer', tr: 'Altı Akor, Tam Cevap'),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'D major and B minor join the family. Six chords, shuffled — '
-                'and the answer needs BOTH the root and the color.',
-            tr:
-                'D majör ve B minör aileye katılıyor. Altı akor karışık geliyor '
-                '— cevap artık HEM kökü HEM rengi istiyor.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Tip', tr: 'İpucu'),
-          t(
-            en:
-                'Catch the bass note first (the home letter), then let the '
-                'mood tell you major or minor.',
-            tr:
-                'Önce bas notayı yakala (ev harfi), sonra havasına bak: majör '
-                'mü minör mü?',
-          ),
-        ),
-      ],
-    ),
-  ),
-  // §1C — kapstone: dokuz niteliğin tümü karışık köklerde (renk ustalığı).
-  // El yazımı ch1–ch12 spine'ının sonuna eklenir; nitelik-tanıma modunda.
-  ChordLesson(
-    id: 'ch_quality_master',
-    title: t(en: '★ Quality Master', tr: '★ Nitelik Ustası'),
-    promise: t(
-      en: 'You will tell all nine chord colors apart — after this, no chord in '
-          'popular music is a stranger to your ear.',
-      tr: 'Dokuz akor renginin hepsini ayırabileceksin — bundan sonra popüler '
-          'müzikteki hiçbir akor kulağına yabancı gelmeyecek.',
-    ),
-    recognizeBy: ChordRecognizeBy.quality,
-    pool: [
-      _c('C', ChordQuality.major),
-      _c('D', ChordQuality.minor),
-      _c('E', ChordQuality.diminished),
-      _c('F', ChordQuality.augmented),
-      _c('G', ChordQuality.dominant7),
-      _c('A', ChordQuality.major7),
-      _c('B', ChordQuality.minor7),
-      _c('C', ChordQuality.halfDiminished7),
-      _c('D', ChordQuality.diminished7),
-    ],
-    concept: Concept(
-      title: t(en: 'Quality Master', tr: 'Nitelik Ustası'),
-      sections: [
-        ConceptSection(
-          t(
-            en:
-                'All nine colors you have met — major, minor, diminished, '
-                'augmented, and the five sevenths — shuffled across different '
-                'roots. The ultimate color-recognition test.',
-            tr:
-                'Tanıştığın dokuz rengin tümü — majör, minör, eksik, artık ve '
-                'beş yedili — farklı köklerde karışık. Nihai renk-tanıma sınavı.',
-          ),
-        ),
-        ConceptSection(
-          heading: t(en: 'Tip', tr: 'İpucu'),
-          t(
-            en:
-                'Forget the root; listen only to the mood and tension of the '
-                'color.',
-            tr: 'Kökü unut; yalnızca rengin havasını ve gerilimini dinle.',
-          ),
-        ),
-      ],
-    ),
+    drill: ChordDrill.master,
+    questionCount: 8,
   ),
 ];

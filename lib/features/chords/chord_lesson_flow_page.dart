@@ -2,27 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../audio/note_player.dart';
-import '../../core/octave_mapping.dart';
-import '../../core/vocal_range.dart';
+import '../../core/content_locale.dart';
 import '../../state/progress_controller.dart';
+import '../../state/settings_controller.dart';
 import '../lesson/lesson.dart';
 import '../lesson/lesson_complete_page.dart';
 import '../lesson/lesson_intro_page.dart';
-import 'chord_arpeggio_page.dart';
-import 'chord_inversion_recognition_page.dart';
+import '../lesson/theory_badge.dart';
+import 'chord_color_page.dart';
 import 'chord_lesson.dart';
-import 'chord_quality_recognition_page.dart';
-import 'chord_recognition_page.dart';
-import 'learn_chords_page.dart';
+import 'chord_produce_page.dart';
+import 'chord_round.dart';
 
 // -----------------------------------------------------------------------------
-// AKOR DERS AKIŞI — Öğren → Söyle (arpej) → Tanı ("hangi akor?")
+// AKOR DERS AKIŞI — Vaat → Oyun → (Teori Rozeti) → Tamamla
 //
-// Nota derslerinin akor karşılığı. Tanıma bitince sonuç ilerlemeye işlenir
-// (XP, streak, ustalık, ders tamamlama → kilit açar).
+// Eski akış "vaat → uzun kavram kartı → arpej söyleme → çoktan seçmeli tanıma"
+// idi. Uygulamadaki diğer üç yetenek track'i (Melodi, Armoni, Ritim) bu iskeleti
+// çoktan bıraktı ve kullanıcı onları onayladı; Akorlar da aynı ritüele geçti:
+// uzun kavram kartı YOK, teori en sonda rozet.
 // -----------------------------------------------------------------------------
 
-enum _Phase { intro, learning, singing, recognizing, done }
+enum _Phase { intro, playing, badge, done }
 
 class ChordLessonFlowPage extends ConsumerStatefulWidget {
   const ChordLessonFlowPage({super.key, required this.lesson});
@@ -35,38 +36,20 @@ class ChordLessonFlowPage extends ConsumerStatefulWidget {
 }
 
 class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
-  static const int _questionCount = 8;
-  static const int _xpPerCorrect = 10;
+  static const int _xpPerCorrect = 12;
 
   final NotePlayer _player = createNotePlayer();
-  // Vaat ekranı yalnızca dersin bir kazanım cümlesi varsa gösterilir.
-  late _Phase _phase = widget.lesson.promise == null
-      ? _Phase.learning
-      : _Phase.intro;
+  _Phase _phase = _Phase.intro;
   LessonResult? _result;
   int _xpEarned = 0;
-
-  // Kullanıcının ses aralığı + bu derse özel tek oktav offset'i. Akorlar ders
-  // başında bir kez blok halinde transpoze edilir; öğren/söyle/tanı adımlarının
-  // HEPSİ aynı transpoze havuzu kullanır. Kalibre değilse akorlar aynı kalır.
-  late final VocalRange? _range = ref.read(progressProvider).vocalRange;
-  late final ChordLesson _lesson = ChordLesson(
-    id: widget.lesson.id,
-    title: widget.lesson.title,
-    pool: transposeChordsForVoice(widget.lesson.pool, _range),
-    recognizeBy: widget.lesson.recognizeBy, // transpoze ederken kaybolmasın
-    concept: widget.lesson.concept,
-  );
-
-  // Ustalık/taç seviyesi (0 = temel; ≥1 tekrar oynanışta zorlaşır).
   late final int _level;
 
   @override
   void initState() {
     super.initState();
     _level = ref.read(progressProvider).skillLevelOf(widget.lesson.id);
-    // Taç tekrarında öğren/arpej atlanır → doğrudan (ipuçsuz) tanıma.
-    if (_level >= 1) _phase = _Phase.recognizing;
+    // Taç tekrarında vaat ekranı atlanır (kullanıcı zaten biliyor).
+    if (_level >= 1) _phase = _Phase.playing;
   }
 
   @override
@@ -75,7 +58,7 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
     super.dispose();
   }
 
-  void _onRecognitionComplete(LessonResult result) {
+  void _onComplete(LessonResult result) {
     final xp = result.correct * _xpPerCorrect * (1 + _level);
     ref
         .read(progressProvider.notifier)
@@ -91,7 +74,9 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
     setState(() {
       _result = result;
       _xpEarned = xp;
-      _phase = _Phase.done;
+      final earned =
+          widget.lesson.badge != null && result.accuracy >= kPassAccuracy;
+      _phase = earned ? _Phase.badge : _Phase.done;
     });
   }
 
@@ -101,45 +86,22 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
       case _Phase.intro:
         return LessonIntroPage(
           title: widget.lesson.title,
-          promise: widget.lesson.promise!,
-          onStart: () => setState(() => _phase = _Phase.learning),
+          promise: widget.lesson.promise,
+          howItWorks: _howItWorks(),
+          onStart: () => setState(() => _phase = _Phase.playing),
         );
-      case _Phase.learning:
-        return LearnChordsPage(
-          lesson: _lesson,
+      case _Phase.playing:
+        return buildChordGame(
+          lesson: widget.lesson,
           player: _player,
-          onReady: () => setState(() => _phase = _Phase.singing),
+          ref: ref,
+          onComplete: _onComplete,
         );
-      case _Phase.singing:
-        return ChordArpeggioPage(
-          // Söyle aşamasında en çok 2 akoru arpej yap (kısa tut).
-          chords: _lesson.pool.take(2).toList(),
-          player: _player,
-          range: _range,
-          onComplete: () => setState(() => _phase = _Phase.recognizing),
+      case _Phase.badge:
+        return TheoryBadgePage(
+          badge: widget.lesson.badge!,
+          onContinue: () => setState(() => _phase = _Phase.done),
         );
-      case _Phase.recognizing:
-        // Tanıma tipi derse göre: nitelik / çevrim / spesifik akor.
-        return switch (_lesson.recognizeBy) {
-          ChordRecognizeBy.quality => ChordQualityRecognitionPage(
-            pool: _lesson.pool,
-            player: _player,
-            questionCount: _questionCount + _level * 2,
-            onComplete: _onRecognitionComplete,
-          ),
-          ChordRecognizeBy.inversion => ChordInversionRecognitionPage(
-            pool: _lesson.pool,
-            player: _player,
-            questionCount: _questionCount + _level * 2,
-            onComplete: _onRecognitionComplete,
-          ),
-          ChordRecognizeBy.chord => ChordRecognitionPage(
-            pool: _lesson.pool,
-            player: _player,
-            questionCount: _questionCount + _level * 2,
-            onComplete: _onRecognitionComplete,
-          ),
-        };
       case _Phase.done:
         return LessonCompletePage(
           result: _result!,
@@ -148,9 +110,63 @@ class _ChordLessonFlowPageState extends ConsumerState<ChordLessonFlowPage> {
           onDone: () => Navigator.of(context).pop(),
           onReplay: () => setState(() {
             _result = null;
-            _phase = _Phase.recognizing;
+            _phase = _Phase.playing;
           }),
         );
     }
   }
+
+  String _howItWorks() => switch (widget.lesson.drill) {
+    ChordDrill.findThird || ChordDrill.findTop => t(
+      en: 'How it works: Eko plays a chord — you find one note inside it, on '
+          'the keys or with your voice. Hunt around until it matches.',
+      tr: 'Nasıl oynanır: Eko bir akor çalar — sen içindeki tek bir sesi '
+          'bulursun, tuşlarda ya da sesinle. Tutana kadar arayabilirsin.',
+    ),
+    ChordDrill.buildChord => t(
+      en: 'How it works: Eko gives you one note — you build the whole chord on '
+          'top of it, note by note.',
+      tr: 'Nasıl oynanır: Eko sana tek bir ses verir — sen onun üstüne akorun '
+          'tamamını, ses ses kurarsın.',
+    ),
+    _ => t(
+      en: 'How it works: Eko plays a chord — you say how it felt. No terms to '
+          'learn first.',
+      tr: 'Nasıl oynanır: Eko bir akor çalar — sen nasıl geldiğini '
+          'söylersin. Önceden öğrenilecek terim yok.',
+    ),
+  };
+}
+
+/// Bir akor dersinin oyun ekranını kurar.
+///
+/// Akış sayfası, Sonsuz Pratik ve tekrar oturumu AYNI fabrikayı kullanır →
+/// davranış her yerde birebir aynı kalır.
+Widget buildChordGame({
+  required ChordLesson lesson,
+  required NotePlayer player,
+  required WidgetRef ref,
+  required void Function(LessonResult result) onComplete,
+  int? questionCount,
+}) {
+  if (!lesson.isProduction) {
+    return ChordColorPage(
+      lesson: lesson,
+      player: player,
+      questionCount: questionCount,
+      onComplete: onComplete,
+    );
+  }
+  // Üretim ekranı cevap modunu (tuş/söyle) Ayarlar'dan okur — Eko Oyunu ve
+  // Armoni ile ORTAK tercih, kullanıcıya her track'te yeniden sorulmaz.
+  return ChordProducePage(
+    lesson: lesson,
+    player: player,
+    range: ref.watch(progressProvider).vocalRange,
+    questionCount: questionCount,
+    mode: ref.watch(settingsProvider).echoInputMode,
+    onModeChanged: (mode) =>
+        ref.read(settingsProvider.notifier).setEchoInputMode(mode),
+    onComplete: onComplete,
+  );
 }

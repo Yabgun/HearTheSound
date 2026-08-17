@@ -9,31 +9,34 @@ import 'package:hear_the_sound/features/practice/endless_drill_page.dart';
 void main() {
   test('yalnızca tamamlanmış dersler, doğru karıştırma tipiyle gelir', () {
     final p = PlayerProgress(
-      completedLessons: const ['first_notes', 'ch5', 'mel3'],
+      completedLessons: const ['first_notes', 'ch_color', 'mel3'],
     );
     final skills = buildDrillSkills(p, null);
     final byId = {for (final s in skills) s.id: s.type};
 
     // Tamamlananlar doğru tiple:
     expect(byId['first_notes'], 'note');
-    expect(byId['ch5'], 'quality'); // ch5 = nitelik (renk) tanıma
+    expect(byId['ch_color'], 'color'); // akor rengi (algı)
     expect(byId['mel3'], 'melody'); // Eko oyunu (üretme)
 
     // Tamamlanmayanlar listede yok:
     expect(byId.containsKey('l2_cde'), isFalse);
-    expect(byId.containsKey('ch1'), isFalse);
+    expect(byId.containsKey('ch_bright'), isFalse);
   });
 
-  test('akor tanıma tipleri ayrışır (chord / quality / inv)', () {
+  // Akorlar track'i 2026-08-17'de yeniden kuruldu: eski chord/quality/inv
+  // ayrımı yerine RENK ALGISI ile AKORDA SES ÜRETME ayrımı var.
+  test('akor tipleri ayrışır (renk algısı / ses üretme)', () {
     final p = PlayerProgress(
-      completedLessons: const ['ch1', 'ch5', 'ch9'],
+      completedLessons: const ['ch_color', 'ch_third', 'ch_build', 'ch_master'],
     );
     final byId = {
       for (final s in buildDrillSkills(p, null)) s.id: s.type,
     };
-    expect(byId['ch1'], 'chord'); // spesifik akor
-    expect(byId['ch5'], 'quality'); // nitelik
-    expect(byId['ch9'], 'inv'); // çevrim
+    expect(byId['ch_color'], 'color');
+    expect(byId['ch_master'], 'color');
+    expect(byId['ch_third'], 'chordNote'); // üçlüyü üret
+    expect(byId['ch_build'], 'chordNote'); // akoru kur
   });
 
   test('hiç tamamlanmamışsa boş liste (drill edilecek beceri yok)', () {

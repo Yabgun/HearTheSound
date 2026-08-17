@@ -16,7 +16,7 @@ void main() {
     final firstIds = [for (final tr in curriculum) tr.items.first.id];
     expect(firstIds[0], 'first_notes'); // Notalar
     expect(firstIds[1], 'mel1'); // Melodi Kulağı
-    expect(firstIds[2], 'ch1'); // Akorlar
+    expect(firstIds[2], 'ch_bright'); // Akorlar
     expect(firstIds[3], 'har1'); // Armoni Kulağı
     expect(firstIds[4], 'rhy1'); // Ritim Kulağı
   });

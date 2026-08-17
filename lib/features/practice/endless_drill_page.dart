@@ -13,10 +13,8 @@ import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
 import '../../state/settings_controller.dart';
 import '../../ui/app_theme.dart';
-import '../chords/chord_inversion_recognition_page.dart';
 import '../chords/chord_lesson.dart';
-import '../chords/chord_quality_recognition_page.dart';
-import '../chords/chord_recognition_page.dart';
+import '../chords/chord_lesson_flow_page.dart';
 import '../concept/concept_sheet.dart';
 import '../harmony/harmony_lesson.dart';
 import '../harmony/harmony_lesson_flow_page.dart';
@@ -91,40 +89,24 @@ List<DrillSkill> buildDrillSkills(PlayerProgress p, VocalRange? range) {
     );
   }
 
-  // Akorlar — tanıma tipi derse göre (spesifik akor / nitelik / çevrim).
+  // Akorlar — RENK duyma ve akorda ses üretme. Karıştırma tipi mekaniğe göre
+  // ayrılır ki "en çok karıştırdıkların" istatistiği anlamlı kalsın.
   for (final l in chordLessons) {
     if (!p.isLessonCompleted(l.id)) continue;
-    final pool = transposeChordsForVoice(l.pool, range);
-    final type = switch (l.recognizeBy) {
-      ChordRecognizeBy.quality => 'quality',
-      ChordRecognizeBy.inversion => 'inv',
-      ChordRecognizeBy.chord => 'chord',
-    };
     skills.add(
       DrillSkill(
         id: l.id,
-        type: type,
+        type: l.isProduction ? 'chordNote' : 'color',
         title: l.title,
-        build: (player, qc, onDone) => switch (l.recognizeBy) {
-          ChordRecognizeBy.quality => ChordQualityRecognitionPage(
-            pool: pool,
+        build: (player, qc, onDone) => Consumer(
+          builder: (context, ref, _) => buildChordGame(
+            lesson: l,
             player: player,
+            ref: ref,
             questionCount: qc,
             onComplete: onDone,
           ),
-          ChordRecognizeBy.inversion => ChordInversionRecognitionPage(
-            pool: pool,
-            player: player,
-            questionCount: qc,
-            onComplete: onDone,
-          ),
-          ChordRecognizeBy.chord => ChordRecognitionPage(
-            pool: pool,
-            player: player,
-            questionCount: qc,
-            onComplete: onDone,
-          ),
-        },
+        ),
       ),
     );
   }
@@ -208,9 +190,8 @@ List<DrillSkill> buildDrillSkills(PlayerProgress p, VocalRange? range) {
 /// Karıştırma tipi belirteci → görünen (yerelleştirilmiş) ad.
 String _typeLabel(String type) => switch (type) {
   'note' => t(en: 'notes', tr: 'notalar'),
-  'chord' => t(en: 'chords', tr: 'akorlar'),
-  'quality' => t(en: 'chord colors', tr: 'akor renkleri'),
-  'inv' => t(en: 'inversions', tr: 'çevrimler'),
+  'color' => t(en: 'chord colours', tr: 'akor renkleri'),
+  'chordNote' => t(en: 'notes inside chords', tr: 'akorun sesleri'),
   'interval' => t(en: 'intervals', tr: 'aralıklar'),
   'melody' => t(en: 'melodies', tr: 'ezgiler'),
   'harmony' => t(en: 'hearing harmony', tr: 'armoni duyma'),

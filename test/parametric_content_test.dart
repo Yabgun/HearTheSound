@@ -1,10 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hear_the_sound/core/chord.dart';
 import 'package:hear_the_sound/core/major_key.dart';
 import 'package:hear_the_sound/core/note.dart';
-import 'package:hear_the_sound/features/chords/chord_lesson.dart';
 
-// Parametrik içerik — beşler çemberi (MajorKey) + akor nitelik capstone.
+// Parametrik içerik — beşler çemberi (MajorKey).
 //
 // NOT: "Tonalite Yolculuğu" (üretilen işlev/ilerleme dersleri) testleri
 // kaldırıldı; o track müfredattan çıkarıldı. MajorKey çekirdekte kalıyor çünkü
@@ -24,12 +22,8 @@ void main() {
     });
   });
 
-  group('Akor Nitelik Ustası capstone', () {
-    test('chordLessons içinde, nitelik modunda, dokuz niteliğin tümüyle', () {
-      final master = chordLessons.firstWhere((l) => l.id == 'ch_quality_master');
-      expect(master.recognizeBy, ChordRecognizeBy.quality);
-      final qualities = master.pool.map((c) => c.quality).toSet();
-      expect(qualities.length, ChordQuality.values.length); // 9 niteliğin tümü
-    });
-  });
+  // NOT: eski "Nitelik Ustası" capstone testi kaldırıldı — Akorlar track'i
+  // 2026-08-17'de yeniden kuruldu; dokuz şıklı etiketleme capstone'u yerine,
+  // öğrenilen ALGI sorularını karıştıran 'ch_master' geldi (sözleşmeleri
+  // test/chord_round_test.dart'ta).
 }

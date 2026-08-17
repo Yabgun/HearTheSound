@@ -6,10 +6,8 @@ import '../../core/content_locale.dart';
 import '../../core/octave_mapping.dart';
 import '../../core/vocal_range.dart';
 import '../../state/progress_controller.dart';
-import '../chords/chord_inversion_recognition_page.dart';
 import '../chords/chord_lesson.dart';
-import '../chords/chord_quality_recognition_page.dart';
-import '../chords/chord_recognition_page.dart';
+import '../chords/chord_lesson_flow_page.dart';
 import '../../state/settings_controller.dart';
 import '../harmony/harmony_lesson.dart';
 import '../harmony/harmony_lesson_flow_page.dart';
@@ -149,30 +147,16 @@ class _ReviewSessionPageState extends ConsumerState<ReviewSessionPage> {
     }
     final chord = _chordLessonById(id);
     if (chord != null) {
-      final pool = transposeChordsForVoice(chord.pool, _range);
-      return switch (chord.recognizeBy) {
-        ChordRecognizeBy.quality => ChordQualityRecognitionPage(
-          key: key,
-          pool: pool,
+      return KeyedSubtree(
+        key: key,
+        child: buildChordGame(
+          lesson: chord,
           player: _player,
+          ref: ref,
           questionCount: _questionsPerSkill,
           onComplete: (r) => _grade(id, r),
         ),
-        ChordRecognizeBy.inversion => ChordInversionRecognitionPage(
-          key: key,
-          pool: pool,
-          player: _player,
-          questionCount: _questionsPerSkill,
-          onComplete: (r) => _grade(id, r),
-        ),
-        ChordRecognizeBy.chord => ChordRecognitionPage(
-          key: key,
-          pool: pool,
-          player: _player,
-          questionCount: _questionsPerSkill,
-          onComplete: (r) => _grade(id, r),
-        ),
-      };
+      );
     }
     // Melodi dersi — Eko oyunu (tanıma değil ÜRETME). Cevap modu kullanıcının
     // Ayarlar'daki tercihinden okunur.

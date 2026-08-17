@@ -33,9 +33,15 @@ const Set<String> kShippedLessonIds = {
   // Notalar
   'first_notes', 'l2_cde', 'l3_penta', 'l4_diatonic', 'l5_chromatic',
   // Akorlar
-  'ch1', 'ch2', 'ch3', 'ch4', 'ch5', 'ch6',
-  'ch7', 'ch8', 'ch9', 'ch10', 'ch11', 'ch12',
-  'ch_quality_master',
+  //
+  // 2026-08-17: track KÖKTEN yeniden kuruldu (13 ders → 8). Eski id'ler
+  // (ch1–ch12, ch_quality_master) KALDIRILDI: "bu hangi akor?" kök bulmayla
+  // çakışıyordu (Armoni'nin işi), "kaçıncı çevrim?" bir analiz sorusuydu ve
+  // söyleme adımı akoru arpejleyerek melodiye çeviriyordu. Yayın ÖNCESİ
+  // olduğumuz için serbest (üretim tablosu boş) — har5/har6/har7'de olduğu
+  // gibi. ⚠️ Kaldırılan id'ler ASLA yeniden kullanılmamalı.
+  'ch_bright', 'ch_color', 'ch_third', 'ch_top',
+  'ch_build', 'ch_tense', 'ch_seventh', 'ch_master',
   // Melodi Kulağı (Eko oyunu)
   'mel1', 'mel2', 'mel3', 'mel4', 'mel5', 'mel6', 'mel7', 'mel8',
   // Armoni Kulağı (bas duyma omurgası)
