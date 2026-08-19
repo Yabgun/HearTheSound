@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hear_the_sound/core/player_progress.dart';
 import 'package:hear_the_sound/data/progress_repository.dart';
+import 'package:hear_the_sound/features/home/curriculum.dart';
 import 'package:hear_the_sound/features/onboarding/onboarding_flow_page.dart';
 import 'package:hear_the_sound/features/placement/placement_test_page.dart';
 import 'package:hear_the_sound/state/progress_controller.dart';
@@ -45,8 +46,8 @@ Future<ProviderContainer> _pumpOnboarding(WidgetTester tester) async {
   await tester.pumpAndSettle();
 
   // Akış artık karşılama → giriş → ad → avatar ile BAŞLIYOR. Bu testler
-  // karşılama sonrası adımları (kalibrasyon/seviye/placement) sınadığından, ilk
-  // dört adımı atlayıp welcome'a ilerliyoruz.
+  // karşılama sonrası adımları (kalibrasyon/başlangıç noktası) sınadığından,
+  // ilk dört adımı atlayıp welcome'a ilerliyoruz.
   await tester.tap(find.text("Let's begin")); // intro → signIn
   await tester.pumpAndSettle();
   await tester.tap(find.text('Continue as guest')); // signIn → nameSetup
@@ -58,25 +59,54 @@ Future<ProviderContainer> _pumpOnboarding(WidgetTester tester) async {
   return container;
 }
 
-Future<void> _openPlacementFromOffer(WidgetTester tester) async {
+/// welcome → başlangıç noktası ekranı.
+Future<void> _toStartPoint(WidgetTester tester) async {
   await tester.tap(find.widgetWithText(TextButton, "I'll calibrate later"));
   await tester.pumpAndSettle();
+}
 
-  // Seviye seçici → "kısa test" linki yerleştirme testine götürür.
-  await tester.tap(
-    find.widgetWithText(TextButton, 'Not sure? Take a quick test'),
-  );
+Future<void> _openPlacement(WidgetTester tester) async {
+  await _toStartPoint(tester);
+  await tester.tap(find.text('I already know some music'));
   await tester.pumpAndSettle();
-
   expect(find.byType(PlacementTestPage), findsOneWidget);
 }
 
 void main() {
-  testWidgets('placement sayfasından geri dönmek onboarding’i bitirmez', (
+  testWidgets('başlangıç noktası ekranı iki yol sunar (dört seviye kartı YOK)', (
+    tester,
+  ) async {
+    await _pumpOnboarding(tester);
+    await _toStartPoint(tester);
+
+    expect(find.text("I'm new to music"), findsOneWidget);
+    expect(find.text('I already know some music'), findsOneWidget);
+    // Kullanıcıya kendini etiketleten eski kartlar geri gelmesin: onların
+    // sorunu, kullanıcının kendi seviyesini bilememesiydi.
+    expect(find.text('I can name notes'), findsNothing);
+    expect(find.text('I know my chords by ear'), findsNothing);
+  });
+
+  testWidgets('"müziğe yeniyim" testi HİÇ göstermez ve hemen bitirir', (
     tester,
   ) async {
     final container = await _pumpOnboarding(tester);
-    await _openPlacementFromOffer(tester);
+    await _toStartPoint(tester);
+
+    await tester.tap(find.text("I'm new to music"));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PlacementTestPage), findsNothing);
+    expect(container.read(settingsProvider).onboarded, isTrue);
+    // Sıfırdan başlayan hiçbir dersi "biliyor" saymaz.
+    expect(container.read(progressProvider).completedLessons, isEmpty);
+  });
+
+  testWidgets('merdiven testinden geri dönmek onboarding’i bitirmez', (
+    tester,
+  ) async {
+    final container = await _pumpOnboarding(tester);
+    await _openPlacement(tester);
 
     await tester.pageBack();
     await tester.pumpAndSettle();
@@ -85,32 +115,28 @@ void main() {
     expect(container.read(settingsProvider).onboarded, isFalse);
   });
 
-  testWidgets('placement içinde sıfırdan başla seçimi onboarding’i bitirir', (
+  testWidgets('testin içinden "sıfırdan başla" onboarding’i bitirir', (
     tester,
   ) async {
     final container = await _pumpOnboarding(tester);
-    await _openPlacementFromOffer(tester);
+    await _openPlacement(tester);
 
-    await tester.tap(find.byType(TextButton));
+    await tester.tap(find.text('Start from scratch instead'));
     await tester.pumpAndSettle();
 
     expect(container.read(settingsProvider).onboarded, isTrue);
+    expect(container.read(progressProvider).completedLessons, isEmpty);
   });
 
-  testWidgets('seviye seçimi onboarding’i bitirir ve doğru dersleri açar', (
+  testWidgets('onboarding sonrası her hâlükârda açık bir ders var', (
     tester,
   ) async {
     final container = await _pumpOnboarding(tester);
-    // Welcome → seviye seçici
-    await tester.tap(find.widgetWithText(TextButton, "I'll calibrate later"));
-    await tester.pumpAndSettle();
-    // "Notaları biliyorum" → Notalar tamam sayılır, Aralıklardan başlar.
-    await tester.tap(find.text('I can name notes'));
+    await _toStartPoint(tester);
+    await tester.tap(find.text("I'm new to music"));
     await tester.pumpAndSettle();
 
-    expect(container.read(settingsProvider).onboarded, isTrue);
-    final p = container.read(progressProvider);
-    expect(p.isLessonCompleted('first_notes'), isTrue); // Notalar tamam
-    expect(p.isLessonCompleted('iv1'), isFalse); // Aralıklar değil
+    // "Devam Et" hedefi boş kalırsa ana ekran ölü uçla açılır.
+    expect(nextLesson(container.read(progressProvider)), isNotNull);
   });
 }

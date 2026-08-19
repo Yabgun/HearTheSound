@@ -17,12 +17,15 @@ import '../placement/placement_test_page.dart';
 // ONBOARDING — ilk açılış akışı
 //
 // Sıra: Karşılama (Eko tanıtır) → Giriş → Adın → Avatarın → Sesini tanıyalım
-// (kalibrasyon) → Seviye seçimi. Bitince 'onboarded' bayrağı set edilir; kök
+// (kalibrasyon) → Başlangıç noktası. Bitince 'onboarded' bayrağı set edilir; kök
 // geçiş (main) otomatik ana ekrana döner. HER adım atlanabilir (giriş: misafir;
-// ad/avatar: "şimdilik atla"; kalibrasyon: "sonra"; seviyede "kısa test").
+// ad/avatar: "şimdilik atla"; kalibrasyon: "sonra").
+//
+// SON ADIM İKİ YOL: "müziğe yeniyim" → hiç test yok, ilk dersten başlar ·
+// "biraz müzik biliyorum" → merdiven testi (features/placement/).
 // -----------------------------------------------------------------------------
 
-enum _Step { intro, signIn, nameSetup, avatarSetup, welcome, levelChooser }
+enum _Step { intro, signIn, nameSetup, avatarSetup, welcome, startPoint }
 
 class OnboardingFlowPage extends ConsumerStatefulWidget {
   const OnboardingFlowPage({super.key});
@@ -52,7 +55,7 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
     await Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const CalibrationPage()));
-    if (mounted) setState(() => _step = _Step.levelChooser);
+    if (mounted) setState(() => _step = _Step.startPoint);
   }
 
   Future<void> _goPlacement() async {
@@ -76,7 +79,7 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
       _Step.nameSetup => _buildNameSetup(context),
       _Step.avatarSetup => _buildAvatarSetup(context),
       _Step.welcome => _buildWelcome(context),
-      _Step.levelChooser => _buildLevelChooser(context),
+      _Step.startPoint => _buildStartPoint(context),
     };
   }
 
@@ -405,7 +408,7 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
               ),
               const SizedBox(height: 8),
               TextButton(
-                onPressed: () => setState(() => _step = _Step.levelChooser),
+                onPressed: () => setState(() => _step = _Step.startPoint),
                 child: Text(
                   t(
                     en: "I'll calibrate later",
@@ -475,7 +478,17 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
     _finish();
   }
 
-  Widget _buildLevelChooser(BuildContext context) {
+  /// BAŞLANGIÇ NOKTASI — iki yol.
+  ///
+  /// Eskiden burada dört "seviye kartı" vardı ve kullanıcıdan kendini
+  /// etiketlemesi isteniyordu ("Ezgileri kulakla takip edebiliyorum" — bunun
+  /// ne demek olduğunu bilen zaten bilir, bilmeyen tahmin eder). İki sebeple
+  /// kaldırıldı: (a) kullanıcı kendi seviyesini bilemez, (b) yanlış seçim
+  /// sessizce ya sıkıcı ya da imkânsız bir müfredat verir.
+  ///
+  /// Yerine: sıfırdan başlayan hiçbir test görmez (tek dokunuş, hemen başlar);
+  /// bir şeyler bilen ise GERÇEK derslerle sınanır (merdiven testi).
+  Widget _buildStartPoint(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
@@ -488,77 +501,42 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
           children: [
             Text(
               t(
-                en:
-                    "Pick your level and I'll open the right lessons. You can "
-                    'always replay earlier ones for a crown.',
-                tr:
-                    'Seviyeni seç, doğru dersleri açayım. Öncekileri taç için '
-                    'istediğin zaman tekrar oynayabilirsin.',
+                en: 'Two ways in. If music is new to you, we begin at the very '
+                    'first lesson. If you already play or sing, I can test you '
+                    'and skip the parts you know.',
+                tr: 'İki yol var. Müzik sana yeniyse en baştan başlarız. Zaten '
+                    'çalıyor ya da söylüyorsan seni sınayıp bildiğin bölümleri '
+                    'atlayabilirim.',
               ),
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 20),
-            // Seviye → kaç track "tamam" sayılır (bkz. lessonIdsInFirstTracks):
-            // 0 → Notalar'dan · 1 → Melodi Kulağı'ndan · 2 → Akorlar'dan ·
-            // 3 → Armoni Kulağı'ndan.
-            // DİKKAT: en üst seviye BÜTÜN müfredatı tamam saymamalı; yoksa
-            // kullanıcı açık hiçbir ders olmadan başlar — bu yüzden son kart
-            // müfredatın SON track'ini açık bırakır.
             _levelCard(
               theme,
               icon: AppIcons.levelBeginner,
-              title: t(en: "I'm starting from scratch", tr: 'Yeni başlıyorum'),
-              subtitle: t(en: 'Begin with Notes', tr: 'Notalardan başla'),
+              title: t(en: "I'm new to music", tr: 'Müziğe yeniyim'),
+              subtitle: t(
+                en: 'Start at the first lesson',
+                tr: 'İlk dersten başla',
+              ),
               color: AppColors.catNotes,
               onTap: () => _chooseLevel(0),
             ),
             _levelCard(
               theme,
-              icon: AppIcons.levelNotes,
-              title: t(en: 'I can name notes', tr: 'Notaları tanıyorum'),
-              subtitle: t(
-                en: 'Start at Melody Ear',
-                tr: 'Melodi Kulağı\'ndan başla',
-              ),
-              color: AppColors.catMelody,
-              onTap: () => _chooseLevel(1),
-            ),
-            _levelCard(
-              theme,
               icon: AppIcons.levelChords,
               title: t(
-                en: 'I can follow melodies by ear',
-                tr: 'Ezgileri kulakla takip edebiliyorum',
-              ),
-              subtitle: t(en: 'Start at Chords', tr: 'Akorlardan başla'),
-              color: AppColors.catChords,
-              onTap: () => _chooseLevel(2),
-            ),
-            _levelCard(
-              theme,
-              icon: AppIcons.levelTheory,
-              title: t(
-                en: 'I know my chords by ear',
-                tr: 'Akorları kulaktan tanıyorum',
+                en: 'I already know some music',
+                tr: 'Biraz müzik biliyorum',
               ),
               subtitle: t(
-                en: 'Start at Harmony Ear',
-                tr: 'Armoni Kulağı\'ndan başla',
+                en: 'Take a short test — skip what you know',
+                tr: 'Kısa bir test yap — bildiğini atla',
               ),
               color: AppColors.catHarmony,
-              onTap: () => _chooseLevel(3),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: _goPlacement,
-              child: Text(
-                t(
-                  en: 'Not sure? Take a quick test',
-                  tr: 'Emin değil misin? Kısa test yap',
-                ),
-              ),
+              onTap: _goPlacement,
             ),
           ],
         ),

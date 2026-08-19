@@ -15,6 +15,7 @@ import 'package:hear_the_sound/features/harmony/harmony_find_page.dart';
 import 'package:hear_the_sound/features/harmony/harmony_lesson.dart';
 import 'package:hear_the_sound/features/harmony/harmony_pattern_page.dart';
 import 'package:hear_the_sound/features/melody/echo_game_page.dart';
+import 'package:hear_the_sound/features/placement/placement_test_page.dart';
 import 'package:hear_the_sound/features/melody/melody_lesson.dart';
 import 'package:hear_the_sound/features/rhythm/rhythm_echo_page.dart';
 import 'package:hear_the_sound/features/rhythm/rhythm_lesson.dart';
@@ -475,5 +476,12 @@ void main() {
       await t.pump(const Duration(milliseconds: 800));
     }
     expect(t.takeException(), isNull, reason: 'cevap sonrası taşma olmamalı');
+  });
+
+  // SEVİYE TESPİTİ (merdiven testi) — açılış ekranı beş bölümü listeler.
+  // Basamakların kendisi gerçek ders ekranları olduğu için burada yalnızca
+  // merdivenin çizimi yoklanır; akış ve sözleşmeler placement_ladder_test'te.
+  testWidgets('seviye tespiti merdiveni çizilir', (t) async {
+    await smoke(t, const PlacementTestPage());
   });
 }

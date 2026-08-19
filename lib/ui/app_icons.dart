@@ -38,9 +38,9 @@ abstract final class AppIcons {
   /// Dersin kazanımı ("bu dersten sonra şunu yapabileceksin").
   static const promise = Icons.emoji_events_rounded;
 
-  // Onboarding seviye kartları (🌱 🎵 🎹 🎼).
+  // Onboarding başlangıç noktası kartları: "müziğe yeniyim" · "biraz biliyorum".
+  // (Eskiden dört seviye kartı vardı; kullanıcıya kendini etiketletmek yerine
+  // gerçek derslerle sınayan merdiven testine geçildi → iki ikon yetiyor.)
   static const levelBeginner = Icons.eco_rounded;
-  static const levelNotes = Icons.music_note_rounded;
   static const levelChords = Icons.piano_rounded;
-  static const levelTheory = Icons.graphic_eq_rounded;
 }
