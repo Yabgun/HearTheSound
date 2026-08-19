@@ -60,8 +60,10 @@ class _LessonCompletePageState extends State<LessonCompletePage>
 
   List<_Particle> _makeParticles() {
     final rng = Random(7);
+    // Konfeti DEKORATİF: parçacıklar temayla dönmez, marka hue'ları kalır
+    // (const listesi korunur, her karede yeniden kurulmaz).
     const colors = [
-      AppColors.grape,
+      AppColors.grapeHue,
       AppColors.coral,
       AppColors.teal,
       AppColors.amber,
@@ -118,7 +120,7 @@ class _LessonCompletePageState extends State<LessonCompletePage>
                             // Geçince canlı mor→mercan; geçemeyince yumuşak amber
                             // (teşvik edici, kutlama değil).
                             colors: _passed
-                                ? const [AppColors.grape, AppColors.coral]
+                                ? [context.colors.grape, AppColors.coral]
                                 : [
                                     AppColors.amber.withValues(alpha: 0.85),
                                     AppColors.coral.withValues(alpha: 0.6),
@@ -129,7 +131,7 @@ class _LessonCompletePageState extends State<LessonCompletePage>
                           boxShadow: [
                             BoxShadow(
                               color:
-                                  (_passed ? AppColors.grape : AppColors.amber)
+                                  (_passed ? context.colors.grape : AppColors.amber)
                                       .withValues(alpha: 0.3),
                               blurRadius: 28,
                               spreadRadius: 3,

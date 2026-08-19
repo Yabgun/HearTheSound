@@ -52,7 +52,7 @@ class LessonIntroPage extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: AppColors.grapeSoft,
+                  color: context.colors.grapeSoft,
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Column(
@@ -60,12 +60,12 @@ class LessonIntroPage extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(AppIcons.promise, color: AppColors.grape),
+                        Icon(AppIcons.promise, color: context.colors.grape),
                         const SizedBox(width: 10),
                         Text(
                           t(en: 'After this lesson', tr: 'Bu dersten sonra'),
                           style: theme.textTheme.labelLarge?.copyWith(
-                            color: AppColors.grape,
+                            color: context.colors.grape,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -75,7 +75,7 @@ class LessonIntroPage extends StatelessWidget {
                     Text(
                       promise,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        color: AppColors.ink,
+                        color: context.colors.ink,
                         height: 1.4,
                       ),
                     ),

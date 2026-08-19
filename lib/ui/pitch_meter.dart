@@ -62,7 +62,7 @@ class PitchMeter extends StatelessWidget {
     final needleColor = !active
         ? theme.colorScheme.outline
         : inTune
-        ? AppColors.success
+        ? context.colors.success
         : AppColors.amber;
 
     return Column(
@@ -84,7 +84,7 @@ class PitchMeter extends StatelessWidget {
                   Container(
                     height: 10,
                     decoration: BoxDecoration(
-                      color: AppColors.wash,
+                      color: context.colors.wash,
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
@@ -95,7 +95,7 @@ class PitchMeter extends StatelessWidget {
                     child: Container(
                       height: 10,
                       decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.22),
+                        color: context.colors.success.withValues(alpha: 0.22),
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
@@ -161,7 +161,7 @@ class PitchMeter extends StatelessWidget {
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: inTune
-                    ? AppColors.success
+                    ? context.colors.success
                     : theme.colorScheme.onSurfaceVariant,
               ),
             ),

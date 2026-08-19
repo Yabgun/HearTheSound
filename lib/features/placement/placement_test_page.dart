@@ -201,7 +201,7 @@ class _PlacementTestPageState extends ConsumerState<PlacementTestPage> {
             const SizedBox(height: 4),
             Text(
               t(en: 'Next: ${next.name}', tr: 'Sıradaki: ${next.name}'),
-              style: theme.textTheme.bodySmall?.copyWith(color: AppColors.muted),
+              style: theme.textTheme.bodySmall?.copyWith(color: context.colors.muted),
               textAlign: TextAlign.center,
             ),
           ],
@@ -398,7 +398,7 @@ class _LadderStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final active = state != _StepState.upcoming;
-    final color = active ? track.color : AppColors.faint;
+    final color = active ? track.color : context.colors.faint;
 
     final String status = switch (state) {
       _StepState.passed => t(en: 'You know this', tr: 'Bunu biliyorsun'),
@@ -421,7 +421,7 @@ class _LadderStep extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: active ? color.withValues(alpha: 0.10) : AppColors.wash,
+          color: active ? color.withValues(alpha: 0.10) : context.colors.wash,
           borderRadius: BorderRadius.circular(16),
           border: state == _StepState.current || state == _StepState.start
               ? Border.all(color: color, width: 2)
@@ -455,13 +455,13 @@ class _LadderStep extends StatelessWidget {
                     track.name,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: active ? AppColors.ink : AppColors.muted,
+                      color: active ? context.colors.ink : context.colors.muted,
                     ),
                   ),
                   Text(
                     status,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.muted,
+                      color: context.colors.muted,
                     ),
                   ),
                 ],

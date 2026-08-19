@@ -437,7 +437,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.grapeSoft,
+        color: context.colors.grapeSoft,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -446,7 +446,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
           Text(
             t(en: 'Chord recipe', tr: 'Akorun tarifi'),
             style: theme.textTheme.labelLarge?.copyWith(
-              color: AppColors.grape,
+              color: context.colors.grape,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -465,7 +465,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
                         'kök → ${chordRecipe(quality).map((s) => '+$s').join(' → ')} tuş',
                   ),
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: AppColors.ink,
+                    color: context.colors.ink,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -495,7 +495,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: i == _attempt.length && _matches == null
-                          ? AppColors.grape
+                          ? context.colors.grape
                           : theme.colorScheme.outline.withValues(alpha: 0.5),
                       width: i == _attempt.length && _matches == null ? 2.5 : 1,
                     ),
@@ -506,7 +506,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
                       i < _attempt.length ? _attempt[i].label : '?',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
-                        color: _matches != null ? Colors.white : AppColors.ink,
+                        color: _slotTextColor(i),
                       ),
                     ),
                   ),
@@ -538,12 +538,22 @@ class _ChordProducePageState extends State<ChordProducePage> {
     );
   }
 
+
+  /// Yuva ETİKETİNİN rengi — zeminiyle çift gider (bkz. _slotColor).
+  /// Dolgu success/danger olduğunda etiket paletten gelmeli: koyu temada dolgu
+  /// açık yeşile/kırmızıya döner ve üstünde beyaz yazı okunmaz.
+  Color _slotTextColor(int index) {
+    final matches = _matches;
+    if (matches == null) return context.colors.ink;
+    return matches[index] ? context.colors.onSuccess : context.colors.onDanger;
+  }
+
   Color _slotColor(ThemeData theme, int index) {
     final matches = _matches;
     if (matches != null) {
-      return matches[index] ? AppColors.success : AppColors.danger;
+      return matches[index] ? context.colors.success : context.colors.danger;
     }
-    if (index < _attempt.length) return AppColors.grapeSoft;
+    if (index < _attempt.length) return context.colors.grapeSoft;
     return theme.colorScheme.surfaceContainerHighest;
   }
 
@@ -584,9 +594,9 @@ class _ChordProducePageState extends State<ChordProducePage> {
       label: note.label,
       child: Material(
         color: isHint
-            ? AppColors.grapeSoft
+            ? context.colors.grapeSoft
             : isRoot
-            ? AppColors.wash
+            ? context.colors.wash
             : theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
         clipBehavior: Clip.antiAlias,
@@ -599,7 +609,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
               border: isHint
-                  ? Border.all(color: AppColors.grape, width: 2)
+                  ? Border.all(color: context.colors.grape, width: 2)
                   : null,
             ),
             child: Column(
@@ -648,7 +658,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
         Icon(
           _micActive ? Icons.mic_rounded : Icons.mic_off_rounded,
           size: 32,
-          color: _micActive ? AppColors.grape : theme.colorScheme.outline,
+          color: _micActive ? context.colors.grape : theme.colorScheme.outline,
         ),
         const SizedBox(height: 10),
         if (_targetIsKnown)
@@ -665,7 +675,7 @@ class _ChordProducePageState extends State<ChordProducePage> {
               child: LinearProgressIndicator(
                 value: _lockProgress,
                 minHeight: 8,
-                backgroundColor: AppColors.wash,
+                backgroundColor: context.colors.wash,
               ),
             ),
           ),

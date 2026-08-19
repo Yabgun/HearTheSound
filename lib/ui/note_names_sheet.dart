@@ -177,14 +177,14 @@ class _BridgeRow extends StatelessWidget {
             height: 42,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppColors.grapeSoft,
+              color: context.colors.grapeSoft,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               letter,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w800,
-                color: AppColors.grape,
+                color: context.colors.grape,
               ),
             ),
           ),
@@ -192,7 +192,7 @@ class _BridgeRow extends StatelessWidget {
           Text(
             '=',
             style: theme.textTheme.titleMedium?.copyWith(
-              color: AppColors.faint,
+              color: context.colors.faint,
             ),
           ),
           const SizedBox(width: 10),

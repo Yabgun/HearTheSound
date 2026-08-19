@@ -81,7 +81,7 @@ class TodayPage extends ConsumerWidget {
           _planCard(context, theme, progress, next, due),
           const SizedBox(height: 16),
 
-          _statRow(theme, progress, rank),
+          _statRow(context, theme, progress, rank),
         ],
       ),
     );
@@ -104,7 +104,7 @@ class TodayPage extends ConsumerWidget {
           borderRadius: BorderRadius.circular(26),
           boxShadow: [
             BoxShadow(
-              color: AppColors.grape.withValues(alpha: 0.35),
+              color: context.colors.grape.withValues(alpha: 0.35),
               blurRadius: 26,
               offset: const Offset(0, 14),
             ),
@@ -115,9 +115,12 @@ class TodayPage extends ConsumerWidget {
           borderRadius: BorderRadius.circular(26),
           clipBehavior: Clip.antiAlias,
           child: Ink(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.teal, AppColors.grape],
+                // Hero degradesi SABİT hue'larla kurulur: üstündeki beyaz metnin
+                // kontrastı temaya göre kaymasın (palet moru koyu temada
+                // açılır ve beyaz yazıyı okunmaz hale getirirdi).
+                colors: [AppColors.teal, AppColors.grapeHue],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -177,7 +180,7 @@ class TodayPage extends ConsumerWidget {
                                 tr: 'Sonsuz pratik →',
                               ),
                               style: theme.textTheme.titleMedium?.copyWith(
-                                color: AppColors.grape,
+                                color: context.colors.grape,
                               ),
                             ),
                           ),
@@ -411,7 +414,7 @@ class TodayPage extends ConsumerWidget {
               context,
               theme,
               icon: Icons.all_inclusive_rounded,
-              color: AppColors.grape,
+              color: context.colors.grape,
               title: t(en: 'Endless practice', tr: 'Sonsuz pratik'),
               subtitle: t(
                 en: 'Mixed questions from everything you know',
@@ -429,8 +432,8 @@ class TodayPage extends ConsumerWidget {
             child: LinearProgressIndicator(
               value: pct,
               minHeight: 8,
-              color: AppColors.grape,
-              backgroundColor: AppColors.wash,
+              color: context.colors.grape,
+              backgroundColor: context.colors.wash,
             ),
           ),
           const SizedBox(height: 8),
@@ -514,7 +517,12 @@ class TodayPage extends ConsumerWidget {
     );
   }
 
-  Widget _statRow(ThemeData theme, PlayerProgress progress, Rank rank) {
+  Widget _statRow(
+    BuildContext context,
+    ThemeData theme,
+    PlayerProgress progress,
+    Rank rank,
+  ) {
     Widget cell(String n, String l, Color c) => Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
@@ -540,7 +548,7 @@ class TodayPage extends ConsumerWidget {
     );
     return Row(
       children: [
-        cell('${progress.xp}', 'XP', AppColors.grape),
+        cell('${progress.xp}', 'XP', context.colors.grape),
         const SizedBox(width: 10),
         cell(rank.name, t(en: 'Rank', tr: 'Rütbe'), AppColors.coral),
         const SizedBox(width: 10),
@@ -580,7 +588,7 @@ class TodayPage extends ConsumerWidget {
 
   Widget _calibrationBanner(BuildContext context, ThemeData theme) {
     return Material(
-      color: AppColors.grape.withValues(alpha: 0.12),
+      color: context.colors.grape.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(18),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -591,9 +599,9 @@ class TodayPage extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.graphic_eq_rounded,
-                color: AppColors.grape,
+                color: context.colors.grape,
                 size: 30,
               ),
               const SizedBox(width: 14),

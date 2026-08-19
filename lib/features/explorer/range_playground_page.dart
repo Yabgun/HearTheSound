@@ -32,7 +32,6 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
   static final int _highMidi = Note.fromName('C', 6).midi; // 84
   static const double _itemExtent = 58;
   static const Duration _holdTarget = Duration(milliseconds: 1000);
-  static const Color _green = AppColors.success;
   static const Color _amber = Color(0xFFE0912B);
 
   final PitchService _pitch = PitchService();
@@ -153,7 +152,7 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
       range == null ? null : reachZoneFor(midi, range);
 
   Color _zoneColor(ReachZone? zone, ThemeData theme) => switch (zone) {
-    ReachZone.comfort => _green,
+    ReachZone.comfort => context.colors.success,
     ReachZone.stretch => _amber,
     _ => theme.colorScheme.outline,
   };
@@ -343,7 +342,7 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w800,
                   color: (_caught || exact)
-                      ? _green
+                      ? context.colors.success
                       : theme.colorScheme.primary,
                 ),
               ),
@@ -369,7 +368,7 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
             minHeight: 6,
             backgroundColor: theme.colorScheme.surface,
             valueColor: AlwaysStoppedAnimation(
-              (_caught || exact) ? _green : theme.colorScheme.primary,
+              (_caught || exact) ? context.colors.success : theme.colorScheme.primary,
             ),
           ),
           const SizedBox(height: 12),
@@ -378,7 +377,7 @@ class _RangePlaygroundPageState extends ConsumerState<RangePlaygroundPage> {
             textAlign: TextAlign.center,
             style: theme.textTheme.titleSmall?.copyWith(
               color: (_caught || exact)
-                  ? _green
+                  ? context.colors.success
                   : theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),

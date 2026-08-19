@@ -345,7 +345,7 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
     ),
     child: Column(
       children: [
-        const Icon(Icons.lock_outline_rounded, size: 32, color: AppColors.muted),
+        Icon(Icons.lock_outline_rounded, size: 32, color: context.colors.muted),
         const SizedBox(height: 12),
         Text(
           t(
@@ -571,14 +571,16 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
     final Color background;
     final Color foreground;
     if (checked != null) {
-      background = checked[index] ? AppColors.success : AppColors.danger;
-      foreground = Colors.white;
+      background = checked[index] ? context.colors.success : context.colors.danger;
+      foreground = checked[index]
+          ? context.colors.onSuccess
+          : context.colors.onDanger;
     } else if (chord != null) {
-      background = AppColors.grapeSoft;
-      foreground = AppColors.ink;
+      background = context.colors.grapeSoft;
+      foreground = context.colors.ink;
     } else {
       background = theme.colorScheme.surfaceContainerHighest;
-      foreground = AppColors.ink;
+      foreground = context.colors.ink;
     }
 
     return Semantics(
@@ -599,9 +601,9 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isPlaying
-                    ? AppColors.grape
+                    ? context.colors.grape
                     : isCurrent
-                    ? AppColors.grape.withValues(alpha: 0.55)
+                    ? context.colors.grape.withValues(alpha: 0.55)
                     : Colors.transparent,
                 width: isPlaying ? 3 : 2,
               ),
@@ -691,7 +693,7 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
         onTap: () => _place(chord),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          child: ChordLabel(chord, color: AppColors.ink),
+          child: ChordLabel(chord, color: context.colors.ink),
         ),
       ),
     ),
@@ -718,14 +720,14 @@ class _SongSolvePageState extends ConsumerState<SongSolvePage> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.grapeSoft,
+              color: context.colors.grapeSoft,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
               insight,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppColors.ink,
+                color: context.colors.ink,
                 height: 1.4,
               ),
             ),

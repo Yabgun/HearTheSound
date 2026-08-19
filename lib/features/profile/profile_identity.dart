@@ -271,7 +271,7 @@ class _AvatarChoice extends StatelessWidget {
             shape: BoxShape.circle,
             color: palette.from.withValues(alpha: 0.16),
             border: Border.all(
-              color: selected ? AppColors.ink : Colors.transparent,
+              color: selected ? context.colors.ink : Colors.transparent,
               width: 3,
             ),
           ),

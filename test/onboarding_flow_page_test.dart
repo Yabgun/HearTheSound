@@ -8,6 +8,7 @@ import 'package:hear_the_sound/features/onboarding/onboarding_flow_page.dart';
 import 'package:hear_the_sound/features/placement/placement_test_page.dart';
 import 'package:hear_the_sound/state/progress_controller.dart';
 import 'package:hear_the_sound/state/settings_controller.dart';
+import 'package:hear_the_sound/ui/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MemoryProgressRepository implements ProgressRepository {
@@ -45,9 +46,9 @@ Future<ProviderContainer> _pumpOnboarding(WidgetTester tester) async {
   );
   await tester.pumpAndSettle();
 
-  // Akış artık karşılama → giriş → ad → avatar ile BAŞLIYOR. Bu testler
-  // karşılama sonrası adımları (kalibrasyon/başlangıç noktası) sınadığından,
-  // ilk dört adımı atlayıp welcome'a ilerliyoruz.
+  // Akış: karşılama → giriş → ad → avatar → TEMA → welcome. Bu testler
+  // sonraki adımları (kalibrasyon/başlangıç noktası) sınadığından, baştaki
+  // adımları atlayıp welcome'a ilerliyoruz.
   await tester.tap(find.text("Let's begin")); // intro → signIn
   await tester.pumpAndSettle();
   await tester.tap(find.text('Continue as guest')); // signIn → nameSetup
@@ -55,6 +56,8 @@ Future<ProviderContainer> _pumpOnboarding(WidgetTester tester) async {
   await tester.tap(find.widgetWithText(TextButton, 'Skip for now')); // ad atla
   await tester.pumpAndSettle();
   await tester.tap(find.widgetWithText(TextButton, 'Skip for now')); // avatar atla
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Continue')); // tema adımı → welcome
   await tester.pumpAndSettle();
   return container;
 }
@@ -72,7 +75,101 @@ Future<void> _openPlacement(WidgetTester tester) async {
   expect(find.byType(PlacementTestPage), findsOneWidget);
 }
 
+/// Karşılama → giriş → ad → avatar; TEMA adımında durur.
+Future<ProviderContainer> _toThemeStep(
+  WidgetTester tester, {
+  double textScale = 1.0,
+}) async {
+  await tester.binding.setSurfaceSize(const Size(500, 1400));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+  final container = ProviderContainer(
+    overrides: [
+      prefsProvider.overrideWithValue(prefs),
+      progressRepositoryProvider.overrideWithValue(_MemoryProgressRepository()),
+    ],
+  );
+  addTearDown(container.dispose);
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: Consumer(
+        builder: (_, ref, _) => MaterialApp(
+          theme: AppTheme.forTest(Brightness.light, AppPalette.light),
+          darkTheme: AppTheme.forTest(Brightness.dark, AppPalette.dark),
+          themeMode: ref.watch(settingsProvider).themeMode,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
+          home: const OnboardingFlowPage(),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text("Let's begin"));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Continue as guest'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(TextButton, 'Skip for now'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.widgetWithText(TextButton, 'Skip for now'));
+  await tester.pumpAndSettle();
+  return container;
+}
+
 void main() {
+  testWidgets('tema sorusu Eko seçiminden HEMEN SONRA gelir', (tester) async {
+    await _toThemeStep(tester);
+    expect(find.text('How should the app look?'), findsOneWidget);
+    expect(find.text('Light'), findsOneWidget);
+    expect(find.text('Dark'), findsOneWidget);
+  });
+
+  testWidgets('koyu seçilince tema ANINDA uygulanır ve kaydedilir', (
+    tester,
+  ) async {
+    final container = await _toThemeStep(tester);
+    expect(container.read(settingsProvider).themeMode, ThemeMode.light);
+
+    await tester.tap(find.text('Dark'));
+    await tester.pumpAndSettle();
+
+    expect(container.read(settingsProvider).themeMode, ThemeMode.dark);
+    // Seçim ekranda da görünmeli: kullanıcı seçtiğini TAHMİN etmemeli.
+    final ctx = tester.element(find.text('How should the app look?'));
+    expect(Theme.of(ctx).brightness, Brightness.dark);
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('theme_mode'), 'dark');
+  });
+
+  testWidgets("tema adımı akışı bitirmez, welcome adımına geçer", (tester) async {
+    final container = await _toThemeStep(tester);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('How should the app look?'), findsNothing);
+    expect(container.read(settingsProvider).onboarded, isFalse);
+    expect(
+      find.widgetWithText(TextButton, "I'll calibrate later"),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('tema adımı 1.3x metin ölçeğinde taşmaz', (tester) async {
+    tester.view.physicalSize = const Size(420, 960);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await _toThemeStep(tester, textScale: 1.3);
+    expect(find.text('How should the app look?'), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: '1.3x tema adımı taşmamalı');
+  });
+
   testWidgets('başlangıç noktası ekranı iki yol sunar (dört seviye kartı YOK)', (
     tester,
   ) async {

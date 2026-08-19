@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -39,6 +40,15 @@ class AppSettings {
   final Instrument instrument; // egzersiz tınısı (piyano/sentez)
   final String localeCode; // 'en' (varsayılan) | 'tr'
 
+  /// Açık / koyu / sisteme uy.
+  ///
+  /// Varsayılan AÇIK — sistem DEĞİL. Uygulamanın tasarlanmış kimliği açık tema
+  /// ("Aydınlık stüdyo"); koyu tema bir TERCİH. Varsayılan "sistem" olduğunda
+  /// telefonu koyu modda olan kullanıcı uygulamayı hiç seçim yapmadan koyu
+  /// buluyor ve bunu "koyuya sabitlenmiş" diye okuyor (cihaz testinde tam
+  /// olarak bu oldu). "Sistem" hâlâ seçenek, ama artık kullanıcının kararı.
+  final ThemeMode themeMode;
+
   /// Eko oyununda tekrarın nasıl verileceği. Varsayılan TUŞ: her ortamda
   /// çalışır ve ilk temasta mikrofon izni istemez (sürtünmesiz başlangıç).
   final EchoInputMode echoInputMode;
@@ -51,6 +61,7 @@ class AppSettings {
     this.instrument = Instrument.piano,
     this.localeCode = 'en',
     this.echoInputMode = EchoInputMode.tap,
+    this.themeMode = ThemeMode.light,
   });
 
   AppSettings copyWith({
@@ -61,6 +72,7 @@ class AppSettings {
     Instrument? instrument,
     String? localeCode,
     EchoInputMode? echoInputMode,
+    ThemeMode? themeMode,
   }) {
     return AppSettings(
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
@@ -70,6 +82,7 @@ class AppSettings {
       instrument: instrument ?? this.instrument,
       localeCode: localeCode ?? this.localeCode,
       echoInputMode: echoInputMode ?? this.echoInputMode,
+      themeMode: themeMode ?? this.themeMode,
     );
   }
 }
@@ -77,6 +90,18 @@ class AppSettings {
 /// Prefs'teki dil anahtarını çözer. Varsayılan İngilizce.
 String localeFromPrefs(SharedPreferences prefs) =>
     prefs.getString('locale') == 'tr' ? 'tr' : 'en';
+
+/// Prefs'teki tema anahtarını çözer.
+///
+/// KAYIT YOKSA ya da tanınmıyorsa AÇIK tema: kullanıcı bir şey seçene kadar
+/// uygulama kendi tasarlandığı hâlde açılır. Koyu tema ancak kullanıcı
+/// isteyince gelir; sistem takibi de açıkça seçilmesi gereken bir seçenek.
+ThemeMode themeModeFromPrefs(SharedPreferences prefs) =>
+    switch (prefs.getString('theme_mode')) {
+      'dark' => ThemeMode.dark,
+      'system' => ThemeMode.system,
+      _ => ThemeMode.light,
+    };
 
 /// Prefs'teki tını anahtarını çözer. Varsayılan piyano (gerçek tını).
 Instrument instrumentFromPrefs(SharedPreferences prefs) =>
@@ -98,12 +123,21 @@ class SettingsController extends Notifier<AppSettings> {
     echoInputMode: _prefs.getString('echo_input_mode') == 'sing'
         ? EchoInputMode.sing
         : EchoInputMode.tap,
+    themeMode: themeModeFromPrefs(_prefs),
   );
 
   /// Eko oyunu cevap modunu değiştirir (oyun içindeki seçiciden çağrılır).
   Future<void> setEchoInputMode(EchoInputMode mode) async {
     await _prefs.setString('echo_input_mode', mode.name);
     state = state.copyWith(echoInputMode: mode);
+  }
+
+  /// Temayı değiştirir. MaterialApp bu değeri izlediği için tüm ağaç yeni
+  /// palette yeniden çizilir (renkler ThemeExtension'dan geldiği için
+  /// ekranlarda tek satır değişiklik gerekmez).
+  Future<void> setThemeMode(ThemeMode mode) async {
+    await _prefs.setString('theme_mode', mode.name);
+    state = state.copyWith(themeMode: mode);
   }
 
   Future<void> setEnabled(bool value) async {

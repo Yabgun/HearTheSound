@@ -93,7 +93,7 @@ class PathMapPage extends ConsumerWidget {
               left: 26,
               top: 6,
               bottom: 14,
-              child: Container(width: 3, color: AppColors.wash),
+              child: Container(width: 3, color: context.colors.wash),
             ),
             Column(
               children: [
@@ -131,9 +131,9 @@ class PathMapPage extends ConsumerWidget {
     Widget bubble;
     if (completed) {
       bubble = _bub(
-        AppColors.success.withValues(alpha: 0.16),
-        AppColors.success,
-        const Icon(Icons.check_rounded, color: AppColors.success, size: 20),
+        context.colors.success.withValues(alpha: 0.16),
+        context.colors.success,
+        Icon(Icons.check_rounded, color: context.colors.success, size: 20),
       );
     } else if (isCurrent) {
       bubble = Container(
@@ -258,16 +258,16 @@ class PathMapPage extends ConsumerWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
+                    Icon(
                       AppIcons.crown,
                       size: 14,
-                      color: AppColors.amberDeep,
+                      color: context.colors.amberDeep,
                     ),
                     const SizedBox(width: 3),
                     Text(
                       '$level',
                       style: theme.textTheme.labelMedium?.copyWith(
-                        color: AppColors.amberDeep,
+                        color: context.colors.amberDeep,
                         fontWeight: FontWeight.w800,
                       ),
                     ),

@@ -119,11 +119,14 @@ class HearTheSoundApp extends ConsumerWidget {
     // metinleri için).
     final localeCode = ref.watch(settingsProvider.select((s) => s.localeCode));
     ContentLocale.code = localeCode;
+    final themeMode = ref.watch(settingsProvider.select((s) => s.themeMode));
 
     return MaterialApp(
       title: 'HearTheSound',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: themeMode,
       locale: Locale(localeCode),
       supportedLocales: const [Locale('en'), Locale('tr')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,

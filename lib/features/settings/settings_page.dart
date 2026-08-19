@@ -84,7 +84,7 @@ class _AccountActionState extends ConsumerState<_AccountAction> {
             child: Text(t(en: 'Cancel', tr: 'Vazgeç')),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            style: FilledButton.styleFrom(backgroundColor: context.colors.danger),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(t(en: 'Sign out', tr: 'Çıkış yap')),
           ),
@@ -131,7 +131,7 @@ class _AccountActionState extends ConsumerState<_AccountAction> {
     return IconButton(
       onPressed: _busy ? null : _confirmSignOut,
       tooltip: t(en: 'Sign out', tr: 'Çıkış yap'),
-      icon: const Icon(Icons.logout_rounded, color: AppColors.danger),
+      icon: Icon(Icons.logout_rounded, color: context.colors.danger),
     );
   }
 }
@@ -281,13 +281,13 @@ class _AccountSectionState extends ConsumerState<_AccountSection> {
             ),
           ),
         ListTile(
-          leading: const Icon(
+          leading: Icon(
             Icons.delete_forever_rounded,
-            color: AppColors.danger,
+            color: context.colors.danger,
           ),
           title: Text(
             t(en: 'Delete account & data', tr: 'Hesabımı ve verimi sil'),
-            style: const TextStyle(color: AppColors.danger),
+            style: TextStyle(color: context.colors.danger),
           ),
           enabled: !_busy,
           onTap: _busy ? null : _deleteAccount,
@@ -352,6 +352,49 @@ class SettingsPage extends ConsumerWidget {
             const _AccountSection(),
             const Divider(),
           ],
+          // TEMA — dil seçicisiyle aynı desen: başlık kendi satırında, seçici
+          // altında. Varsayılan AÇIK; koyu tema ve sistem takibi kullanıcının
+          // seçimi (bkz. AppSettings.themeMode).
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Row(
+              children: [
+                Icon(
+                  settings.themeMode == ThemeMode.dark
+                      ? Icons.dark_mode_rounded
+                      : Icons.light_mode_rounded,
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  t(en: 'Theme', tr: 'Tema'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: SegmentedButton<ThemeMode>(
+              segments: [
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  label: Text(t(en: 'Light', tr: 'Açık')),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  label: Text(t(en: 'Dark', tr: 'Koyu')),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  label: Text(t(en: 'System', tr: 'Sistem')),
+                ),
+              ],
+              selected: {settings.themeMode},
+              showSelectedIcon: false,
+              onSelectionChanged: (s) => ctrl.setThemeMode(s.first),
+            ),
+          ),
+          const Divider(),
           // Nota adları başvuru kartı — ders ekranlarındaki ℹ️ ile AYNI kart.
           // Ayarlar'da da olması şart: kullanıcı ders ortasında değilken de
           // "C ne demekti?" diye bakabilmeli.
@@ -423,7 +466,7 @@ class SettingsPage extends ConsumerWidget {
                 child: Text(
                   t(en: 'Version $version', tr: 'Sürüm $version'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.muted,
+                    color: context.colors.muted,
                   ),
                 ),
               ),

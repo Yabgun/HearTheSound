@@ -85,5 +85,5 @@ class PhraseDots extends StatelessWidget {
 /// Bitiş karakterine göre renk — tek kaynak, tüm cümle ekranları paylaşır.
 /// Evde biten yeşil (varış), askıda kalan amber (bekleyiş). Amber bilinçli:
 /// askıda kalmak YANLIŞ değil, tamamlanmamıştır — kırmızı yanlış anlatırdı.
-Color phraseEndColor({required bool endsAtHome}) =>
-    endsAtHome ? AppColors.success : AppColors.amber;
+Color phraseEndColor(BuildContext context, {required bool endsAtHome}) =>
+    endsAtHome ? context.colors.success : AppColors.amber;

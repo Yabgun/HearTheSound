@@ -264,14 +264,14 @@ class _HarmonyChoicePageState extends State<HarmonyChoicePage> {
     final Color background;
     final Color foreground;
     if (answered && isAnswer) {
-      background = AppColors.success;
-      foreground = Colors.white;
+      background = context.colors.success;
+      foreground = context.colors.onSuccess;
     } else if (answered && isPicked) {
-      background = AppColors.danger;
-      foreground = Colors.white;
+      background = context.colors.danger;
+      foreground = context.colors.onDanger;
     } else {
       background = theme.colorScheme.surfaceContainerHighest;
-      foreground = AppColors.ink;
+      foreground = context.colors.ink;
     }
 
     return Semantics(

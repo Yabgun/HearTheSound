@@ -290,7 +290,7 @@ class _HarmonyPatternPageState extends State<HarmonyPatternPage> {
               child: i < _attempt.length
                   ? ChordLabel(
                       _attempt[i],
-                      color: _matches != null ? Colors.white : AppColors.ink,
+                      color: _slotTextColor(i),
                     )
                   : const SizedBox.shrink(),
             ),
@@ -299,12 +299,22 @@ class _HarmonyPatternPageState extends State<HarmonyPatternPage> {
     );
   }
 
+
+  /// Yuva ETİKETİNİN rengi — zeminiyle çift gider (bkz. _slotColor).
+  /// Dolgu success/danger olduğunda etiket paletten gelmeli: koyu temada dolgu
+  /// açık yeşile/kırmızıya döner ve üstünde beyaz yazı okunmaz.
+  Color _slotTextColor(int index) {
+    final matches = _matches;
+    if (matches == null) return context.colors.ink;
+    return matches[index] ? context.colors.onSuccess : context.colors.onDanger;
+  }
+
   Color _slotColor(ThemeData theme, int index) {
     final matches = _matches;
     if (matches != null) {
-      return matches[index] ? AppColors.success : AppColors.danger;
+      return matches[index] ? context.colors.success : context.colors.danger;
     }
-    if (index < _attempt.length) return AppColors.grapeSoft;
+    if (index < _attempt.length) return context.colors.grapeSoft;
     return theme.colorScheme.surfaceContainerHighest;
   }
 
@@ -355,7 +365,7 @@ class _HarmonyPatternPageState extends State<HarmonyPatternPage> {
           onTap: _phase == _Phase.answering ? () => _place(chord) : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 18),
-            child: ChordLabel(chord, color: AppColors.ink),
+            child: ChordLabel(chord, color: context.colors.ink),
           ),
         ),
       ),

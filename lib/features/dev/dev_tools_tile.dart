@@ -44,7 +44,7 @@ class DevToolsSection extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Row(
             children: [
-              const Icon(Icons.construction_rounded, color: AppColors.amberDeep),
+              Icon(Icons.construction_rounded, color: context.colors.amberDeep),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
@@ -53,7 +53,7 @@ class DevToolsSection extends ConsumerWidget {
                     tr: 'Geliştirici araçları · yalnızca debug',
                   ),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.amberDeep,
+                    color: context.colors.amberDeep,
                   ),
                 ),
               ),
@@ -83,10 +83,10 @@ class DevToolsSection extends ConsumerWidget {
           },
         ),
         ListTile(
-          leading: const Icon(Icons.restart_alt_rounded, color: AppColors.danger),
+          leading: Icon(Icons.restart_alt_rounded, color: context.colors.danger),
           title: Text(
             t(en: 'Reset progress', tr: 'İlerlemeyi sıfırla'),
-            style: const TextStyle(color: AppColors.danger),
+            style: TextStyle(color: context.colors.danger),
           ),
           subtitle: Text(
             t(
@@ -122,7 +122,7 @@ class DevToolsSection extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            style: FilledButton.styleFrom(backgroundColor: context.colors.danger),
             child: Text(t(en: 'Reset', tr: 'Sıfırla')),
           ),
         ],

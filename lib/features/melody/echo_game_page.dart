@@ -430,7 +430,11 @@ class _EchoGamePageState extends State<EchoGamePage> {
                   i < _attempt.length ? _attempt[i].label : '',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: comparison != null ? Colors.white : AppColors.ink,
+                    color: comparison == null
+                        ? context.colors.ink
+                        : (comparison.matches[i]
+                              ? context.colors.onSuccess
+                              : context.colors.onDanger),
                   ),
                 ),
               ),
@@ -442,9 +446,9 @@ class _EchoGamePageState extends State<EchoGamePage> {
 
   Color _slotColor(ThemeData theme, int index, EchoComparison? comparison) {
     if (comparison != null) {
-      return comparison.matches[index] ? AppColors.success : AppColors.danger;
+      return comparison.matches[index] ? context.colors.success : context.colors.danger;
     }
-    if (index < _attempt.length) return AppColors.grapeSoft;
+    if (index < _attempt.length) return context.colors.grapeSoft;
     return theme.colorScheme.surfaceContainerHighest;
   }
 
@@ -513,7 +517,7 @@ class _EchoGamePageState extends State<EchoGamePage> {
         Icon(
           _micActive ? Icons.mic_rounded : Icons.mic_off_rounded,
           size: 34,
-          color: _micActive ? AppColors.grape : theme.colorScheme.outline,
+          color: _micActive ? context.colors.grape : theme.colorScheme.outline,
         ),
         const SizedBox(height: 10),
         // Hedefi GÖSTERMEYEN ilerleme halkası: kullanıcı ibreyi değil, ezgiyi
@@ -525,7 +529,7 @@ class _EchoGamePageState extends State<EchoGamePage> {
             child: LinearProgressIndicator(
               value: _lockProgress,
               minHeight: 8,
-              backgroundColor: AppColors.wash,
+              backgroundColor: context.colors.wash,
             ),
           ),
         ),

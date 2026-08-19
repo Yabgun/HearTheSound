@@ -99,7 +99,7 @@ class _ContrastDemoState extends State<ContrastDemo> {
     final theme = Theme.of(context);
     final option = widget.options[index];
     final playing = _playingIndex == index;
-    final accent = phraseEndColor(endsAtHome: option.endsAtHome);
+    final accent = phraseEndColor(context, endsAtHome: option.endsAtHome);
 
     return Semantics(
       button: true,

@@ -53,8 +53,6 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
   // Doğru notayı bu kadar süre tutunca "söyledi" sayılır.
   static const Duration _holdTarget = Duration(milliseconds: 900);
 
-  static const Color _green = AppColors.success;
-
   final PitchService _pitch = PitchService();
   final NotePlayer _player = createNotePlayer();
 
@@ -353,7 +351,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
         : t(en: 'FINDING YOUR HIGHEST NOTE', tr: 'EN TİZ NOTANI BULUYORUZ');
 
     final exact = _reading != null && _reading!.note.midi == _target;
-    final ringColor = (_matched || exact) ? _green : theme.colorScheme.primary;
+    final ringColor = (_matched || exact) ? context.colors.success : theme.colorScheme.primary;
 
     final String status;
     if (_matched) {
@@ -431,7 +429,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                   _matched ? Icons.check_rounded : Icons.mic_rounded,
                   size: 54,
                   color: _matched
-                      ? _green
+                      ? context.colors.success
                       : (_micActive
                             ? theme.colorScheme.primary
                             : theme.colorScheme.outline),
@@ -445,7 +443,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
             textAlign: TextAlign.center,
             style: theme.textTheme.titleMedium?.copyWith(
               color: (_matched || exact)
-                  ? _green
+                  ? context.colors.success
                   : theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
@@ -468,7 +466,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
                     icon: const Icon(AppIcons.comfortable, size: 20),
                     label: Text(t(en: 'Comfortable', tr: 'Rahattı')),
                     style: FilledButton.styleFrom(
-                      backgroundColor: _green,
+                      backgroundColor: context.colors.success,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
@@ -522,7 +520,7 @@ class _CalibrationPageState extends ConsumerState<CalibrationPage> {
       child: Column(
         children: [
           const Spacer(),
-          const Icon(Icons.check_circle_rounded, size: 64, color: _green),
+          Icon(Icons.check_circle_rounded, size: 64, color: context.colors.success),
           const SizedBox(height: 20),
           Text(
             t(en: 'Your vocal range is ready', tr: 'Ses aralığın hazır'),

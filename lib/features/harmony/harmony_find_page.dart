@@ -426,7 +426,7 @@ class _HarmonyFindPageState extends State<HarmonyFindPage> {
                       i < _attempt.length ? _attempt[i].label : '?',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
-                        color: _matches != null ? Colors.white : AppColors.ink,
+                        color: _slotTextColor(i),
                       ),
                     ),
                   ),
@@ -453,12 +453,22 @@ class _HarmonyFindPageState extends State<HarmonyFindPage> {
     );
   }
 
+
+  /// Yuva ETİKETİNİN rengi — zeminiyle çift gider (bkz. _slotColor).
+  /// Dolgu success/danger olduğunda etiket paletten gelmeli: koyu temada dolgu
+  /// açık yeşile/kırmızıya döner ve üstünde beyaz yazı okunmaz.
+  Color _slotTextColor(int index) {
+    final matches = _matches;
+    if (matches == null) return context.colors.ink;
+    return matches[index] ? context.colors.onSuccess : context.colors.onDanger;
+  }
+
   Color _slotColor(ThemeData theme, int index) {
     final matches = _matches;
     if (matches != null) {
-      return matches[index] ? AppColors.success : AppColors.danger;
+      return matches[index] ? context.colors.success : context.colors.danger;
     }
-    if (index < _attempt.length) return AppColors.grapeSoft;
+    if (index < _attempt.length) return context.colors.grapeSoft;
     return theme.colorScheme.surfaceContainerHighest;
   }
 
@@ -560,7 +570,7 @@ class _HarmonyFindPageState extends State<HarmonyFindPage> {
         Icon(
           _micActive ? Icons.mic_rounded : Icons.mic_off_rounded,
           size: 34,
-          color: _micActive ? AppColors.grape : theme.colorScheme.outline,
+          color: _micActive ? context.colors.grape : theme.colorScheme.outline,
         ),
         const SizedBox(height: 10),
         SizedBox(
@@ -570,7 +580,7 @@ class _HarmonyFindPageState extends State<HarmonyFindPage> {
             child: LinearProgressIndicator(
               value: _lockProgress,
               minHeight: 8,
-              backgroundColor: AppColors.wash,
+              backgroundColor: context.colors.wash,
             ),
           ),
         ),

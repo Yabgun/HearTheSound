@@ -113,7 +113,7 @@ class PracticeHubPage extends ConsumerWidget {
             const SizedBox(height: 14),
             _PracticeCard(
               icon: Icons.piano_rounded,
-              color: AppColors.grape,
+              color: context.colors.grape,
               title: t(
                 en: 'Vocal Range Playground',
                 tr: 'Ses Aralığı Oyun Alanı',
@@ -191,15 +191,16 @@ class ProfileHubPage extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.grape, AppColors.coral],
+                gradient: LinearGradient(
+                  // Beyaz metin taşıyan degrade → sabit hue (bkz. today_page hero).
+                  colors: [AppColors.grapeHue, AppColors.coral],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.grape.withValues(alpha: 0.3),
+                    color: context.colors.grape.withValues(alpha: 0.3),
                     blurRadius: 24,
                     offset: const Offset(0, 12),
                   ),

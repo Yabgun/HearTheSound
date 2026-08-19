@@ -217,8 +217,8 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
                                   ),
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: correct
-                                  ? AppColors.success
-                                  : AppColors.danger,
+                                  ? context.colors.success
+                                  : context.colors.danger,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -256,11 +256,11 @@ class _NoteRecognitionPageState extends State<NoteRecognitionPage> {
 
     if (_answered) {
       if (note == _target) {
-        bg = AppColors.success;
-        fg = Colors.white;
+        bg = context.colors.success;
+        fg = context.colors.onSuccess;
       } else if (note == _selected) {
-        bg = AppColors.danger;
-        fg = Colors.white;
+        bg = context.colors.danger;
+        fg = context.colors.onDanger;
       } else {
         bg = theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
         fg = theme.colorScheme.onSurfaceVariant;

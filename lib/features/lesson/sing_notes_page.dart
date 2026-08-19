@@ -226,7 +226,7 @@ class _SingNotesPageState extends State<SingNotesPage> {
     final exact = _reading != null && _reading!.note.midi == _target.midi;
     final samePitchClass =
         _reading != null && _reading!.note.pitchClass == _target.pitchClass;
-    const green = AppColors.success;
+    final green = context.colors.success;
     final ringColor = (_celebrating || exact)
         ? green
         : theme.colorScheme.primary;

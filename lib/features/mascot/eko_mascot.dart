@@ -223,7 +223,9 @@ class _EkoPainter extends CustomPainter {
       );
     } else {
       final white = Paint()..color = Colors.white;
-      final pupil = Paint()..color = AppColors.ink;
+      // Göz bebeği HER ZAMAN koyu: beyaz gözün üstüne çizilir, uygulama
+      // zemininden bağımsızdır (koyu temada açılırsa Eko kör görünür).
+      final pupil = Paint()..color = const Color(0xFF20233B);
       canvas.drawCircle(const Offset(49, 58), 7, white);
       canvas.drawCircle(const Offset(71, 58), 7, white);
       canvas.drawCircle(const Offset(50, 59), 3.4, pupil);

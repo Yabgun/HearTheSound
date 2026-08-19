@@ -16,16 +16,29 @@ import '../placement/placement_test_page.dart';
 // -----------------------------------------------------------------------------
 // ONBOARDING — ilk açılış akışı
 //
-// Sıra: Karşılama (Eko tanıtır) → Giriş → Adın → Avatarın → Sesini tanıyalım
-// (kalibrasyon) → Başlangıç noktası. Bitince 'onboarded' bayrağı set edilir; kök
-// geçiş (main) otomatik ana ekrana döner. HER adım atlanabilir (giriş: misafir;
-// ad/avatar: "şimdilik atla"; kalibrasyon: "sonra").
+// Sıra: Karşılama (Eko tanıtır) → Giriş → Adın → Avatarın → TEMAN → Sesini
+// tanıyalım (kalibrasyon) → Başlangıç noktası. Bitince 'onboarded' bayrağı set
+// edilir; kök geçiş (main) otomatik ana ekrana döner. HER adım atlanabilir
+// (giriş: misafir; ad/avatar: "şimdilik atla"; tema: seçim zaten hazır gelir;
+// kalibrasyon: "sonra").
+//
+// TEMA ADIMI profil kurulumunun devamıdır: adını yazdın, Eko'nun rengini
+// seçtin — sıradaki doğal soru "uygulama nasıl görünsün". Sonrasında tema
+// yalnızca Ayarlar'dan değişir; ders ekranlarının başlığı zaten dolu.
 //
 // SON ADIM İKİ YOL: "müziğe yeniyim" → hiç test yok, ilk dersten başlar ·
 // "biraz müzik biliyorum" → merdiven testi (features/placement/).
 // -----------------------------------------------------------------------------
 
-enum _Step { intro, signIn, nameSetup, avatarSetup, welcome, startPoint }
+enum _Step {
+  intro,
+  signIn,
+  nameSetup,
+  avatarSetup,
+  themeChoice,
+  welcome,
+  startPoint,
+}
 
 class OnboardingFlowPage extends ConsumerStatefulWidget {
   const OnboardingFlowPage({super.key});
@@ -78,6 +91,7 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
       ),
       _Step.nameSetup => _buildNameSetup(context),
       _Step.avatarSetup => _buildAvatarSetup(context),
+      _Step.themeChoice => _buildThemeChoice(context),
       _Step.welcome => _buildWelcome(context),
       _Step.startPoint => _buildStartPoint(context),
     };
@@ -305,7 +319,7 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
               ),
               const SizedBox(height: 8),
               TextButton(
-                onPressed: () => setState(() => _step = _Step.welcome),
+                onPressed: () => setState(() => _step = _Step.themeChoice),
                 child: Text(t(en: 'Skip for now', tr: 'Şimdilik atla')),
               ),
             ],
@@ -319,7 +333,7 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
     if (_avatarId != null) {
       ref.read(progressProvider.notifier).setAvatar(_avatarId!);
     }
-    setState(() => _step = _Step.welcome);
+    setState(() => _step = _Step.themeChoice);
   }
 
   Widget _avatarChoice({
@@ -340,12 +354,108 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
             shape: BoxShape.circle,
             color: palette.from.withValues(alpha: 0.16),
             border: Border.all(
-              color: selected ? AppColors.ink : Colors.transparent,
+              color: selected ? context.colors.ink : Colors.transparent,
               width: 3,
             ),
           ),
           alignment: Alignment.center,
           child: EkoMascot(size: 52, palette: palette),
+        ),
+      ),
+    );
+  }
+
+  // --- Tema tercihi (profil kurulumunun son adımı) ---------------------------
+
+  /// "Hangi temada kullanmak istersin?"
+  ///
+  /// NEDEN BURADA: tema, her ekranda duran bir kontrol değil bir KİŞİSELLEŞTİRME
+  /// kararı — ve yeri, kullanıcının zaten kendini kurduğu an (adını yazdı,
+  /// Eko'sunun rengini seçti; sıradaki doğal soru "nasıl görünsün"). Her ekrana
+  /// anahtar koymak denendi ve fazlaydı: kullanıcı temayı günde bir kez bile
+  /// değiştirmiyor, ama o düğme her başlıkta yer kaplıyordu.
+  ///
+  /// NEDEN CANLI: karta dokunulunca tema ANINDA uygulanır — kullanıcı seçtiği
+  /// şeyi tahmin etmez, görür. (Uygulamanın genel ilkesi: önce yaşat.)
+  /// Bundan sonrası Ayarlar'ın işi.
+  Widget _buildThemeChoice(BuildContext context) {
+    final theme = Theme.of(context);
+    final mode = ref.watch(settingsProvider).themeMode;
+    // "Sistem" seçili gelirse (kullanıcı Ayarlar'dan seçmiş olabilir) hangi
+    // kartın işaretleneceğini EKRANDAKİ parlaklık söyler.
+    final isDark = mode == ThemeMode.system
+        ? theme.brightness == Brightness.dark
+        : mode == ThemeMode.dark;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            children: [
+              const Spacer(),
+              Text(
+                t(
+                  en: 'How should the app look?',
+                  tr: 'Uygulama nasıl görünsün?',
+                ),
+                style: theme.textTheme.headlineSmall,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                t(
+                  en: 'Pick the one that feels easier on your eyes. You can '
+                      'change it any time in Settings.',
+                  tr: 'Gözüne hangisi daha rahat geliyorsa onu seç. İstediğin '
+                      'zaman Ayarlar\'dan değiştirebilirsin.',
+                ),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 28),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ThemeChoiceCard(
+                      palette: AppPalette.light,
+                      icon: Icons.light_mode_rounded,
+                      label: t(en: 'Light', tr: 'Açık'),
+                      selected: !isDark,
+                      onTap: () => ref
+                          .read(settingsProvider.notifier)
+                          .setThemeMode(ThemeMode.light),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _ThemeChoiceCard(
+                      palette: AppPalette.dark,
+                      icon: Icons.dark_mode_rounded,
+                      label: t(en: 'Dark', tr: 'Koyu'),
+                      selected: isDark,
+                      onTap: () => ref
+                          .read(settingsProvider.notifier)
+                          .setThemeMode(ThemeMode.dark),
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => setState(() => _step = _Step.welcome),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: Text(t(en: 'Continue', tr: 'Devam')),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -461,7 +571,7 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
         chip(
           Icons.lightbulb_rounded,
           t(en: 'Get it', tr: 'Anla'),
-          AppColors.grape,
+          context.colors.grape,
         ),
         arrow(),
         chip(Icons.mic_rounded, t(en: 'Sing', tr: 'Söyle'), AppColors.teal),
@@ -593,4 +703,113 @@ class _OnboardingFlowPageState extends ConsumerState<OnboardingFlowPage> {
       ),
     );
   }
+}
+
+/// Tema seçim kartı — KENDİ paletinde küçük bir uygulama önizlemesi.
+///
+/// Önizleme bilerek metinsiz: renkli çubuklar dilden bağımsızdır ve büyük
+/// metin ölçeğinde taşmaz. Asıl anlatılan şey zaten yazı değil, ZEMİN ile
+/// metnin birbirine oranı.
+class _ThemeChoiceCard extends StatelessWidget {
+  final AppPalette palette;
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemeChoiceCard({
+    required this.palette,
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Önizleme kutusu: renkleri PALETTEN alır, bağlamdan değil —
+            // kart, seçilirse ne göreceğini göstermeli.
+            Container(
+              height: 132,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: palette.paper,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: selected ? palette.grape : palette.lineStrong,
+                  width: selected ? 3 : 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: palette.grape, size: 22),
+                  const SizedBox(height: 10),
+                  _bar(palette.ink, 0.75, 9),
+                  const SizedBox(height: 6),
+                  _bar(palette.muted, 0.5, 7),
+                  const Spacer(),
+                  Container(
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: palette.card,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: palette.line),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (selected) ...[
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Önizlemedeki metin satırı taklidi.
+  Widget _bar(Color color, double widthFactor, double height) =>
+      FractionallySizedBox(
+        alignment: Alignment.centerLeft,
+        widthFactor: widthFactor,
+        child: Container(
+          height: height,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
+      );
 }

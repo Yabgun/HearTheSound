@@ -74,7 +74,7 @@ class TheoryBadgePage extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w800,
-                          color: AppColors.grape,
+                          color: context.colors.grape,
                         ),
                       ),
                       const SizedBox(height: 16),

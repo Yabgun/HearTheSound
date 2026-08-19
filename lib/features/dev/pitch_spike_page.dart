@@ -143,11 +143,11 @@ class _PitchSpikePageState extends State<PitchSpikePage> {
     if (!active || reading == null) {
       accent = theme.colorScheme.outline;
     } else if (reading.cents.abs() < 5) {
-      accent = AppColors.success;
+      accent = context.colors.success;
     } else if (reading.cents.abs() < 20) {
       accent = const Color(0xFFE0912B);
     } else {
-      accent = AppColors.danger;
+      accent = context.colors.danger;
     }
 
     return Scaffold(

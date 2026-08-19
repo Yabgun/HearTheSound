@@ -61,7 +61,7 @@ void main() {
         height: 1024,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [AppColors.grape, AppColors.coral],
+            colors: [AppColors.grapeHue, AppColors.coral],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

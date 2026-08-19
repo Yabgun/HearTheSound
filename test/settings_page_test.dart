@@ -103,6 +103,31 @@ void main() {
     expect(find.text('Delete account & data'), findsNothing);
   });
 
+  testWidgets('tema seçici üç seçenek sunar, varsayılan Açık', (t) async {
+    await pumpSettings(t);
+    expect(find.text('Theme'), findsOneWidget);
+    for (final label in ['Light', 'Dark', 'System']) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    final picker = t.widget<SegmentedButton<ThemeMode>>(
+      find.byType(SegmentedButton<ThemeMode>),
+    );
+    expect(picker.selected, {ThemeMode.light});
+  });
+
+  testWidgets('koyu seçilince tercih kaydedilir', (t) async {
+    await pumpSettings(t);
+    await t.tap(find.text('Dark'));
+    await t.pumpAndSettle();
+
+    final picker = t.widget<SegmentedButton<ThemeMode>>(
+      find.byType(SegmentedButton<ThemeMode>),
+    );
+    expect(picker.selected, {ThemeMode.dark});
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('theme_mode'), 'dark');
+  });
+
   testWidgets('nota adları satırı kartı açar', (t) async {
     await pumpSettings(t);
     await t.tap(find.text('Note names'));

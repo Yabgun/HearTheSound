@@ -79,11 +79,11 @@ class RhythmTimeline extends StatelessWidget {
         playheadMs: playheadMs,
         grid: theme.colorScheme.outline.withValues(alpha: 0.25),
         gridStrong: theme.colorScheme.outline.withValues(alpha: 0.55),
-        rail: AppColors.wash,
+        rail: context.colors.wash,
         block: theme.colorScheme.outline,
-        active: AppColors.grape,
-        ok: AppColors.success,
-        bad: AppColors.danger,
+        active: context.colors.grape,
+        ok: context.colors.success,
+        bad: context.colors.danger,
       ),
     );
 
